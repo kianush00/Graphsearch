@@ -1,0 +1,26 @@
+<component name="libraryTable">
+  <library name="LuceneLibraries">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/antlr4-runtime-4.5.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/core-3.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/utility-3.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/drmaa-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/lucene-analyzers-common-6.2.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/commons-compress-1.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/lucene-queryparser-6.2.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/lucene-core-6.2.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/tupleflow-3.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/krovetz-stemmer-3.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/commons-lang3-3.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/junit-4.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/lucene-6.2.0.zip!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/jbibtex-1.0.15.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/citeproc-java-1.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/snowball-stemmers-3.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/eval-3.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/toolkit/LuceneLibraries/tupleflow-gridengine-3.10.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
