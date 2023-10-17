@@ -31,8 +31,25 @@ query = XPLORE(xploreID)
 query.outputDataFormat='object'
 
 
-# Calculate de absolute distance between the positions of two words in a document. word1_vector_pos and word2_vector_pos, represents the vectors with the word positions in the document. Using lambda functions.
-def get_word_distances(word1_vector_pos, word2_vector_pos):
+def get_word_distances(word1_vector_pos: list, word2_vector_pos: list) -> list:
+    """
+    Calculate de absolute distance between the positions of two 
+    words in a document. word1_vector_pos and word2_vector_pos, 
+    represents the vectors with the word positions in the document. 
+    Using lambda functions.
+
+    Parameters
+    ----------
+    word1_vector_pos : list
+        List with the positions of the first word
+    word2_vector_pos : list
+        List with the positions of the second word
+    
+    Returns
+    -------
+    result : list
+        List with the absolute distances between the positions of the words
+    """
     
     # this empty list stores the output
     result = []
@@ -44,8 +61,22 @@ def get_word_distances(word1_vector_pos, word2_vector_pos):
     return result
 
 
-# Get IEEE-Xplore article
-def get_ieee_explore_article(parameter, value):
+def get_ieee_explore_article(parameter: str, value: str) -> str:
+    """
+    Get an article from IEEE-Xplore.
+    
+    Parameters
+    ----------
+    parameter
+        Parameter used to search the article (e.g. 'article_number')
+    value
+        Value of the parameter used to search the article (e.g. '8600704')
+    
+    Returns
+    -------
+    article : str
+        A string with the title and abstract of an article
+    """
     query = XPLORE(xploreID)
     query.outputDataFormat='object'
     query.addParameter(parameter, value)
@@ -53,24 +84,54 @@ def get_ieee_explore_article(parameter, value):
     return data['articles'][0]['title'] + '. ' + data['articles'][0]['abstract']
 
 
-# Get IEEE-Xplore Ranking
-# q : query string
-# nr_documents: number of retrieved documents results
-def get_ieee_explore_ranking(q, max_records):
+def get_ieee_explore_ranking(
+        query_text: str, 
+        max_results: int
+        ) -> list:
+    """
+    Get a ranking of articles from IEEE-Xplore.
+
+    Parameters
+    ----------
+    query_text : str
+        Text used to search the articles
+    max_results : int
+        Maximum number of results to be returned
+
+    Returns
+    -------
+    results : list
+        A list of articles
+    """
     query = XPLORE(xploreID)
     query.outputDataFormat='object'
-    query.maximumResults(max_records)
-    query.queryText(q)
+    query.maximumResults(max_results)
+    query.queryText(query_text)
     data = query.callAPI()
     results = data['articles']
     
     return results
 
 
-# Transform the ranking array in one string document.
-# if weighted <> none : the document will be weighted depending on its position in the ranking, 
-# by multiplying its text (title + abstract) with the corresponding factor.
-def get_ranking_as_string(results, weighted='none') :
+def get_ranking_as_string(
+        results: list, 
+        weighted: str = 'none'
+        ) -> str:
+    """
+    Transform the ranking array in one string document.
+    if weighted <> none : the document will be weighted depending on its position in the ranking,
+    by multiplying its text (title + abstract) with the corresponding factor.
+
+    Parameters
+    ----------
+    results : list
+        Array of documents
+    
+    Returns
+    -------
+    ranking : str
+        A string with the ranking
+    """
     ranking = ''
     results_size = len(results)
     for index, article in enumerate(results):
@@ -97,14 +158,37 @@ def get_ranking_as_list(results, atribute_list):
 
 
 
-# Execute some text processing tasks
-def text_transformations(parragraph, stop_words_list, lema=True, stem=True):   
+def text_transformations(
+        paragraph: str, 
+        stop_words_list: list, 
+        lema: bool = True, 
+        stem: bool = True
+        ) -> str:
+    """
+    Apply some text transformations to a paragraph.
+
+    Parameters
+    ----------
+    paragraph : str
+        String with the paragraph to be transformed
+    stop_words_list : list
+        List of stop words to be removed from the paragraph
+    lema : bool
+        If True, lematization is applied
+    stem : bool
+        If True, stemming is applied
+    
+    Returns
+    -------
+    final_string : str
+        The transformed paragraph
+    """
     
     # Low the string
-    parragraph = parragraph.lower()
+    paragraph = paragraph.lower()
     
     # Remove puntuation
-    tokens = nltk.word_tokenize(parragraph)
+    tokens = nltk.word_tokenize(paragraph)
     filtered_parragraph = [w for w in tokens if w.isalnum()]
     
     # Remove Stopwords
@@ -125,8 +209,20 @@ def text_transformations(parragraph, stop_words_list, lema=True, stem=True):
 
 
 
-# Calculate a matrix containing the terms positions from a group (list) of cocuments
-def get_documents_positions_matrix(documents):
+def get_documents_positions_matrix(documents: list) -> list:
+    """
+    Calculate a matrix containing the terms positions from a group (list) of documents.
+
+    Parameters
+    ----------
+    documents : list
+        List of documents
+
+    Returns
+    -------
+    term_positions_matrix : list
+        A list of dictionaries, each dictionary contains the terms positions of a document
+    """
     term_positions_matrix = []
     for doc in documents:
         positions_dict = get_term_positions_dict(doc)
@@ -134,27 +230,70 @@ def get_documents_positions_matrix(documents):
     return term_positions_matrix
 
 
-# Calculates a vecinity matrix from a list of documents
-# - The @document_positions_matrix is an array of dictionaries
-# - The result matrix is also an array of dictionaries 
-# - Each dictionary corresponds to a a document or parragraph
-# 
-def get_vecinity_matrix(document_positions_matrix, reference_term, limit_distance, sumarize, include_reference_term):
+def get_vecinity_matrix(
+        document_positions_matrix: dict, 
+        reference_term: str, 
+        limit_distance: int, 
+        summarize: str, 
+        include_reference_term: bool
+        ) -> list:
+    """
+    Calculate a vecinity matrix from a list of documents.
+
+    Parameters
+    ----------
+    document_positions_matrix : dict
+        List of dictionaries, each dictionary contains the terms positions of a document
+    reference_term : str
+        Term used as reference for calculating wich terms are in its vecinity
+    limit_distance : int
+        Maximal distance of terms used to calculate the vecinity
+    summarize : str
+        Used to define the function to sumarize the distance of the terms in the vecinity
+    include_reference_term : bool
+        If True, the reference term is included in the vecinity
+    
+    Returns
+    -------
+    vecinity_matrix : list
+        A list of dictionaries, each dictionary contains the terms in the vecinity of the reference term and their corresponding distances
+    """
     vecinity_matrix = []
     for doc_positions_dic in document_positions_matrix:
-        document_term_vecinity_dict = get_document_term_vecinity_dict(doc_positions_dic, reference_term, limit_distance, sumarize, include_reference_term)
+        document_term_vecinity_dict = get_document_term_vecinity_dict(doc_positions_dic, reference_term, limit_distance, summarize, include_reference_term)
         vecinity_matrix.append(document_term_vecinity_dict)
     return vecinity_matrix
 
 
-# Calculates the vecinity of a term in a doument
-# where:
-# document_positions_dict : is a dictionary with the positions of all terms in a document
-# reference_term : is a term used as reference for calculating wich terms are in its vecinity
-# limit_distance : is the maximal distance of terms used to calculate the vecinity
-# sumarize : is used to define the function to sumarize the distance of the terms in the vecinity
-def get_document_term_vecinity_dict(document_positions_dict, reference_term, limit_distance, sumarize='none', include_reference_term=True):
+def get_document_term_vecinity_dict(
+        document_positions_dict: dict, 
+        reference_term: str, 
+        limit_distance: int, 
+        summarize: str = 'none', 
+        include_reference_term: bool = True
+        ) -> dict:
+    """
+    Calculate the vecinity of a term in a document.
     
+    Parameters
+    ----------
+    document_positions_dict
+        Dictionary with the positions of all terms in a document
+    reference_term
+        Term used as reference for calculating which terms are in its vecinity
+    limit_distance
+        Maximal distance of terms used to calculate the vecinity
+    sumarize
+        Used to define the function to sumarize the distance of the terms in the vecinity
+    include_reference_term : bool
+        If True, the reference term is included in the vecinity
+    
+    Returns
+    -------
+    vecinity_dict : dict
+        A dictionary with the terms in the vecinity of the reference term and their corresponding distances
+    """
+
     # Create the empty dictionary
     vecinity_dict = {}
     
@@ -171,13 +310,13 @@ def get_document_term_vecinity_dict(document_positions_dict, reference_term, lim
             neighborhood_positions = calculate_term_positions_distances(reference_term_positions, term_positions, limit_distance)
             
             if(len(neighborhood_positions)>0):
-                if (sumarize == 'mean'):
+                if (summarize == 'mean'):
                     vecinity_dict[term] = np.mean(neighborhood_positions)
-                elif (sumarize == 'median'): 
+                elif (summarize == 'median'): 
                     vecinity_dict[term] = np.median(neighborhood_positions)
                 else: 
                     vecinity_dict[term] = neighborhood_positions
-                
+
     return vecinity_dict
 
 
@@ -185,6 +324,7 @@ def get_document_term_vecinity_dict(document_positions_dict, reference_term, lim
 # Calculate the a dictionary with the document's term positions
 # See corresponding UNITTEST
 def get_term_positions_dict(document):
+    """Calculate the a dictionary with the document's term positions."""
     vectorizer = CountVectorizer()
     vector = vectorizer.build_tokenizer()(document)
     document_positions_dic = defaultdict(list)
@@ -195,7 +335,8 @@ def get_term_positions_dict(document):
 
 # Merge two "generic" dictionaries 
 # See corresponding UNITTEST
-def merge_dictionaries(dict_A, dict_B):
+def merge_dictionaries(dict_A: dict, dict_B: dict):
+    """Merge two "generic" dictionaries."""
     for i in dict_A.keys():
         if(i in dict_B.keys()):
             dict_B[i] = dict_B[i]+dict_A[i]
@@ -207,6 +348,7 @@ def merge_dictionaries(dict_A, dict_B):
 # Merge two "graph" dictionaries 
 # See corresponding UNITTEST
 def merge_graph_dictionaries(g1, g2):
+    """Merge two "graph" dictionaries."""
     for i in g1.keys():
         if (i in g2.keys()):
             g2[i]['frequency'] = g2[i]['frequency'] + g1[i]['frequency']
@@ -216,10 +358,29 @@ def merge_graph_dictionaries(g1, g2):
     return g2
 
 
-# Compare the positions vectors of two terms, and return the list of distances of the terms 
-# that are inside limit_distance
-# See corresponding UNITTEST
-def calculate_term_positions_distances(term_positions1, term_positions2, limit_distance=float("inf")):
+def calculate_term_positions_distances(
+        term_positions1: list, 
+        term_positions2: list, 
+        limit_distance: float = float("inf")
+        ) -> list:
+    """
+    Compare the positions vectors of two terms, and return the list of 
+    distances of the terms that are inside limit_distance.
+
+    Parameters
+    ----------
+    term_positions1 : list
+        List of positions of the first term
+    term_positions2 : list
+        List of positions of the second term
+    limit_distance : float
+        Maximal distance of terms
+
+    Returns
+    -------
+    term_distances : list
+        List of distances of the terms that are inside limit_distance 
+    """
     term_distances = [] 
     for pos1 in term_positions1:
         for pos2 in term_positions2:
@@ -230,21 +391,38 @@ def calculate_term_positions_distances(term_positions1, term_positions2, limit_d
 
 
             
-# Calculates a vecinity dictionary from all documents, merging their vecinities
 def get_unique_vecinity_dict(document_positions_matrix):
+    """Calculates a vecinity dictionary from all documents, merging their vecinities."""
     product = reduce((lambda x, y: merge_dictionaries(x,y)), document_positions_matrix)
     return product
 
 
-# Calculates a vecinity dictionary from an array of graph dictionaries, merging their vecinities
 def get_unique_graph_dictionary(graph_dictionaries_array):
+    """Calculates a vecinity dictionary from an array of graph dictionaries, merging their vecinities."""
     product = reduce((lambda x, y: merge_graph_dictionaries(x,y)), graph_dictionaries_array)
     return product
 
 
-# Normalize the values of a dictionary using a range
-# The range should be (lower_bound, upper_bound)    
-def normalize_dictionary_values(dictio, range):
+def normalize_dictionary_values(
+        dictio: dict, 
+        range: list
+        ) -> dict:
+    """
+    Normalize the values of a dictionary using a range.
+    The range should be (lower_bound, upper_bound).
+    
+    Parameters
+    ----------
+    dictio : dict
+        Dictionary to be normalized
+    range : list
+        Tuple with the lower and upper bounds of the range used to normalize the dictionary
+    
+    Returns
+    -------
+    dictio : dict
+        The normalized dictionary
+    """
     a = dictio[max(dictio, key=dictio.get)]
     c = dictio[min(dictio, key=dictio.get)]
     b = range[1]
@@ -260,8 +438,13 @@ def normalize_dictionary_values(dictio, range):
     return dictio
     
     
-# Calculates the graph of the most frecuently neighboors of a term
-def getGraphViz(search_key, neighboors_df, node_size='2', node_color='green'):
+def getGraphViz(
+        search_key: str, 
+        neighboors_df: dict, 
+        node_size: str = '2', 
+        node_color: str = 'green'
+        ) -> Graph:
+    """Calculates the graph of the most frequently neighboors of a term."""
     g = Graph('G', filename='graph_search.gv', engine='neato')
     g.attr('node', shape='circle', fontsize='10')
     counter = 0
