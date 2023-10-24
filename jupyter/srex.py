@@ -112,7 +112,10 @@ def get_ieee_explore_ranking(
     
     return results
 
-
+# Comment from P.Galeas:
+# This is a preliminary approach to assign some relevance to the documents in the ranking
+# The first documents should be more relevant than the last documents in the ranking.
+# This approach must be improved.
 def get_ranking_as_string(
         results: list, 
         weighted: str = 'none'
