@@ -413,6 +413,7 @@ def normalize_dictionary_values(
     """
     Normalize the values of a dictionary using a range.
     The range should be (lower_bound, upper_bound).
+    This adjustment is used to scale the graph
     
     Parameters
     ----------
