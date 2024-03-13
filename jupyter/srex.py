@@ -33,10 +33,10 @@ query.outputDataFormat='object'
 
 def get_word_distances(word1_vector_pos: list, word2_vector_pos: list) -> list:
     """
-    Calculate de absolute distance between the positions of two 
+    Calculate the absolute distance between the positions of two 
     words in a document. word1_vector_pos and word2_vector_pos, 
     represents the vectors with the word positions in the document. 
-    Using lambda functions.
+    Using list comprehensions.
 
     Parameters
     ----------
@@ -51,14 +51,10 @@ def get_word_distances(word1_vector_pos: list, word2_vector_pos: list) -> list:
         List with the absolute distances between the positions of the words
     """
     
-    # this empty list stores the output
-    result = []
+    # Se calcula la diferencia absoluta entre cada par de posiciones
+    differences = [abs(a - b) for a in word1_vector_pos for b in word2_vector_pos]
     
-    # now, apply nested map function on both 
-    # the created lists append the final output to
-    # the "result" list
-    list(map(lambda a: result.extend(map(a, word2_vector_pos)), map(lambda a: lambda b: abs(a-b), word1_vector_pos)))
-    return result
+    return differences
 
 
 def get_ieee_explore_article(parameter: str, value: str) -> str:
