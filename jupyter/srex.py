@@ -200,6 +200,7 @@ def text_transformations(
     
     # Stemmer
     if(stem):
+        st = PorterStemmer()
         filtered_parragraph = list(map(lambda word: st.stem(word), filtered_parragraph))
     
     final_string = ' ' . join(map(str, filtered_parragraph))
