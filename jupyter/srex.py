@@ -3,18 +3,19 @@ import numpy as np
 import math
 
 from collections import defaultdict
-import pandas as pd
+#import pandas as pd
 
-from nltk.corpus import stopwords
+#from nltk.corpus import stopwords
 
-from many_stop_words import get_stop_words
+#from many_stop_words import get_stop_words
+#from stop_words import get_stop_words
 
 from nltk.stem import PorterStemmer #Stemmer
 from textblob import Word #Lemmatize
 
 from graphviz import Graph
 
-import re
+#import re
 import nltk
 
 from functools import reduce
@@ -24,14 +25,14 @@ from xploreapi import XPLORE
 
 from sklearn.feature_extraction.text import CountVectorizer
 
-import unittest
+#import unittest
 
 xploreID = '6g7w4kfgteeqvy2jur3ak9mn'
 query = XPLORE(xploreID)
 query.outputDataFormat='object'
 
 
-def get_word_distances(word1_vector_pos: list, word2_vector_pos: list) -> list:
+def get_word_distances(word1_vector_pos: list[int], word2_vector_pos: list[int]) -> list[int]:
     """
     Calculate the absolute distance between the positions of two 
     words in a document. word1_vector_pos and word2_vector_pos, 
@@ -40,18 +41,18 @@ def get_word_distances(word1_vector_pos: list, word2_vector_pos: list) -> list:
 
     Parameters
     ----------
-    word1_vector_pos : list
+    word1_vector_pos : list[int]
         List with the positions of the first word
-    word2_vector_pos : list
+    word2_vector_pos : list[int]
         List with the positions of the second word
     
     Returns
     -------
-    result : list
-        List with the absolute distances between the positions of the words
+    result : list[int]
+        List with the absolute distances between the positions of the words (Lenght = vector1 * vector2)
     """
     
-    # Se calcula la diferencia absoluta entre cada par de posiciones
+    # The absolute difference between each pair of positions is calculated
     differences = [abs(a - b) for a in word1_vector_pos for b in word2_vector_pos]
     
     return differences
@@ -83,20 +84,20 @@ def get_ieee_explore_article(parameter: str, value: str) -> str:
 def get_ieee_explore_ranking(
         query_text: str, 
         max_results: int
-        ) -> list:
+        ) -> list[dict]:
     """
     Get a ranking of articles from IEEE-Xplore.
 
     Parameters
     ----------
     query_text : str
-        Text used to search the articles
+        Text used to search the articles  (e.g. 'internet of things')
     max_results : int
         Maximum number of results to be returned
 
     Returns
     -------
-    results : list
+    results : list[dict]
         A list of articles
     """
     query = XPLORE(xploreID)
@@ -113,7 +114,7 @@ def get_ieee_explore_ranking(
 # The first documents should be more relevant than the last documents in the ranking.
 # This approach must be improved.
 def get_ranking_as_string(
-        results: list, 
+        results: list[dict], 
         weighted: str = 'none'
         ) -> str:
     """
@@ -123,8 +124,10 @@ def get_ranking_as_string(
 
     Parameters
     ----------
-    results : list
-        Array of documents
+    results : list[dict]
+        Array of documents (articles)
+    weighted : str
+        Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
     
     Returns
     -------
@@ -158,20 +161,20 @@ def get_ranking_as_list(results, atribute_list):
 
 
 def text_transformations(
-        paragraph: str, 
-        stop_words_list: list, 
+        sentence: str, 
+        stop_words_list: list[str], 
         lema: bool = True, 
         stem: bool = True
         ) -> str:
     """
-    Apply some text transformations to a paragraph.
+    Apply some text transformations to a sentence.
 
     Parameters
     ----------
-    paragraph : str
-        String with the paragraph to be transformed
-    stop_words_list : list
-        List of stop words to be removed from the paragraph
+    sentence : str
+        String with the sentence to be transformed
+    stop_words_list : list[str]
+        List of stop words to be removed from the sentence
     lema : bool
         If True, lematization is applied
     stem : bool
@@ -180,30 +183,30 @@ def text_transformations(
     Returns
     -------
     final_string : str
-        The transformed paragraph
+        The transformed sentence
     """
     
     # Low the string
-    paragraph = paragraph.lower()
+    sentence = sentence.lower()
     
     # Remove puntuation
-    tokens = nltk.word_tokenize(paragraph)
-    filtered_parragraph = [w for w in tokens if w.isalnum()]
+    tokens = nltk.word_tokenize(sentence)
+    filtered_sentence = [w for w in tokens if w.isalnum()]
     
     # Remove Stopwords
     if(len(stop_words_list)>0):
-        filtered_parragraph = list(filter(lambda word_of_parragraph: (word_of_parragraph not in stop_words_list), filtered_parragraph))
+        filtered_sentence = list(filter(lambda word_of_sentence: (word_of_sentence not in stop_words_list), filtered_sentence))
     
     # Apply lematization
     if(lema):
-        filtered_parragraph = list(map(lambda word_filtered_parragraph: Word(word_filtered_parragraph).lemmatize(), filtered_parragraph))
+        filtered_sentence = list(map(lambda word_filtered_sentence: Word(word_filtered_sentence).lemmatize(), filtered_sentence))
     
     # Stemmer
     if(stem):
         st = PorterStemmer()
-        filtered_parragraph = list(map(lambda word: st.stem(word), filtered_parragraph))
+        filtered_sentence = list(map(lambda word: st.stem(word), filtered_sentence))
     
-    final_string = ' ' . join(map(str, filtered_parragraph))
+    final_string = ' ' . join(map(str, filtered_sentence))
     
     return final_string
 
