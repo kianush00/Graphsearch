@@ -10,7 +10,7 @@ from collections import defaultdict
 #from many_stop_words import get_stop_words
 #from stop_words import get_stop_words
 
-from nltk.stem import PorterStemmer #Stemmer
+from nltk.stem import PorterStemmer as st #Stemmer
 from textblob import Word #Lemmatize
 
 from graphviz import Graph
@@ -32,30 +32,6 @@ query = XPLORE(xploreID)
 query.outputDataFormat='object'
 
 
-def get_word_distances(word1_vector_pos: list[int], word2_vector_pos: list[int]) -> list[int]:
-    """
-    Calculate the absolute distance between the positions of two 
-    words in a document. word1_vector_pos and word2_vector_pos, 
-    represents the vectors with the word positions in the document. 
-    Using list comprehensions.
-
-    Parameters
-    ----------
-    word1_vector_pos : list[int]
-        List with the positions of the first word
-    word2_vector_pos : list[int]
-        List with the positions of the second word
-    
-    Returns
-    -------
-    result : list[int]
-        List with the absolute distances between the positions of the words (Lenght = vector1 * vector2)
-    """
-    
-    # The absolute difference between each pair of positions is calculated
-    differences = [abs(a - b) for a in word1_vector_pos for b in word2_vector_pos]
-    
-    return differences
 
 
 def get_ieee_explore_article(parameter: str, value: str) -> str:
@@ -191,7 +167,7 @@ def text_transformations(
     
     # Remove puntuation
     tokens = nltk.word_tokenize(sentence)
-    filtered_sentence = [w for w in tokens if w.isalnum()]
+    filtered_sentence = [tk for tk in tokens if tk.isalnum()]
     
     # Remove Stopwords
     if(len(stop_words_list)>0):
@@ -203,7 +179,6 @@ def text_transformations(
     
     # Stemmer
     if(stem):
-        st = PorterStemmer()
         filtered_sentence = list(map(lambda word: st.stem(word), filtered_sentence))
     
     final_string = ' ' . join(map(str, filtered_sentence))
@@ -212,18 +187,18 @@ def text_transformations(
 
 
 
-def get_documents_positions_matrix(documents: list) -> list:
+def get_documents_positions_matrix(documents: list[str]) -> list[dict[str, list[int]]]:
     """
     Calculate a matrix containing the terms positions from a group (list) of documents.
 
     Parameters
     ----------
-    documents : list
+    documents : list[str]
         List of documents
 
     Returns
     -------
-    term_positions_matrix : list
+    term_positions_matrix : list[dict[str, list[int]]]
         A list of dictionaries, each dictionary contains the terms positions of a document
     """
     term_positions_matrix = []
@@ -234,31 +209,31 @@ def get_documents_positions_matrix(documents: list) -> list:
 
 
 def get_vecinity_matrix(
-        document_positions_matrix: dict, 
+        document_positions_matrix: list[dict[str, list[int]]], 
         reference_term: str, 
         limit_distance: int, 
         summarize: str, 
         include_reference_term: bool
-        ) -> list:
+        ) -> list[dict]:
     """
     Calculate a vecinity matrix from a list of documents.
 
     Parameters
     ----------
-    document_positions_matrix : dict
+    document_positions_matrix : list[dict[str, list[int]]]
         List of dictionaries, each dictionary contains the terms positions of a document
     reference_term : str
         Term used as reference for calculating wich terms are in its vecinity
     limit_distance : int
         Maximal distance of terms used to calculate the vecinity
     summarize : str
-        Used to define the function to sumarize the distance of the terms in the vecinity
+        Used to define the function to summarize the distance of the terms in the vecinity
     include_reference_term : bool
         If True, the reference term is included in the vecinity
     
     Returns
     -------
-    vecinity_matrix : list
+    vecinity_matrix : list[dict]
         A list of dictionaries, each dictionary contains the terms in the vecinity of the reference term and their corresponding distances
     """
     vecinity_matrix = []
@@ -269,7 +244,7 @@ def get_vecinity_matrix(
 
 
 def get_document_term_vecinity_dict(
-        document_positions_dict: dict, 
+        document_positions_dict: dict[str, list[int]], 
         reference_term: str, 
         limit_distance: int, 
         summarize: str = 'none', 
@@ -280,14 +255,15 @@ def get_document_term_vecinity_dict(
     
     Parameters
     ----------
-    document_positions_dict
+    document_positions_dict : dict[str, list[int]]
         Dictionary with the positions of all terms in a document
-    reference_term
+    reference_term : str
         Term used as reference for calculating which terms are in its vecinity
-    limit_distance
+    limit_distance : int
         Maximal distance of terms used to calculate the vecinity
-    sumarize
-        Used to define the function to sumarize the distance of the terms in the vecinity
+    summarize : str
+        Used to define the function to summarize the distance of the terms in the vecinity
+        (it can be: 'mean', 'median' or 'none')
     include_reference_term : bool
         If True, the reference term is included in the vecinity
     
@@ -326,8 +302,20 @@ def get_document_term_vecinity_dict(
 
 # Calculate the a dictionary with the document's term positions
 # See corresponding UNITTEST
-def get_term_positions_dict(document):
-    """Calculate the a dictionary with the document's term positions."""
+def get_term_positions_dict(document : str) -> dict[str, list[int]]:
+    """
+    Calculate the a dictionary with the document's term positions.
+    
+    Parameters
+    ----------
+    document : str
+        The document to calculate
+    
+    Returns
+    -------
+    document_positions_dic : dict[str, list[int]]
+        A dictionary with a list of positions for each term of the document
+    """
     vectorizer = CountVectorizer()
     vector = vectorizer.build_tokenizer()(document)
     document_positions_dic = defaultdict(list)
@@ -362,31 +350,31 @@ def merge_graph_dictionaries(g1, g2):
 
 
 def calculate_term_positions_distances(
-        term_positions1: list, 
-        term_positions2: list, 
+        term1_positions: list[int], 
+        term2_positions: list[int], 
         limit_distance: float = float("inf")
-        ) -> list:
+        ) -> list[int]:
     """
     Compare the positions vectors of two terms, and return the list of 
-    distances of the terms that are inside limit_distance.
+    distances between the two terms that are inside limit_distance.
 
     Parameters
     ----------
-    term_positions1 : list
+    term1_positions : list[int]
         List of positions of the first term
-    term_positions2 : list
+    term2_positions : list[int]
         List of positions of the second term
     limit_distance : float
         Maximal distance of terms
 
     Returns
     -------
-    term_distances : list
-        List of distances of the terms that are inside limit_distance 
+    term_distances : list[int]
+        List of distances between the two terms that are inside limit_distance (Lenght = tp1_length * tp2_length)
     """
     term_distances = [] 
-    for pos1 in term_positions1:
-        for pos2 in term_positions2:
+    for pos1 in term1_positions:
+        for pos2 in term2_positions:
             absolute_distance = abs(pos1-pos2)
             if (absolute_distance <= limit_distance):
                 term_distances.append(absolute_distance)
