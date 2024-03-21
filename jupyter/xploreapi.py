@@ -45,10 +45,10 @@ class XPLORE:
         self.startRecord = 1
 
         # default sort order is ascending; could also be 'desc' for descending
-        self.sortOrder = 'asc'
+        self.sortOrder = 'desc'
 
         # field name that is being used for sorting
-        self.sortField = 'article_title'
+        self.sortField = 'relevance'
 
         # array of permitted search fields for searchField() method
         self.allowedSearchFields = ['abstract', 'affiliation', 'article_number', 'article_title', 'author', 'boolean_text', 'content_type', 'd-au', 'd-pubtype', 'd-publisher', 'd-year', 'doi', 'end_year', 'facet', 'index_terms', 'isbn', 'issn', 'is_number', 'meta_data', 'open_access', 'publication_number', 'publication_title', 'publication_year', 'publisher', 'querytext', 'start_year', 'thesaurus_terms']

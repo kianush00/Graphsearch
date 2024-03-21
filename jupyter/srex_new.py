@@ -146,7 +146,7 @@ def get_sentences_list_from_documents(
 
 
 def do_text_transformations_by_document(
-    sentences_list: list[dict],
+    documents_list: list[dict],
     stop_words_list: list[str], 
     lema: bool = True, 
     stem: bool = True
@@ -155,11 +155,26 @@ def do_text_transformations_by_document(
     Apply some text transformations to a list of documents (Remove stopwords, punctuation, stemming, lematization)
     """
 
-    for document in sentences_list:
+    for document in documents_list:
         document["text"] = list(map(lambda sentence: text_transformations(sentence, stop_words_list, lema, stem), document["text"]))
 
-    return sentences_list
+    return documents_list
 
+
+def do_text_transformations_by_string_in_list(
+    string_list: list[str],
+    stop_words_list: list[str], 
+    lema: bool = True, 
+    stem: bool = True
+    ) -> list[str]:
+    """
+    Apply some text transformations to a list of strings (Remove stopwords, punctuation, stemming, lematization)
+    """
+    processed_string_list = []
+    for term in string_list:
+        processed_string_list.append(text_transformations(term, stop_words_list, lema, stem))
+
+    return processed_string_list
 
 
 def text_transformations(
@@ -212,70 +227,103 @@ def text_transformations(
     return final_string
 
 
+def delete_sentences_without_refterms(
+    documents_list: list[dict],
+    reference_terms: list[str], 
+    ) -> list[dict]:
+    """
+    Delete sentences from a list of sentences by document that do not contain a reference term
+
+    Parameters
+    ----------
+    documents_list: list[dict]
+        List of dictionaries (articles), each one contains a list (array) of sentences
+    reference_terms: list[str]
+        List of reference terms that must be contained in the sentences
+    
+    Returns
+    -------
+    documents_list_with_refterms : list[dict]
+        List of documents that exclusively contain a reference term in its list of sentences
+    """
+    for document in documents_list:
+        sentences_with_refterms = []
+        for sentence in document['text']:
+            for term in reference_terms:
+                if term in sentence:
+                    sentences_with_refterms.append(sentence)
+                    break
+        document['text'] = sentences_with_refterms
+
+    return documents_list
+
 
 def get_documents_positions_matrix(
-        documents: list[str]
-        ) -> list[dict[str, list[int]]]:
+        documents_list: list[dict]
+        ) -> list[dict]:
     """
     Calculate a matrix containing the terms positions from a group (list) of documents.
 
     Parameters
     ----------
-    documents : list[str]
+    documents_list : list[dict]
         List of documents
 
     Returns
     -------
-    term_positions_matrix : list[dict[str, list[int]]]
-        A list of dictionaries, each dictionary contains the terms positions of a document
+    documents_list_with_matrix_positions : list[dict]
+        A list of dictionaries, each dictionary contains the terms positions of a sentence
     """
-    term_positions_matrix = []
-    for doc in documents:
-        positions_dict = get_term_positions_dict(doc)
-        term_positions_matrix.append(positions_dict)
-    return term_positions_matrix
+    for document in documents_list:
+        term_positions_list = []
+        for sentence in document['text']:
+            positions_dict = get_term_positions_dict(sentence)
+            term_positions_list.append(positions_dict)
+        document['text'] = term_positions_list
+
+    return documents_list
 
 
 def get_term_positions_dict(
-        document : str
+        sentence : str
         ) -> dict[str, list[int]]:
     """
-    Calculate the a dictionary with the document's term positions.
+    Calculate the a dictionary with the sentence's term positions.
     
     Parameters
     ----------
-    document : str
-        The document to calculate
+    sentence : str
+        The sentence to calculate its positions by term
     
     Returns
     -------
-    document_positions_dic : dict[str, list[int]]
-        A dictionary with a list of positions for each term of the document
+    sentence_positions_dict : dict[str, list[int]]
+        A dictionary with a list of positions for each term of the sentence
     """
     vectorizer = CountVectorizer()
-    vector = vectorizer.build_tokenizer()(document)
-    document_positions_dic = defaultdict(list)
+    vector = vectorizer.build_tokenizer()(sentence)
+    sentence_positions_dict = defaultdict(list)
     for i in range(len(vector)):
-        document_positions_dic[vector[i]].append(i)
-    return document_positions_dic
+        sentence_positions_dict[vector[i]].append(i)
+    return sentence_positions_dict
 
 
 def get_vecinity_matrix(
-        document_positions_matrix: list[dict[str, list[int]]], 
-        reference_term: str, 
+        documents_list_with_matrix_positions: list[dict], 
+        reference_terms: list[str], 
         limit_distance: int, 
         summarize: str, 
         include_reference_term: bool
-        ) -> list[dict[str, list[int]]]:
+        ) -> list[dict]:
     """
     Calculate a vecinity matrix from a list of documents.
 
     Parameters
     ----------
-    document_positions_matrix : list[dict[str, list[int]]]
+    documents_list_with_matrix_positions : list[dict]
         List of dictionaries, each dictionary contains the terms positions of a document
-    reference_term : str
-        Term used as reference for calculating wich terms are in its vecinity
+    reference_terms: list[str]
+        Terms used as reference for calculating wich terms are in its vecinity
     limit_distance : int
         Maximal distance of terms used to calculate the vecinity
     summarize : str
@@ -285,12 +333,12 @@ def get_vecinity_matrix(
     
     Returns
     -------
-    vecinity_matrix : list[dict[str, list[int]]]
+    vecinity_matrix : list[dict]
         A list of dictionaries, each dictionary contains the terms in the vecinity of the reference term and their corresponding distances
     """
     vecinity_matrix = []
-    for doc_positions_dic in document_positions_matrix:
-        document_term_vecinity_dict = get_document_term_vecinity_dict(doc_positions_dic, reference_term, limit_distance, summarize, include_reference_term)
+    for doc_positions_dic in documents_list_with_matrix_positions:
+        document_term_vecinity_dict = get_document_term_vecinity_dict(doc_positions_dic, reference_terms, limit_distance, summarize, include_reference_term)
         vecinity_matrix.append(document_term_vecinity_dict)
     return vecinity_matrix
 
