@@ -1,24 +1,15 @@
 import numpy as np
-
 import math
-
 from collections import defaultdict
 import pandas as pd
-
-
 from nltk.stem import PorterStemmer as st #Stemmer
 from textblob import Word #Lemmatize
-
 from graphviz import Graph
-
 import nltk
-
 from functools import reduce
-
-
 from xploreapi import XPLORE
-
 from sklearn.feature_extraction.text import CountVectorizer
+import copy
 
 #import unittest
 
@@ -286,7 +277,7 @@ def get_documents_positions_matrix(
 
 def get_term_positions_dict(
         sentence : str
-        ) -> dict[str, list[int]]:
+        ) -> defaultdict[str, list[int]]:
     """
     Calculate the a dictionary with the sentence's term positions.
     
@@ -297,7 +288,7 @@ def get_term_positions_dict(
     
     Returns
     -------
-    sentence_positions_dict : dict[str, list[int]]
+    sentence_positions_dict : defaultdict[str, list[int]]
         A dictionary with a list of positions for each term of the sentence
     """
     vectorizer = CountVectorizer()
@@ -321,7 +312,7 @@ def get_vecinity_matrix(
     Parameters
     ----------
     documents_list_with_matrix_positions : list[dict]
-        List of dictionaries, each dictionary contains the terms positions of a document
+        List of dictionaries (documents), each dictionary contains the terms positions by sentence
     reference_terms: list[str]
         Terms used as reference for calculating wich terms are in its vecinity
     limit_distance : int
@@ -333,65 +324,97 @@ def get_vecinity_matrix(
     
     Returns
     -------
-    vecinity_matrix : list[dict]
-        A list of dictionaries, each dictionary contains the terms in the vecinity of the reference term and their corresponding distances
+    documents_list_with_matrix_positions : list[dict]
+        A list of dictionaries, each dictionary contains the terms in the vecinity of the reference term and their
+        corresponding distances for each sentence
     """
-    vecinity_matrix = []
-    for doc_positions_dic in documents_list_with_matrix_positions:
-        document_term_vecinity_dict = get_document_term_vecinity_dict(doc_positions_dic, reference_terms, limit_distance, summarize, include_reference_term)
-        vecinity_matrix.append(document_term_vecinity_dict)
-    return vecinity_matrix
+    for document in documents_list_with_matrix_positions:
+        vecinity_list = []
+        for term_positions_defaultdict in document['text']:
+            document_term_vecinity_dict = get_document_term_vecinity_dict(term_positions_defaultdict, reference_terms, limit_distance, summarize, include_reference_term)
+            vecinity_list.append(document_term_vecinity_dict)
+        document['text'] = vecinity_list
+
+    return documents_list_with_matrix_positions
 
 
 def get_document_term_vecinity_dict(
-        document_positions_dict: dict[str, list[int]], 
-        reference_term: str, 
+        term_positions_defaultdict: defaultdict[str, list[int]], 
+        reference_terms: list[str], 
         limit_distance: int, 
         summarize: str = 'none', 
-        include_reference_term: bool = True
-        ) -> dict[str, list[int]]:
+        include_reference_terms: bool = True
+        ) -> dict[str, dict[str, list[int]]]:
     """
-    Calculate the vecinity of a term in a document.
+    Calculate the vecinity of a list of reference terms in a sentence, limited by a specified distance.
     
     Parameters
     ----------
-    document_positions_dict : dict[str, list[int]]
-        Dictionary with the positions of all terms in a document
-    reference_term : str
-        Term used as reference for calculating which terms are in its vecinity
+    term_positions_defaultdict : defaultdict[str, list[int]]
+        Dictionary with the positions of all terms in a sentence
+    reference_terms : list[str]
+        List of terms used as reference for calculating which terms are in its vecinity
     limit_distance : int
         Maximal distance of terms used to calculate the vecinity
     summarize : str
         Used to define the function to summarize the distance of the terms in the vecinity
         (it can be: 'mean', 'median' or 'none')
-    include_reference_term : bool
+    include_reference_terms : bool
         If True, the reference term is included in the vecinity
     
     Returns
     -------
-    vecinity_dict : dict[str, list[int]]
+    vecinity_dict : dict[str, dict[str, list[int]]]
         A dictionary with the terms in the vecinity of the reference term and their corresponding distances
     """
 
     vecinity_dict = {}  # Create the empty dictionary
-    reference_term_positions = document_positions_dict[reference_term]  # Get the term positions of the reference term
+    ref_term_positions_dict = get_ref_term_positions_dict(term_positions_defaultdict, reference_terms)
     
-    # Calculate all terms in document_positions_dict that are at distance limit_distance (or closer) to the reference_term
+    # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the reference_terms
     # and return a list of these terms and their corresponding distances
-    for term, term_positions in document_positions_dict.items():
-        if((term != reference_term) or (include_reference_term)): # Avoid comparing the term of reference with itself
+    for term, term_positions in term_positions_defaultdict.items():
+        if((term not in ref_term_positions_dict.keys()) or (include_reference_terms)): # Avoid comparing the term of reference with itself
             # Calculate the distance between the reference term and the rest of terms
-            neighborhood_positions = calculate_term_positions_distances(reference_term_positions, term_positions, limit_distance)
-            
-            if (len(neighborhood_positions) > 0):
-                if (summarize == 'mean'):
-                    vecinity_dict[term] = [np.mean(neighborhood_positions)]
-                elif (summarize == 'median'): 
-                    vecinity_dict[term] = [np.median(neighborhood_positions)]
-                else: 
-                    vecinity_dict[term] = neighborhood_positions
+            first_one = True
+            for ref_term, ref_positions in ref_term_positions_dict.items():
+                neighborhood_positions = calculate_term_positions_distances(ref_positions, term_positions, limit_distance)
+                
+                if (len(neighborhood_positions) > 0):
+                    if (first_one):
+                        vecinity_dict[term] = {}
+                        first_one = False
+
+                    if (summarize == 'mean'):
+                        vecinity_dict[term][ref_term] = [np.mean(neighborhood_positions)]
+                    elif (summarize == 'median'): 
+                        vecinity_dict[term][ref_term] = [np.median(neighborhood_positions)]
+                    else: 
+                        vecinity_dict[term][ref_term] = neighborhood_positions
 
     return vecinity_dict
+
+
+def get_ref_term_positions_dict(
+        term_positions_defaultdict: defaultdict[str, list[int]], 
+        reference_terms: list[str]
+        ) -> dict[str, list[int]]:
+    """Returns a dictionary to store the list of positions for each reference term, along with its splitted terms"""
+    ref_term_positions_dict = {}
+
+    for ref_term in reference_terms:
+        ref_term_words = ref_term.split(' ')
+        if len(ref_term_words) > 1:    # If the reference term contains more than one word
+            for splitted_ref_term in ref_term_words:   # Get the term positions of each splitted reference term
+                if splitted_ref_term in term_positions_defaultdict.keys():
+                    ref_term_positions_dict[splitted_ref_term] = term_positions_defaultdict[splitted_ref_term]
+        else:
+            if ref_term in term_positions_defaultdict.keys():
+                ref_term_positions_dict[ref_term] = term_positions_defaultdict[ref_term]    # Get the term positions of the reference term
+    
+    return ref_term_positions_dict
+
+
 
 
 def calculate_term_positions_distances(
