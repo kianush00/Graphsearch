@@ -370,6 +370,7 @@ def get_document_term_vecinity_dict(
 
     vecinity_dict = {}  # Create the empty dictionary
     ref_term_positions_dict = get_ref_term_positions_dict(term_positions_defaultdict, reference_terms)
+    print(ref_term_positions_dict)
     
     # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the reference_terms
     # and return a list of these terms and their corresponding distances
@@ -404,10 +405,10 @@ def get_ref_term_positions_dict(
 
     for ref_term in reference_terms:
         ref_term_words = ref_term.split(' ')
-        if len(ref_term_words) > 1:    # If the reference term contains more than one word
+        if (len(ref_term_words) > 1) and (ref_term_words[0] in term_positions_defaultdict.keys()):    # If the reference term contains more than one word
             for splitted_ref_term in ref_term_words:   # Get the term positions of each splitted reference term
-                if splitted_ref_term in term_positions_defaultdict.keys():
-                    ref_term_positions_dict[splitted_ref_term] = term_positions_defaultdict[splitted_ref_term]
+                ref_term_positions_dict[splitted_ref_term] = term_positions_defaultdict[splitted_ref_term]
+            ref_term_positions_dict.update(format_ref_term_positions_dict(ref_term_positions_dict, ref_term_words))
         else:
             if ref_term in term_positions_defaultdict.keys():
                 ref_term_positions_dict[ref_term] = term_positions_defaultdict[ref_term]    # Get the term positions of the reference term
@@ -415,6 +416,36 @@ def get_ref_term_positions_dict(
     return ref_term_positions_dict
 
 
+def format_ref_term_positions_dict(
+        ref_term_positions_dict: dict[str, list[int]],
+        reference_terms: list[str]
+        ) -> dict[str, list[int]]:
+    """Format the reference term positions dictionary, so that it can be used in the vecinity matrix."""
+    new_dicc = defaultdict(list)
+    new_dicc_2 = defaultdict(list)
+    ref_term_positions_dict_splitted = defaultdict(list)
+
+    for key, value in ref_term_positions_dict.items():
+        if key in reference_terms:
+            ref_term_positions_dict_splitted[key] = value
+
+    for index in range(len(reference_terms)-1):
+        for number1 in ref_term_positions_dict_splitted[reference_terms[index]]:
+            for number2 in ref_term_positions_dict_splitted[reference_terms[index+1]]:
+                if ((number1 + 1) == number2):
+                    if index == 0:
+                        new_dicc[reference_terms[index]].append(number1)
+                    new_dicc[reference_terms[index+1]].append(number2)
+
+    for index in range(len(reference_terms)-1):
+        for number1 in new_dicc[reference_terms[index]]:
+            for number2 in new_dicc[reference_terms[index+1]]:
+                if ((number1 + 1) == number2):
+                    if index == 0:
+                        new_dicc_2[reference_terms[index]].append(number1)
+                    new_dicc_2[reference_terms[index+1]].append(number2)
+    
+    return new_dicc_2
 
 
 def calculate_term_positions_distances(
