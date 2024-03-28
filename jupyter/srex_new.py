@@ -370,7 +370,6 @@ def get_document_term_vecinity_dict(
 
     vecinity_dict = {}  # Create the empty dictionary
     ref_term_positions_dict = get_ref_term_positions_dict(term_positions_defaultdict, reference_terms)
-    print(ref_term_positions_dict)
     
     # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the reference_terms
     # and return a list of these terms and their corresponding distances
@@ -418,34 +417,38 @@ def get_ref_term_positions_dict(
 
 def format_ref_term_positions_dict(
         ref_term_positions_dict: dict[str, list[int]],
-        reference_terms: list[str]
+        reference_term_words: list[str]
         ) -> dict[str, list[int]]:
     """Format the reference term positions dictionary, so that it can be used in the vecinity matrix."""
-    new_dicc = defaultdict(list)
-    new_dicc_2 = defaultdict(list)
     ref_term_positions_dict_splitted = defaultdict(list)
 
+    #Omit keys that are not in reference_term_words
     for key, value in ref_term_positions_dict.items():
-        if key in reference_terms:
+        if key in reference_term_words:
             ref_term_positions_dict_splitted[key] = value
-
-    for index in range(len(reference_terms)-1):
-        for number1 in ref_term_positions_dict_splitted[reference_terms[index]]:
-            for number2 in ref_term_positions_dict_splitted[reference_terms[index+1]]:
-                if ((number1 + 1) == number2):
-                    if index == 0:
-                        new_dicc[reference_terms[index]].append(number1)
-                    new_dicc[reference_terms[index+1]].append(number2)
-
-    for index in range(len(reference_terms)-1):
-        for number1 in new_dicc[reference_terms[index]]:
-            for number2 in new_dicc[reference_terms[index+1]]:
-                if ((number1 + 1) == number2):
-                    if index == 0:
-                        new_dicc_2[reference_terms[index]].append(number1)
-                    new_dicc_2[reference_terms[index+1]].append(number2)
     
-    return new_dicc_2
+    new_dict = get_new_dict_formatted_ref_term_positions(reference_term_words, ref_term_positions_dict_splitted)
+    formatted_dict = get_new_dict_formatted_ref_term_positions(reference_term_words, new_dict)
+    
+    return formatted_dict
+
+
+def get_new_dict_formatted_ref_term_positions(
+        reference_terms: list[str],
+        ref_term_positions_dict: dict[str, list[int]]
+        ) -> dict[str, list[int]]:
+    """Get a new formatted reference term positions dictionary"""
+    new_formatted_dict = defaultdict(list)
+
+    for index in range(len(reference_terms)-1):
+        for number1 in ref_term_positions_dict[reference_terms[index]]:
+            for number2 in ref_term_positions_dict[reference_terms[index+1]]:
+                if ((number1 + 1) == number2):
+                    if index == 0:
+                        new_formatted_dict[reference_terms[index]].append(number1)
+                    new_formatted_dict[reference_terms[index+1]].append(number2)
+    
+    return new_formatted_dict
 
 
 def calculate_term_positions_distances(
