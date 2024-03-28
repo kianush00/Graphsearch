@@ -303,7 +303,6 @@ def get_vecinity_matrix(
         documents_list_with_matrix_positions: list[dict], 
         reference_terms: list[str], 
         limit_distance: int, 
-        summarize: str, 
         include_reference_term: bool
         ) -> list[dict]:
     """
@@ -317,8 +316,6 @@ def get_vecinity_matrix(
         Terms used as reference for calculating wich terms are in its vecinity
     limit_distance : int
         Maximal distance of terms used to calculate the vecinity
-    summarize : str
-        Used to define the function to summarize the distance of the terms in the vecinity
     include_reference_term : bool
         If True, the reference term is included in the vecinity
     
@@ -331,7 +328,7 @@ def get_vecinity_matrix(
     for document in documents_list_with_matrix_positions:
         vecinity_list = []
         for term_positions_defaultdict in document['text']:
-            document_term_vecinity_dict = get_document_term_vecinity_dict(term_positions_defaultdict, reference_terms, limit_distance, summarize, include_reference_term)
+            document_term_vecinity_dict = get_document_term_vecinity_dict(term_positions_defaultdict, reference_terms, limit_distance, include_reference_term)
             vecinity_list.append(document_term_vecinity_dict)
         document['text'] = vecinity_list
 
@@ -341,8 +338,7 @@ def get_vecinity_matrix(
 def get_document_term_vecinity_dict(
         term_positions_defaultdict: defaultdict[str, list[int]], 
         reference_terms: list[str], 
-        limit_distance: int, 
-        summarize: str = 'none', 
+        limit_distance: int,
         include_reference_terms: bool = True
         ) -> dict[str, dict[str, list[int]]]:
     """
@@ -356,9 +352,6 @@ def get_document_term_vecinity_dict(
         List of terms used as reference for calculating which terms are in its vecinity
     limit_distance : int
         Maximal distance of terms used to calculate the vecinity
-    summarize : str
-        Used to define the function to summarize the distance of the terms in the vecinity
-        (it can be: 'mean', 'median' or 'none')
     include_reference_terms : bool
         If True, the reference term is included in the vecinity
     
@@ -378,19 +371,13 @@ def get_document_term_vecinity_dict(
             # Calculate the distance between the reference term and the rest of terms
             first_one = True
             for ref_term, ref_positions in ref_term_positions_dict.items():
-                neighborhood_positions = calculate_term_positions_distances(ref_positions, term_positions, limit_distance)
-                
-                if (len(neighborhood_positions) > 0):
+                freq_neighborhood_positions = calculate_frequency_term_positions_distances(ref_positions, term_positions, limit_distance)
+
+                if (any(frq > 0 for frq in freq_neighborhood_positions)):
                     if (first_one):
                         vecinity_dict[term] = {}
                         first_one = False
-
-                    if (summarize == 'mean'):
-                        vecinity_dict[term][ref_term] = [np.mean(neighborhood_positions)]
-                    elif (summarize == 'median'): 
-                        vecinity_dict[term][ref_term] = [np.median(neighborhood_positions)]
-                    else: 
-                        vecinity_dict[term][ref_term] = neighborhood_positions
+                    vecinity_dict[term][ref_term] = freq_neighborhood_positions
 
     return vecinity_dict
 
@@ -451,14 +438,14 @@ def get_new_dict_formatted_ref_term_positions(
     return new_formatted_dict
 
 
-def calculate_term_positions_distances(
+def calculate_frequency_term_positions_distances(
         term1_positions: list[int], 
         term2_positions: list[int], 
         limit_distance: float = float("inf")
         ) -> list[int]:
     """
-    Compare the positions vectors of two terms, and return the list of 
-    distances between the two terms that are inside limit_distance.
+    Compare the positions vectors of two terms, and return the frequency quantity list 
+    per distance between query terms and vecinity terms
 
     Parameters
     ----------
@@ -471,16 +458,18 @@ def calculate_term_positions_distances(
 
     Returns
     -------
-    term_distances : list[int]
-        List of distances between the two terms that are inside limit_distance (Lenght = tp1_length * tp2_length)
+    frequencies_per_distance : list[int]
+        List of frequencies per distance between query terms and vecinity terms
     """
-    term_distances = [] 
+    frequencies_per_distance = [0] * limit_distance
+
     for term1_pos in term1_positions:
         for term2_pos in term2_positions:
             absolute_distance = abs(term1_pos-term2_pos)
             if (absolute_distance <= limit_distance):
-                term_distances.append(absolute_distance)
-    return term_distances
+                frequencies_per_distance[absolute_distance-1] += 1
+    
+    return frequencies_per_distance
 
 
 def get_unique_vecinity_dict(
