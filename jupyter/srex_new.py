@@ -1,7 +1,7 @@
-import numpy as np
+#import numpy as np
 import math
 from collections import defaultdict
-import pandas as pd
+#import pandas as pd
 from nltk.stem import PorterStemmer as st #Stemmer
 from textblob import Word #Lemmatize
 from graphviz import Graph
@@ -9,7 +9,7 @@ import nltk
 from functools import reduce
 from xploreapi import XPLORE
 from sklearn.feature_extraction.text import CountVectorizer
-import copy
+#import copy
 
 #import unittest
 
@@ -321,9 +321,9 @@ def get_vecinity_matrix(
     
     Returns
     -------
-    documents_list_with_matrix_positions : list[dict]
+    vecinity_matrix : list[dict]
         A list of dictionaries, each dictionary contains the terms in the vecinity of the reference term and their
-        corresponding distances for each sentence
+        corresponding frequencies by distances for each sentence
     """
     for document in documents_list_with_matrix_positions:
         vecinity_list = []
@@ -441,7 +441,7 @@ def get_new_dict_formatted_ref_term_positions(
 def calculate_frequency_term_positions_distances(
         term1_positions: list[int], 
         term2_positions: list[int], 
-        limit_distance: float = float("inf")
+        limit_distance: int = 999
         ) -> list[int]:
     """
     Compare the positions vectors of two terms, and return the frequency quantity list 
@@ -472,35 +472,56 @@ def calculate_frequency_term_positions_distances(
     return frequencies_per_distance
 
 
-def get_unique_vecinity_dict(
-        document_positions_matrix: list[dict[str, list[int]]]
-        ) -> dict[str, list[int]]:
+def get_unique_vecinity_dict_by_document(
+        vecinity_matrix: list[dict],
+        limit_distance: int = 999
+        ) -> list[dict]:
     """
-    Calculates a vecinity dictionary from all documents, merging their vecinities.
+    Calculates a vecinity dictionary by document, merging their vecinities by sentence.
 
     Parameters
     ----------
-    document_positions_matrix: list[dict[str, list[int]]]
+    vecinity_matrix: list[dict]
         List of dictionaries, each dictionary contains the terms in the vecinity of the
-        reference term and their corresponding distances
+        reference term and their corresponding frequency by distances
 
     Returns
     -------
-    unique_vecinity_dict : dict[str, list[int]]
+    unique_vecinity_dict : list[dict]
         A dictionary with all its vecinities merged from all documents
     """
-    unique_vecinity_dict = reduce((lambda x, y: merge_dictionaries(x, y)), document_positions_matrix)
-    return unique_vecinity_dict
+    for document in vecinity_matrix:
+        unique_vecinity_document = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), document['text'])
+        document['text'] = unique_vecinity_document
+
+    return vecinity_matrix
 
 
-def merge_dictionaries(dict_A: dict, dict_B: dict) -> dict:
-    """Merge two generic dictionaries."""
-    for key, value in dict_A.items():
-        if key in dict_B.keys():
-            dict_B[key] += value
-        else:
-            dict_B[key] = value
-    return dict_B
+def merge_dictionaries(
+        dict1: dict, 
+        dict2: dict, 
+        limit_distance: int = 999
+        ) -> dict:
+    """Merge two dictionaries."""
+    merged_dict = {}
+
+    # Iterar sobre las claves de nivel 1 de ambos diccionarios
+    for key in set(dict1.keys()) | set(dict2.keys()):
+        merged_dict[key] = {}
+        
+        # Sumar las listas correspondientes
+        for subkey in set(dict1.get(key, {}).keys()) | set(dict2.get(key, {}).keys()):
+            merged_dict[key][subkey] = [x + y for x, y in zip(dict1.get(key, {}).get(subkey, [0] * limit_distance), 
+                                                            dict2.get(key, {}).get(subkey, [0] * limit_distance))]
+
+    # Agregar las claves de nivel 1 que no están en ambos diccionarios
+    for key in set(dict1.keys()) - set(dict2.keys()):
+        merged_dict[key] = dict1[key]
+
+    for key in set(dict2.keys()) - set(dict1.keys()):
+        merged_dict[key] = dict2[key]
+
+    return merged_dict
 
 
 def get_unique_graph_dictionary(graph_dictionaries_array):
