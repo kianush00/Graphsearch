@@ -112,7 +112,22 @@ def calculate_factor(
         index: int
         ) -> float:
     """
-    Calculate the weight depending on the argument value and the position of the document in the ranking
+    Calculate a weight factor depending on the argument value ('linear' or 'inverse'), and 
+    the position of the document in the ranking.
+
+    Parameters
+    ----------
+    weighted : str
+        The type of weighting to be applied. Can be 'linear', 'inverse', or any other value.
+    results_size : int
+        The total number of results/documents.
+    index : int
+        The position of the document in the ranking.
+
+    Returns
+    -------
+    factor : float
+        The calculated weight factor.
     """
     if (weighted=='linear'):
         factor = float(results_size - index)
@@ -129,7 +144,17 @@ def get_sentences_list_from_documents(
         list_of_documents: list[dict]
         ) -> list[dict]:
     """
-    Transform the ranking texts into a list of sentences (text splitted by dots).
+    Transform the text of each document in the input list into a list of sentences. Split the text by dots.
+
+    Parameters
+    ----------
+    list_of_documents : list[dict]
+        A list of dictionaries representing documents, where each dictionary has a 'text' key containing the document text.
+
+    Returns
+    -------
+    list_of_documents_with_sentences_list : list[dict]
+        A list of dictionaries representing documents, where each dictionary has a 'text' key containing a list of sentences.
     """
     for document in list_of_documents:
         document['text'] = document['text'].split('. ')
@@ -137,15 +162,30 @@ def get_sentences_list_from_documents(
 
 
 def do_text_transformations_by_document(
-    documents_list: list[dict],
-    stop_words_list: list[str], 
-    lema: bool = True, 
-    stem: bool = True
-    ) -> list[dict]:
+        documents_list: list[dict],
+        stop_words_list: list[str], 
+        lema: bool = True, 
+        stem: bool = True
+        ) -> list[dict]:
     """
-    Apply some text transformations to a list of documents (Remove stopwords, punctuation, stemming, lematization)
-    """
+    Apply some text transformations to a list of documents. Remove stopwords, punctuation, stemming, lematization
 
+    Parameters
+    ----------
+    string_list : list[str]
+        A list of documents to be transformed.
+    stop_words_list : list[str]
+        List of stop words to be removed from the sentence
+    lema : bool
+        If True, lematization is applied
+    stem : bool
+        If True, stemming is applied
+
+    Returns
+    -------
+    transformed_documents_list : list[dict]
+        A list of transformed documents.
+    """
     for document in documents_list:
         document["text"] = list(map(lambda sentence: text_transformations(sentence, stop_words_list, lema, stem), document["text"]))
 
@@ -153,13 +193,29 @@ def do_text_transformations_by_document(
 
 
 def do_text_transformations_by_string_in_list(
-    string_list: list[str],
-    stop_words_list: list[str], 
-    lema: bool = True, 
-    stem: bool = True
-    ) -> list[str]:
+        string_list: list[str],
+        stop_words_list: list[str], 
+        lema: bool = True, 
+        stem: bool = True
+        ) -> list[str]:
     """
-    Apply some text transformations to a list of strings (Remove stopwords, punctuation, stemming, lematization)
+    Apply text transformations to a list of strings. Remove stopwords, punctuation, stemming, lematization.
+
+    Parameters
+    ----------
+    string_list : list[str]
+        A list of strings to be transformed.
+    stop_words_list : list[str]
+        List of stop words to be removed from the sentence
+    lema : bool
+        If True, lematization is applied
+    stem : bool
+        If True, stemming is applied
+
+    Returns
+    -------
+    processed_string_list : list[str]
+        A list of transformed strings.
     """
     processed_string_list = []
     for term in string_list:
@@ -175,7 +231,7 @@ def text_transformations(
         stem: bool = True
         ) -> str:
     """
-    Apply some text transformations to a sentence (Remove stopwords, punctuation, stemming, lematization)
+    Apply some text transformations to a sentence. Remove stopwords, punctuation, stemming, lematization.
 
     Parameters
     ----------
@@ -219,9 +275,9 @@ def text_transformations(
 
 
 def delete_sentences_without_refterms(
-    documents_list: list[dict],
-    reference_terms: list[str], 
-    ) -> list[dict]:
+        documents_list: list[dict],
+        reference_terms: list[str], 
+        ) -> list[dict]:
     """
     Delete sentences from a list of sentences by document that do not contain a reference term
 
@@ -386,18 +442,39 @@ def get_ref_term_positions_dict(
         term_positions_defaultdict: defaultdict[str, list[int]], 
         reference_terms: list[str]
         ) -> dict[str, list[int]]:
-    """Returns a dictionary to store the list of positions for each reference term, along with its splitted terms"""
+    """
+    Returns a dictionary to store the list of positions for each reference term, along with its splitted terms.
+    This function takes a defaultdict containing term positions and a list of reference terms as input.
+    It splits each reference term into individual words and retrieves the positions of each term from the defaultdict.
+    If a reference term contains multiple words, the function retrieves positions for each individual word and combines them.
+    The resulting dictionary stores each reference term along with its list of positions.
+
+    Parameters
+    ----------
+    term_positions_defaultdict : defaultdict[str, list[int]]
+        A defaultdict containing term positions.
+    reference_terms : list[str]
+        A list of reference terms.
+
+    Returns
+    -------
+    ref_term_positions_dict : dict[str, list[int]
+        A dictionary with reference terms as keys and lists of positions as values.
+    """
     ref_term_positions_dict = {}
 
     for ref_term in reference_terms:
         ref_term_words = ref_term.split(' ')
-        if (len(ref_term_words) > 1) and (ref_term_words[0] in term_positions_defaultdict.keys()):    # If the reference term contains more than one word
-            for splitted_ref_term in ref_term_words:   # Get the term positions of each splitted reference term
+        # If the reference term contains more than one word
+        if (len(ref_term_words) > 1) and (ref_term_words[0] in term_positions_defaultdict.keys()):
+            for splitted_ref_term in ref_term_words:   
+                # Get the term positions of each splitted reference term
                 ref_term_positions_dict[splitted_ref_term] = term_positions_defaultdict[splitted_ref_term]
             ref_term_positions_dict.update(format_ref_term_positions_dict(ref_term_positions_dict, ref_term_words))
         else:
             if ref_term in term_positions_defaultdict.keys():
-                ref_term_positions_dict[ref_term] = term_positions_defaultdict[ref_term]    # Get the term positions of the reference term
+                # Get the term positions of the reference term
+                ref_term_positions_dict[ref_term] = term_positions_defaultdict[ref_term]    
     
     return ref_term_positions_dict
 
@@ -406,7 +483,24 @@ def format_ref_term_positions_dict(
         ref_term_positions_dict: dict[str, list[int]],
         reference_term_words: list[str]
         ) -> dict[str, list[int]]:
-    """Format the reference term positions dictionary, so that it can be used in the vecinity matrix."""
+    """
+    Format the reference term positions dictionary, so that it can be used in the vecinity matrix.
+    This function takes a reference term positions dictionary and a list of reference term words as input.
+    It creates a new dictionary containing only the keys present in the reference term words list,
+    along with their corresponding lists of positions.
+
+    Parameters
+    ----------
+    ref_term_positions_dict : dict[str, list[int]]
+        A dictionary containing term positions.
+    reference_term_words : list[str]
+        A list of reference term words.
+
+    Returns
+    -------
+    formatted_dict : dict[str, list[int]]
+        A formatted dictionary with reference term words as keys and lists of positions as values.
+    """
     ref_term_positions_dict_splitted = defaultdict(list)
 
     #Omit keys that are not in reference_term_words
@@ -424,7 +518,24 @@ def get_new_dict_formatted_ref_term_positions(
         reference_terms: list[str],
         ref_term_positions_dict: dict[str, list[int]]
         ) -> dict[str, list[int]]:
-    """Get a new formatted reference term positions dictionary"""
+    """
+    Get a new formatted reference term positions dictionary.
+    This function takes a list of reference terms and a dictionary containing term positions as input.
+    It iterates over the reference terms and retrieves the positions of adjacent terms in the reference terms list.
+    The resulting dictionary contains each reference term word as a key and its list of positions as the value.
+
+    Parameters
+    ----------
+    reference_terms : list[str]
+        A list of reference terms.
+    ref_term_positions_dict : dict[str, list[int]]
+        A dictionary containing term positions.
+
+    Returns
+    -------
+    new_formatted_dict : dict[str, list[int]]
+        A new formatted dictionary with reference term words as keys and lists of positions as values.
+    """
     new_formatted_dict = defaultdict(list)
 
     for index in range(len(reference_terms)-1):
@@ -498,23 +609,42 @@ def get_unique_vecinity_dict_by_document(
 
 
 def merge_dictionaries(
-        dict1: dict, 
-        dict2: dict, 
+        dict1: dict[str, dict[str, list[int]]], 
+        dict2: dict[str, dict[str, list[int]]], 
         limit_distance: int = 999
-        ) -> dict:
-    """Merge two dictionaries."""
+        ) -> dict[str, dict[str, list[int]]]:
+    """
+    Merge two dictionaries into a new dictionary. 
+    The merging process involves iterating through the keys of both dictionaries, summing the corresponding lists 
+    for each key if they exist in both dictionaries, and adding the keys that only exist in one dictionary. 
+    The optional parameter limit_distance specifies the limit for the size of the lists to be merged.
+    
+    Parameters
+    ----------
+    dict1 : dict[str, dict[str, list[int]]]
+        The first dictionary to merge.
+    dict2 : dict[str, dict[str, list[int]]]
+        The second dictionary to merge.
+    limit_distance : int
+        Limit of distance for the merging process.
+
+    Returns
+    -------
+        merged_dict : dict[str, dict[str, list[int]]]
+
+    """
     merged_dict = {}
 
-    # Iterar sobre las claves de nivel 1 de ambos diccionarios
+    # Iterate over level 1 keys from both dictionaries
     for key in set(dict1.keys()) | set(dict2.keys()):
         merged_dict[key] = {}
         
-        # Sumar las listas correspondientes
+        # Add the corresponding lists
         for subkey in set(dict1.get(key, {}).keys()) | set(dict2.get(key, {}).keys()):
             merged_dict[key][subkey] = [x + y for x, y in zip(dict1.get(key, {}).get(subkey, [0] * limit_distance), 
                                                             dict2.get(key, {}).get(subkey, [0] * limit_distance))]
 
-    # Agregar las claves de nivel 1 que no están en ambos diccionarios
+    # Add level 1 keys that are not in both dictionaries
     for key in set(dict1.keys()) - set(dict2.keys()):
         merged_dict[key] = dict1[key]
 
