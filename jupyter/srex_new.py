@@ -607,11 +607,13 @@ def get_unique_vecinity_dict_by_document(
     vecinity_matrix: list[dict]
         List of dictionaries, each dictionary contains the terms in the vecinity of the
         reference term and their corresponding frequency by distances
+    limit_distance: int
+        Maximal distance of terms
 
     Returns
     -------
-    unique_vecinity_dict : list[dict]
-        A dictionary with all its vecinities merged from all documents
+    unique_vecinity_list : list[dict]
+        A list of dictionaries with all its vecinities merged
     """
     for document in vecinity_matrix:
         unique_vecinity_document = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), document['text'])
@@ -620,13 +622,30 @@ def get_unique_vecinity_dict_by_document(
     return vecinity_matrix
 
 
-def get_unique_vecinity_dict(unique_vecinity_dict, limit_distance):
-    term_dict_list = []
+def get_unique_vecinity_dict(
+        unique_vecinity_dict: list[dict], 
+        limit_distance: int
+        ) -> dict[str, dict[str, list[int]]]:
+    """
+    Calculates a general vecinity dictionary, merging their vecinities by document.
 
+    Parameters
+    ----------
+    unique_vecinity_dict: list[dict]
+        List of dictionaries, each dictionary contains a vecinity by document
+    limit_distance: int
+        Maximal distance of terms
+
+    Returns
+    -------
+    unique_vecinity_dict : dict[str, dict[str, list[int]]]
+        A dictionary with all its vecinities merged
+    """
+    term_dict_list = []
     for dct in unique_vecinity_dict:
         term_dict_list.append(dct["text"])
-    uniq_vecinity_doc = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), term_dict_list)
-    return uniq_vecinity_doc
+    unique_vecinity_dict = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), term_dict_list)
+    return unique_vecinity_dict
 
 
 def merge_dictionaries(
@@ -660,7 +679,7 @@ def merge_dictionaries(
     for key in set(dict1.keys()) | set(dict2.keys()):
         merged_dict[key] = {}
         
-        # Add the corresponding lists
+        # Add the corresponding lists for the union between the two dictionaries
         for subkey in set(dict1.get(key, {}).keys()) | set(dict2.get(key, {}).keys()):
             merged_dict[key][subkey] = [x + y for x, y in zip(dict1.get(key, {}).get(subkey, [0] * limit_distance), 
                                                             dict2.get(key, {}).get(subkey, [0] * limit_distance))]
