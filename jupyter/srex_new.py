@@ -1,4 +1,4 @@
-#import numpy as np
+import numpy as np
 import math
 from collections import defaultdict
 #import pandas as pd
@@ -9,6 +9,8 @@ import nltk
 from functools import reduce
 from xploreapi import XPLORE
 from sklearn.feature_extraction.text import CountVectorizer
+from numpy.linalg import norm
+from numpy import dot
 #import copy
 
 #import unittest
@@ -595,7 +597,7 @@ def calculate_frequency_term_positions_distances(
 
 def get_unique_vecinity_dict_by_document(
         vecinity_matrix: list[dict],
-        limit_distance: int = 999
+        limit_distance: int
         ) -> list[dict]:
     """
     Calculates a vecinity dictionary by document, merging their vecinities by sentence.
@@ -618,10 +620,19 @@ def get_unique_vecinity_dict_by_document(
     return vecinity_matrix
 
 
+def get_unique_vecinity_dict(unique_vecinity_dict, limit_distance):
+    term_dict_list = []
+
+    for dct in unique_vecinity_dict:
+        term_dict_list.append(dct["text"])
+    uniq_vecinity_doc = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), term_dict_list)
+    return uniq_vecinity_doc
+
+
 def merge_dictionaries(
         dict1: dict[str, dict[str, list[int]]], 
         dict2: dict[str, dict[str, list[int]]], 
-        limit_distance: int = 999
+        limit_distance: int = 99
         ) -> dict[str, dict[str, list[int]]]:
     """
     Merge two dictionaries into a new dictionary. 
@@ -735,3 +746,81 @@ def getGraphViz(
         g.edge('0', "'" +str(counter)+"'", label=str(dic['distance']), len=str(dic['distance']))
         
     return g
+
+
+def getSummarizedGraph(self, summarize='median', normalize_frequency_range=False, normalize_distance_range=False):
+        # Calculate a term distance metric for all nodes
+        if (summarize =='median'):
+            summarized_graph = {k: {'frequency':self.nodes[k]['frequency'], 'distance':np.median(self.nodes[k]['distances'])} for k in self.nodes.keys()}
+        elif (summarize == 'mean'):
+            summarized_graph = {k: {'frequency':self.nodes[k]['frequency'], 'distance':np.mean(self.nodes[k]['distances'])} for k in self.nodes.keys()}
+        
+        if((normalize_frequency_range != True) | (normalize_distance_range != False)):
+            summarized_graph_distance = {k: v['distance'] for k, v in summarized_graph.items()}
+            summarized_graph_frequency = {k: v['frequency'] for k, v in summarized_graph.items()}
+            
+            # normalize distance
+            if(normalize_distance_range != False):
+                a1 = summarized_graph_distance[max(summarized_graph_distance, key=summarized_graph_distance.get)]
+                c1 = summarized_graph_distance[min(summarized_graph_distance, key=summarized_graph_distance.get)]
+                b1 = normalize_distance_range[1]
+                d1 = normalize_distance_range[0]
+                if((a1 - c1)>0):
+                    m1 = (b1 - d1) / (a1 - c1)
+                else:
+                    m1 = (b1 - d1) # term frequency dictionary have only sigle words (frequency=1)
+                summarized_graph_distance.update((k, (m1*(summarized_graph_distance[k]-c1)+d1)) for k in summarized_graph_distance.keys())
+            
+            # normalize frequency
+            if(normalize_frequency_range != False):
+                a2 = summarized_graph_frequency[max(summarized_graph_frequency, key=summarized_graph_frequency.get)]
+                c2 = summarized_graph_frequency[min(summarized_graph_frequency, key=summarized_graph_frequency.get)]
+                b2 = normalize_frequency_range[1]
+                d2 = normalize_frequency_range[0]
+                if((a2 - c2)>0):
+                    m2 = (b2 - d2) / (a2 - c2)
+                else:
+                    m2 = (b2 - d2) # term frequency dictionary have only sigle words (frequency=1)
+                summarized_graph_frequency.update((k, (m2*(summarized_graph_frequency[k]-c2)+d2)) for k in summarized_graph_frequency.keys())
+
+            # Update the graph with normalized values
+            summarized_graph = dict(map(self.__integrate, summarized_graph_frequency.items(), summarized_graph_distance.items()))
+        
+        return summarized_graph
+
+
+# Calculate the similarity with otherGraph
+# To calculate similarity we propose to compare the graph using a multidimensional
+# vector space, where the each term properties define a dimension of the space.
+def getSimilarity(self, otherGraph):
+    # initialize the vectors
+    u = [] 
+    v = []
+    # Calculate the base vector with terms of both vector (union)
+    vectorBase = self.__getVectorBase(otherGraph)
+    
+    # Get the graphs versions with summarized distances
+    self_sum = self.getSummarizedGraph()
+    otherGraph_sum = otherGraph.getSummarizedGraph()
+    
+    # Calculate the vectors u and v in the multidimensional space
+    # u: corresponds to self graph
+    # v: correspnds to the otherGraph
+    for term in vectorBase: # Generate de vector space for both attributes (frequency and distance)
+        if (term in self_sum):
+            u.append(self_sum[term]['frequency'])
+            u.append(self_sum[term]['distance'])
+        else:
+            u.append(0) # frequency value equal to cero
+            u.append(0) # distance value equal to cero
+        if (term in otherGraph_sum):
+            v.append(otherGraph_sum[term]['frequency'])
+            v.append(otherGraph_sum[term]['distance'])
+        else:
+            v.append(0) # frequency value equal to cero
+            v.append(0) # distance value equal to cero
+
+    # Calculate the cosine of the angle between the vectors
+    cosine_of_angle = dot(u,v)/norm(u)/norm(v)
+    
+    return cosine_of_angle
