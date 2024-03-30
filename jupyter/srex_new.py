@@ -359,7 +359,8 @@ def get_vecinity_matrix(
         documents_list_with_matrix_positions: list[dict], 
         reference_terms: list[str], 
         limit_distance: int, 
-        include_reference_term: bool
+        include_reference_term: bool,
+        format_refterms: bool
         ) -> list[dict]:
     """
     Calculate a vecinity matrix from a list of documents.
@@ -374,6 +375,8 @@ def get_vecinity_matrix(
         Maximal distance of terms used to calculate the vecinity
     include_reference_term : bool
         If True, the reference term is included in the vecinity
+    format_refterms : bool
+        Format refterms
     
     Returns
     -------
@@ -384,7 +387,7 @@ def get_vecinity_matrix(
     for document in documents_list_with_matrix_positions:
         vecinity_list = []
         for term_positions_defaultdict in document['text']:
-            document_term_vecinity_dict = get_document_term_vecinity_dict(term_positions_defaultdict, reference_terms, limit_distance, include_reference_term)
+            document_term_vecinity_dict = get_document_term_vecinity_dict(term_positions_defaultdict, reference_terms, limit_distance, include_reference_term, format_refterms)
             vecinity_list.append(document_term_vecinity_dict)
         document['text'] = vecinity_list
 
@@ -395,7 +398,8 @@ def get_document_term_vecinity_dict(
         term_positions_defaultdict: defaultdict[str, list[int]], 
         reference_terms: list[str], 
         limit_distance: int,
-        include_reference_terms: bool = True
+        include_reference_terms: bool = True,
+        format_refterms: bool = True
         ) -> dict[str, dict[str, list[int]]]:
     """
     Calculate the vecinity of a list of reference terms in a sentence, limited by a specified distance.
@@ -410,6 +414,8 @@ def get_document_term_vecinity_dict(
         Maximal distance of terms used to calculate the vecinity
     include_reference_terms : bool
         If True, the reference term is included in the vecinity
+    format_refterms : bool
+        Format refterms
     
     Returns
     -------
@@ -418,7 +424,7 @@ def get_document_term_vecinity_dict(
     """
 
     vecinity_dict = {}  # Create the empty dictionary
-    ref_term_positions_dict = get_ref_term_positions_dict(term_positions_defaultdict, reference_terms)
+    ref_term_positions_dict = get_ref_term_positions_dict(term_positions_defaultdict, reference_terms, format_refterms)
     
     # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the reference_terms
     # and return a list of these terms and their corresponding distances
@@ -440,7 +446,8 @@ def get_document_term_vecinity_dict(
 
 def get_ref_term_positions_dict(
         term_positions_defaultdict: defaultdict[str, list[int]], 
-        reference_terms: list[str]
+        reference_terms: list[str],
+        format_refterms: bool = True
         ) -> dict[str, list[int]]:
     """
     Returns a dictionary to store the list of positions for each reference term, along with its splitted terms.
@@ -455,6 +462,8 @@ def get_ref_term_positions_dict(
         A defaultdict containing term positions.
     reference_terms : list[str]
         A list of reference terms.
+    format_refterms: bool
+        Format refterms
 
     Returns
     -------
@@ -470,7 +479,8 @@ def get_ref_term_positions_dict(
             for splitted_ref_term in ref_term_words:   
                 # Get the term positions of each splitted reference term
                 ref_term_positions_dict[splitted_ref_term] = term_positions_defaultdict[splitted_ref_term]
-            ref_term_positions_dict.update(format_ref_term_positions_dict(ref_term_positions_dict, ref_term_words))
+            if format_refterms:
+                ref_term_positions_dict.update(format_ref_term_positions_dict(ref_term_positions_dict, ref_term_words))
         else:
             if ref_term in term_positions_defaultdict.keys():
                 # Get the term positions of the reference term
