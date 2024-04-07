@@ -616,36 +616,12 @@ def get_unique_vecinity_dict_by_document(
         A list of dictionaries with all its vecinities merged
     """
     for document in vecinity_matrix:
+        # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
+        # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
         unique_vecinity_document = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), document['text'])
         document['text'] = unique_vecinity_document
 
     return vecinity_matrix
-
-
-def get_unique_vecinity_dict(
-        unique_vecinity_dict: list[dict], 
-        limit_distance: int
-        ) -> dict[str, dict[str, list[int]]]:
-    """
-    Calculates a general vecinity dictionary, merging their vecinities by document.
-
-    Parameters
-    ----------
-    unique_vecinity_dict: list[dict]
-        List of dictionaries, each dictionary contains a vecinity by document
-    limit_distance: int
-        Maximal distance of terms
-
-    Returns
-    -------
-    unique_vecinity_dict : dict[str, dict[str, list[int]]]
-        A dictionary with all its vecinities merged
-    """
-    term_dict_list = []
-    for dct in unique_vecinity_dict:
-        term_dict_list.append(dct["text"])
-    unique_vecinity_dict = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), term_dict_list)
-    return unique_vecinity_dict
 
 
 def merge_dictionaries(
@@ -670,12 +646,12 @@ def merge_dictionaries(
 
     Returns
     -------
-        merged_dict : dict[str, dict[str, list[int]]]
-
+    merged_dict : dict[str, dict[str, list[int]]]
+        A new dictionary with all its vecinities merged.
     """
     merged_dict = {}
 
-    # Iterate over level 1 keys from both dictionaries
+    # Iterate over level 1 keys from the union between both dictionaries
     for key in set(dict1.keys()) | set(dict2.keys()):
         merged_dict[key] = {}
         
@@ -692,6 +668,169 @@ def merge_dictionaries(
         merged_dict[key] = dict2[key]
 
     return merged_dict
+
+
+def get_terms_frequency_list(
+        unique_vecinity_list_by_doc: list[dict]
+        ) -> list[dict[str, int]]:
+    """
+    This method calculates the frequency of terms in each dictionary from a list of unique vicinity lists.
+
+    Parameters
+    ----------
+    unique_vecinity_list_by_doc : list[dict]
+        A list of dictionaries representing unique vicinity lists for each document. Each dictionary should
+        have a key "text", containing a nested dictionary of terms and their frequencies within a document.
+
+    Returns
+    -------
+    terms_freq_list : list[dict[str, int]]
+        A list of dictionaries containing the frequency of terms for each document. Each dictionary has keys 
+        corresponding to terms, and values represent the frequency of the term within the document.
+
+    """
+    terms_freq_list = []
+
+    # Iterate over each document's vicinity list
+    for d in unique_vecinity_list_by_doc:
+        terms_freq_dict = {}
+
+        # Iterate over each term and its frequencies in the document
+        for key, value in d["text"].items():
+            terms_freq_dict[key] = 0
+
+            # Sum up the frequencies of the term across all distances
+            for arr in value.values():
+                terms_freq_dict[key] += sum(arr) 
+        
+        # Append the term frequency dictionary for the current document to the result list
+        terms_freq_list.append(terms_freq_dict)
+    
+    return terms_freq_list
+
+
+def get_first_sorted_terms_frequency_list(
+        terms_freq_list: list[dict[str, int]],
+        nr_of_graph_terms: int
+        ) -> list[dict[str, int]]:
+    """Sort term frequency for each dictionary from a list of terms frequency in descending 
+    order, limited by the configured number of terms in the graph"""
+    return [sort_dictionary_and_limit_by_number_of_graph_terms(diccionario, nr_of_graph_terms) for diccionario in terms_freq_list]
+
+
+def sort_dictionary_and_limit_by_number_of_graph_terms(
+        dictionary: dict[str, int],
+        nr_of_graph_terms: int
+        ) -> dict[str, int]:
+    """Function to sort the dictionary by values in descending order, limited by the 
+    configured number of terms in the graph"""
+    return {k: v for k, v in sorted(dictionary.items(), key=lambda item: item[1], reverse=True)[:nr_of_graph_terms]}
+
+
+def get_most_frequency_distance_list(
+        first_sorted_terms_freq_list: list[dict[str, int]], 
+        unique_vecinity_list_by_doc: list[dict], 
+        limit_distance: int, 
+        reference_term: str
+        ) -> list[dict[str, dict]]:
+    """
+    This method calculates the most frequency distance list based on the input parameters.
+
+    Parameters
+    ----------
+    first_sorted_terms_freq_list : list[dict[str, int]]
+        A list of dictionaries containing terms and their frequencies, sorted in descending order of frequency.
+    unique_vecinity_list_by_doc : list[dict]
+        A list of dictionaries representing unique vicinity lists for each document. Each dictionary should have
+        a key "text", containing a nested dictionary of terms and their frequencies within a document.
+    limit_distance : int
+        The maximum distance allowed for calculating the mean distance.
+    reference_term : str
+        The reference term used to calculate distances.
+    
+    Returns
+    -------
+    most_freq_distance_list : list[dict[str, dict]]
+        A list of dictionaries containing the most frequency distance for each term.
+        Each dictionary has keys corresponding to terms, and values are dictionaries with keys 'frequency' and 'distance',
+        representing the frequency and mean distance of the term respectively.
+    """
+    most_freq_distance_list = []
+
+    # Iterate over each term frequency dictionary
+    for idx_freq_list, first_sorted_terms_freq_dict in enumerate(first_sorted_terms_freq_list):
+        most_freq_distance_dict = {}
+
+        # Iterate over each term in the frequency dictionary
+        for k in first_sorted_terms_freq_dict.keys():
+            # Retrieve the list of frequencies by distance for the term
+            list_of_freq_by_dist = unique_vecinity_list_by_doc[idx_freq_list].get("text").get(k).get(reference_term, [0,0,0,0])
+            list_to_calculate = []
+
+            # Check if there are non-zero frequencies for distances
+            if any(x > 0 for x in list_of_freq_by_dist):
+                # Construct a list of distances weighted by frequencies
+                for idx, freq in enumerate(list_of_freq_by_dist):
+                    list_to_calculate.extend([idx+1]*freq)
+            else:
+                # If no frequencies are found, use a default distance
+                list_to_calculate = [np.mean([1, limit_distance])]
+            
+             # Calculate the mean distance for the term
+            most_freq_distance_dict[k] = {'frequency': first_sorted_terms_freq_dict.get(k), 'distance': np.mean(list_to_calculate)}
+        
+        # Append the dictionary for the current document to the result list
+        most_freq_distance_list.append(most_freq_distance_dict)
+
+    return most_freq_distance_list
+
+
+def getGraphViz(
+        search_key: str, 
+        neighboors_df: dict, 
+        node_size: str = '2', 
+        node_color: str = 'green'
+        ) -> Graph:
+    """Calculates the graph of the most frequently neighboors of a term."""
+    g = Graph('G', filename='graph_search.gv', engine='neato')
+    g.attr('node', shape='circle', fontsize='10')
+    counter = 0
+    g.node('0', label=search_key, root='true', fixedsize='true', width=node_size, style='filled', fillcolor='azure3', fontcolor='black')
+    for keyword, dic in neighboors_df.items() :
+        counter = counter + 1
+        p_with = str(dic['frequency'])
+        g.node("'" +str(counter)+"'", keyword, fixedsize='true', width=node_size, penwidth=p_with, color=node_color)
+        g.edge('0', "'" +str(counter)+"'", label=str(dic['distance']), len=str(dic['distance']))
+        
+    return g
+
+
+def get_unique_vecinity_dict(
+        unique_vecinity_dict: list[dict], 
+        limit_distance: int
+        ) -> dict[str, dict[str, list[int]]]:
+    """
+    Calculates a general vecinity dictionary, merging their vecinities by document.
+
+    Parameters
+    ----------
+    unique_vecinity_dict: list[dict]
+        List of dictionaries, each dictionary contains a vecinity by document
+    limit_distance: int
+        Maximal distance of terms
+
+    Returns
+    -------
+    unique_vecinity_dict : dict[str, dict[str, list[int]]]
+        A dictionary with all its vecinities merged
+    """
+    term_dict_list = []
+    for dct in unique_vecinity_dict:
+        term_dict_list.append(dct["text"])
+    # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
+    # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
+    unique_vecinity_dict = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), term_dict_list)
+    return unique_vecinity_dict
 
 
 def get_unique_graph_dictionary(graph_dictionaries_array):
@@ -745,26 +884,6 @@ def normalize_dictionary_values(
     dictio.update((k, (m*(dictio[k]-c)+d)) for k in dictio.keys())
     #dictio.update((k, (m*(dictio[k]-c)+d)) for k in dictio.keys())
     return dictio
-    
-    
-def getGraphViz(
-        search_key: str, 
-        neighboors_df: dict, 
-        node_size: str = '2', 
-        node_color: str = 'green'
-        ) -> Graph:
-    """Calculates the graph of the most frequently neighboors of a term."""
-    g = Graph('G', filename='graph_search.gv', engine='neato')
-    g.attr('node', shape='circle', fontsize='10')
-    counter = 0
-    g.node('0', label=search_key, root='true', fixedsize='true', width=node_size, style='filled', fillcolor='azure3', fontcolor='black')
-    for keyword, dic in neighboors_df.items() :
-        counter = counter + 1
-        p_with = str(dic['frequency'])
-        g.node("'" +str(counter)+"'", keyword, fixedsize='true', width=node_size, penwidth=p_with, color=node_color)
-        g.edge('0', "'" +str(counter)+"'", label=str(dic['distance']), len=str(dic['distance']))
-        
-    return g
 
 
 def getSummarizedGraph(self, summarize='median', normalize_frequency_range=False, normalize_distance_range=False):
