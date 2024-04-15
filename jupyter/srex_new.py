@@ -132,9 +132,9 @@ def calculate_factor(
         The calculated weight factor.
     """
     if (weighted=='linear'):
-        factor = float(results_size - index)
+        factor = float((results_size - index) / results_size)
     elif (weighted=='inverse'):
-        factor = float(math.ceil(results_size/(index+1)))
+        factor = float(math.ceil(results_size / (index+1)) / results_size)
     else:
         factor = 1.0
 
@@ -357,7 +357,7 @@ def get_term_positions_dict(
     return sentence_positions_dict
 
 
-def get_vecinity_matrix(
+def get_vecinity_matrix_by_sentence(
         documents_list_with_matrix_positions: list[dict], 
         reference_terms: list[str], 
         limit_distance: int, 
@@ -598,7 +598,7 @@ def calculate_frequency_term_positions_distances(
     return frequencies_per_distance
 
 
-def get_unique_vecinity_dict_by_document(
+def get_unique_vecinity_matrix_by_document(
         vecinity_matrix: list[dict],
         limit_distance: int
         ) -> list[dict]:
@@ -621,22 +621,22 @@ def get_unique_vecinity_dict_by_document(
     for document in vecinity_matrix:
         # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
         # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
-        unique_vecinity_document = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), document['text'])
+        unique_vecinity_document = reduce((lambda dict1, dict2: unite_dictionaries(dict1, dict2, limit_distance)), document['text'])
         document['text'] = unique_vecinity_document
 
     return vecinity_matrix
 
 
-def merge_dictionaries(
+def unite_dictionaries(
         dict1: dict[str, dict[str, list[int]]], 
         dict2: dict[str, dict[str, list[int]]], 
         limit_distance: int = 99
         ) -> dict[str, dict[str, list[int]]]:
     """
-    Merge two dictionaries into a new dictionary. 
+    Unite two dictionaries into a new dictionary. 
     The merging process involves iterating through the keys of both dictionaries, summing the corresponding lists 
-    for each key if they exist in both dictionaries, and adding the keys that only exist in one dictionary. 
-    The optional parameter limit_distance specifies the limit for the size of the lists to be merged.
+    for each subkey, and adding the keys that only exist in one dictionary. 
+    The optional parameter limit_distance specifies the limit for the size of the lists to be united.
     
     Parameters
     ----------
@@ -649,28 +649,78 @@ def merge_dictionaries(
 
     Returns
     -------
-    merged_dict : dict[str, dict[str, list[int]]]
-        A new dictionary with all its vecinities merged.
+    united_dict : dict[str, dict[str, list[int]]]
+        A new dictionary with all its vecinities united.
     """
-    merged_dict = {}
+    united_dict = {}
 
     # Iterate over level 1 keys from the union between both dictionaries
-    for key in set(dict1.keys()) | set(dict2.keys()):
-        merged_dict[key] = {}
+    for key in dict1.keys() | dict2.keys():
+        united_dict[key] = {}
         
-        # Add the corresponding lists for the union between the two dictionaries
-        for subkey in set(dict1.get(key, {}).keys()) | set(dict2.get(key, {}).keys()):
-            merged_dict[key][subkey] = [x + y for x, y in zip(dict1.get(key, {}).get(subkey, [0] * limit_distance), 
-                                                            dict2.get(key, {}).get(subkey, [0] * limit_distance))]
+        # Sum the corresponding lists, value by value, for the union between the subkeys of the two dictionaries
+        for subkey in dict1.get(key, {}).keys() | dict2.get(key, {}).keys():
+            united_dict[key][subkey] = get_sum_of_freq_lists_by_distance(dict1, dict2, key, subkey, limit_distance)
 
     # Add level 1 keys that are not in both dictionaries
-    for key in set(dict1.keys()) - set(dict2.keys()):
-        merged_dict[key] = dict1[key]
+    for key in dict1.keys() - dict2.keys():
+        united_dict[key] = dict1[key]
 
-    for key in set(dict2.keys()) - set(dict1.keys()):
-        merged_dict[key] = dict2[key]
+    for key in dict2.keys() - dict1.keys():
+        united_dict[key] = dict2[key]
 
-    return merged_dict
+    return united_dict
+
+
+def intersect_dictionaries(
+        dict1: dict[str, dict[str, list[int]]], 
+        dict2: dict[str, dict[str, list[int]]], 
+        limit_distance: int = 99
+        ) -> dict[str, dict[str, list[int]]]:
+    """
+    Intersect two dictionaries into a new dictionary. 
+    The intersect process involves iterating through the keys that only exist both dictionaries, summing the 
+    corresponding lists for each subkey.
+    The optional parameter limit_distance specifies the limit for the size of the lists to be merged.
+    
+    Parameters
+    ----------
+    dict1 : dict[str, dict[str, list[int]]]
+        The first dictionary to intersect.
+    dict2 : dict[str, dict[str, list[int]]]
+        The second dictionary to intersect.
+    limit_distance : int
+        Limit of distance for the intersecting process.
+
+    Returns
+    -------
+    intersected_dict : dict[str, dict[str, list[int]]]
+        A new dictionary with all its vecinities intersected.
+    """
+    intersected_dict = {}
+
+    # Iterate over level 1 keys from the intersection between both dictionaries
+    for key in dict1.keys() & dict2.keys():
+        intersected_dict[key] = {}
+        
+        # Sum the corresponding lists, value by value, for the union between the subkeys of the two dictionaries
+        for subkey in dict1.get(key, {}).keys() | dict2.get(key, {}).keys():
+            intersected_dict[key][subkey] = get_sum_of_freq_lists_by_distance(dict1, dict2, key, subkey, limit_distance)
+
+    return intersected_dict
+
+
+def get_sum_of_freq_lists_by_distance(
+        dict1: dict[str, dict[str, list[int]]], 
+        dict2: dict[str, dict[str, list[int]]], 
+        key: str, 
+        subkey: str, 
+        limit_distance: int
+        ) -> list[int]:
+        list_of_freq_by_distance_dict1 = dict1.get(key, {}).get(subkey, [0] * limit_distance)
+        list_of_freq_by_distance_dict2 = dict2.get(key, {}).get(subkey, [0] * limit_distance)
+        sum_of_freq_lists_by_distance = [x + y for x, y in zip(list_of_freq_by_distance_dict1, list_of_freq_by_distance_dict2)]
+        return sum_of_freq_lists_by_distance
 
 
 def get_most_frequency_distance_list_by_refterm(
@@ -851,7 +901,7 @@ def get_unique_vecinity_dict(
         term_dict_list.append(dct["text"])
     # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
     # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
-    unique_vecinity_dict = reduce((lambda x, y: merge_dictionaries(x, y, limit_distance)), term_dict_list)
+    unique_vecinity_dict = reduce((lambda x, y: unite_dictionaries(x, y, limit_distance)), term_dict_list)
     return unique_vecinity_dict
 
 
