@@ -132,9 +132,9 @@ def calculate_factor(
         The calculated weight factor.
     """
     if (weighted=='linear'):
-        factor = float((results_size - index) / results_size)
+        factor = float((results_size - (index * 0.5)) / results_size)
     elif (weighted=='inverse'):
-        factor = float(math.ceil(results_size / (index+1)) / results_size)
+        factor = float(math.ceil(results_size / ((index * 0.5) + 1)) / results_size)
     else:
         factor = 1.0
 
@@ -390,7 +390,7 @@ def get_vecinity_matrix_by_sentence(
         vecinity_list = []
         for term_positions_defaultdict in document['text']:
             document_term_vecinity_dict = get_document_term_vecinity_dict(term_positions_defaultdict, reference_terms, limit_distance, 
-                                                                          include_reference_term, format_adjacent_refterms)
+                                                                          document['weight'], include_reference_term, format_adjacent_refterms)
             vecinity_list.append(document_term_vecinity_dict)
         document['text'] = vecinity_list
 
@@ -401,9 +401,10 @@ def get_document_term_vecinity_dict(
         term_positions_defaultdict: defaultdict[str, list[int]], 
         reference_terms: list[str], 
         limit_distance: int,
+        doc_weight: float = 1.0,
         include_reference_terms: bool = True,
         format_adjacent_refterms: bool = True
-        ) -> dict[str, dict[str, list[int]]]:
+        ) -> dict[str, dict[str, list[float]]]:
     """
     Calculate the vecinity of a list of reference terms in a sentence, limited by a specified distance.
     
@@ -415,6 +416,8 @@ def get_document_term_vecinity_dict(
         List of terms used as reference for calculating which terms are in its vecinity
     limit_distance : int
         Maximal distance of terms used to calculate the vecinity
+    doc_weight : float
+        Weight of the document
     include_reference_terms : bool
         If True, the reference term is included in the vecinity
     format_adjacent_refterms : bool
@@ -422,7 +425,7 @@ def get_document_term_vecinity_dict(
     
     Returns
     -------
-    vecinity_dict : dict[str, dict[str, list[int]]]
+    vecinity_dict : dict[str, dict[str, list[float]]]
         A dictionary with the terms in the vecinity of the reference term and their corresponding distances
     """
 
@@ -436,7 +439,7 @@ def get_document_term_vecinity_dict(
             # Calculate the distance between the reference term and the rest of terms
             first_one = True
             for ref_term, ref_positions in ref_term_positions_dict.items():
-                freq_neighborhood_positions = calculate_frequency_term_positions_distances(ref_positions, term_positions, limit_distance)
+                freq_neighborhood_positions = calculate_frequency_term_positions_distances(ref_positions, term_positions, doc_weight, limit_distance)
 
                 if (any(frq > 0 for frq in freq_neighborhood_positions)):
                     if (first_one):
@@ -566,9 +569,10 @@ def get_new_dict_formatted_adjacent_ref_term_positions(
 
 def calculate_frequency_term_positions_distances(
         term1_positions: list[int], 
-        term2_positions: list[int], 
+        term2_positions: list[int],
+        doc_weight : float, 
         limit_distance: int = 999
-        ) -> list[int]:
+        ) -> list[float]:
     """
     Compare the positions vectors of two terms, and return the frequency quantity list 
     per distance between query terms and vecinity terms
@@ -579,12 +583,14 @@ def calculate_frequency_term_positions_distances(
         List of positions of the first term
     term2_positions : list[int]
         List of positions of the second term
+    doc_weight : float
+        Weight of the document
     limit_distance : float
         Maximal distance of terms
 
     Returns
     -------
-    frequencies_per_distance : list[int]
+    frequencies_per_distance : list[float]
         List of frequencies per distance between query terms and vecinity terms
     """
     frequencies_per_distance = [0] * limit_distance
@@ -595,6 +601,7 @@ def calculate_frequency_term_positions_distances(
             if (absolute_distance <= limit_distance):
                 frequencies_per_distance[absolute_distance-1] += 1
     
+    frequencies_per_distance = [i * doc_weight for i in frequencies_per_distance]
     return frequencies_per_distance
 
 
@@ -628,10 +635,10 @@ def get_unique_vecinity_matrix_by_document(
 
 
 def unite_dictionaries(
-        dict1: dict[str, dict[str, list[int]]], 
-        dict2: dict[str, dict[str, list[int]]], 
+        dict1: dict[str, dict[str, list[float]]], 
+        dict2: dict[str, dict[str, list[float]]], 
         limit_distance: int = 99
-        ) -> dict[str, dict[str, list[int]]]:
+        ) -> dict[str, dict[str, list[float]]]:
     """
     Unite two dictionaries into a new dictionary. 
     The merging process involves iterating through the keys of both dictionaries, summing the corresponding lists 
@@ -640,16 +647,16 @@ def unite_dictionaries(
     
     Parameters
     ----------
-    dict1 : dict[str, dict[str, list[int]]]
+    dict1 : dict[str, dict[str, list[float]]]
         The first dictionary to merge.
-    dict2 : dict[str, dict[str, list[int]]]
+    dict2 : dict[str, dict[str, list[float]]]
         The second dictionary to merge.
     limit_distance : int
         Limit of distance for the merging process.
 
     Returns
     -------
-    united_dict : dict[str, dict[str, list[int]]]
+    united_dict : dict[str, dict[str, list[float]]]
         A new dictionary with all its vecinities united.
     """
     united_dict = {}
@@ -673,10 +680,10 @@ def unite_dictionaries(
 
 
 def intersect_dictionaries(
-        dict1: dict[str, dict[str, list[int]]], 
-        dict2: dict[str, dict[str, list[int]]], 
+        dict1: dict[str, dict[str, list[float]]], 
+        dict2: dict[str, dict[str, list[float]]], 
         limit_distance: int = 99
-        ) -> dict[str, dict[str, list[int]]]:
+        ) -> dict[str, dict[str, list[float]]]:
     """
     Intersect two dictionaries into a new dictionary. 
     The intersect process involves iterating through the keys that only exist both dictionaries, summing the 
@@ -685,16 +692,16 @@ def intersect_dictionaries(
     
     Parameters
     ----------
-    dict1 : dict[str, dict[str, list[int]]]
+    dict1 : dict[str, dict[str, list[float]]]
         The first dictionary to intersect.
-    dict2 : dict[str, dict[str, list[int]]]
+    dict2 : dict[str, dict[str, list[float]]]
         The second dictionary to intersect.
     limit_distance : int
         Limit of distance for the intersecting process.
 
     Returns
     -------
-    intersected_dict : dict[str, dict[str, list[int]]]
+    intersected_dict : dict[str, dict[str, list[float]]]
         A new dictionary with all its vecinities intersected.
     """
     intersected_dict = {}
@@ -711,12 +718,12 @@ def intersect_dictionaries(
 
 
 def get_sum_of_freq_lists_by_distance(
-        dict1: dict[str, dict[str, list[int]]], 
-        dict2: dict[str, dict[str, list[int]]], 
+        dict1: dict[str, dict[str, list[float]]], 
+        dict2: dict[str, dict[str, list[float]]], 
         key: str, 
         subkey: str, 
         limit_distance: int
-        ) -> list[int]:
+        ) -> list[float]:
         list_of_freq_by_distance_dict1 = dict1.get(key, {}).get(subkey, [0] * limit_distance)
         list_of_freq_by_distance_dict2 = dict2.get(key, {}).get(subkey, [0] * limit_distance)
         sum_of_freq_lists_by_distance = [x + y for x, y in zip(list_of_freq_by_distance_dict1, list_of_freq_by_distance_dict2)]
@@ -762,10 +769,10 @@ def get_most_frequency_distance_list_by_refterm(
             distance_calculation_list = []
             # Construct a list of distances multiplied by its frequencies
             for idx, freq in enumerate(list_of_freq_by_distance):
-                distance_calculation_list.extend([idx+1]*freq)
-            
+                distance_calculation_list.extend([idx+1]*round(freq / unique_vecinity_list_by_doc[idx_freq_list].get("weight")))
+                
              # Calculate the mean distance for the term
-            most_freq_distance_dict[k] = {'frequency': first_sorted_terms_freq_dict.get(k), 'distance': np.mean(distance_calculation_list)}
+            most_freq_distance_dict[k] = {'ponderation': first_sorted_terms_freq_dict.get(k), 'distance': np.mean(distance_calculation_list)}
         
         # Append the dictionary for the current document to the result list
         most_freq_distance_list.append(most_freq_distance_dict)
@@ -777,7 +784,7 @@ def get_first_sorted_terms_frequency_list(
         unique_vecinity_list_by_doc: list[dict],
         nr_of_graph_terms: int,
         reference_term: str
-        ) -> list[dict[str, int]]:
+        ) -> list[dict[str, float]]:
     """
     Sort term frequency for each dictionary from a list of terms frequency in descending 
     order, limited by the configured number of terms in the graph
@@ -794,7 +801,7 @@ def get_first_sorted_terms_frequency_list(
 
     Returns
     -------
-    first_sorted_terms_freq_list : list[dict[str, int]]
+    first_sorted_terms_freq_list : list[dict[str, float]]
         A list of first dictionaries sorted by their frequency per document. Each dictionary has keys 
         corresponding to terms, and values represent the frequency of the term within the document.
 
@@ -808,7 +815,7 @@ def get_first_sorted_terms_frequency_list(
 def get_terms_frequency_list(
         unique_vecinity_list_by_doc: list[dict],
         reference_term: str
-        ) -> list[dict[str, int]]:
+        ) -> list[dict[str, float]]:
     """
     This method calculates the frequency of terms by a specified reference term in each dictionary from a 
     list of unique vicinity lists.
@@ -823,7 +830,7 @@ def get_terms_frequency_list(
 
     Returns
     -------
-    terms_freq_list : list[dict[str, int]]
+    terms_freq_list : list[dict[str, float]]
         A list of dictionaries containing the frequency of terms for each document. Each dictionary has keys 
         corresponding to terms, and values represent the frequency of the term within the document.
 
@@ -848,9 +855,9 @@ def get_terms_frequency_list(
 
 
 def sort_dictionary_and_limit_by_number_of_graph_terms(
-        dictionary: dict[str, int],
+        dictionary: dict[str, float],
         nr_of_graph_terms: int
-        ) -> dict[str, int]:
+        ) -> dict[str, float]:
     """Function to sort the dictionary by values in descending order, limited by the 
     configured number of terms in the graph"""
     first_sorted_terms_freq_dict = {k: v for k, v in sorted(dictionary.items(), key=lambda item: item[1], reverse=True)[:nr_of_graph_terms]}
@@ -870,7 +877,7 @@ def getGraphViz(
     g.node('0', label=search_key, root='true', fixedsize='true', width=node_size, style='filled', fillcolor='azure3', fontcolor='black')
     for keyword, dic in neighboors_df.items() :
         counter = counter + 1
-        p_with = str(dic['frequency'])
+        p_with = str(dic['ponderation'])
         g.node("'" +str(counter)+"'", keyword, fixedsize='true', width=node_size, penwidth=p_with, color=node_color)
         g.edge('0', "'" +str(counter)+"'", label=str(dic['distance']), len=str(dic['distance']))
         
@@ -880,7 +887,7 @@ def getGraphViz(
 def get_unique_vecinity_dict(
         unique_vecinity_dict: list[dict], 
         limit_distance: int
-        ) -> dict[str, dict[str, list[int]]]:
+        ) -> dict[str, dict[str, list[float]]]:
     """
     Calculates a general vecinity dictionary, merging their vecinities by document.
 
@@ -893,7 +900,7 @@ def get_unique_vecinity_dict(
 
     Returns
     -------
-    unique_vecinity_dict : dict[str, dict[str, list[int]]]
+    unique_vecinity_dict : dict[str, dict[str, list[float]]]
         A dictionary with all its vecinities merged
     """
     term_dict_list = []
@@ -915,10 +922,10 @@ def merge_graph_dictionaries(g1, g2):
     """Merge two "graph" dictionaries."""
     for i in g1.keys():
         if (i in g2.keys()):
-            g2[i]['frequency'] = g2[i]['frequency'] + g1[i]['frequency']
+            g2[i]['ponderation'] = g2[i]['ponderation'] + g1[i]['ponderation']
             g2[i]['distance'] = g2[i]['distance'] + g1[i]['distance']
         else:
-            g2[i] = {'frequency': g1[i]['frequency'], 'distance': g1[i]['distance']} 
+            g2[i] = {'ponderation': g1[i]['ponderation'], 'distance': g1[i]['distance']} 
     return g2
 
 
@@ -961,15 +968,15 @@ def normalize_dictionary_values(
 def getSummarizedGraph(self, summarize='median', normalize_frequency_range=False, normalize_distance_range=False):
         # Calculate a term distance metric for all nodes
         if (summarize =='median'):
-            summarized_graph = {k: {'frequency':self.nodes[k]['frequency'], 
+            summarized_graph = {k: {'ponderation':self.nodes[k]['ponderation'], 
                                     'distance':np.median(self.nodes[k]['distances'])} for k in self.nodes.keys()}
         elif (summarize == 'mean'):
-            summarized_graph = {k: {'frequency':self.nodes[k]['frequency'], 
+            summarized_graph = {k: {'ponderation':self.nodes[k]['ponderation'], 
                                     'distance':np.mean(self.nodes[k]['distances'])} for k in self.nodes.keys()}
         
         if((normalize_frequency_range != True) | (normalize_distance_range != False)):
             summarized_graph_distance = {k: v['distance'] for k, v in summarized_graph.items()}
-            summarized_graph_frequency = {k: v['frequency'] for k, v in summarized_graph.items()}
+            summarized_graph_frequency = {k: v['ponderation'] for k, v in summarized_graph.items()}
             
             # normalize distance
             if(normalize_distance_range != False):
@@ -1018,18 +1025,18 @@ def getSimilarity(self, otherGraph):
     # Calculate the vectors u and v in the multidimensional space
     # u: corresponds to self graph
     # v: correspnds to the otherGraph
-    for term in vectorBase: # Generate de vector space for both attributes (frequency and distance)
+    for term in vectorBase: # Generate de vector space for both attributes (ponderation and distance)
         if (term in self_sum):
-            u.append(self_sum[term]['frequency'])
+            u.append(self_sum[term]['ponderation'])
             u.append(self_sum[term]['distance'])
         else:
-            u.append(0) # frequency value equal to cero
+            u.append(0) # ponderation value equal to cero
             u.append(0) # distance value equal to cero
         if (term in otherGraph_sum):
-            v.append(otherGraph_sum[term]['frequency'])
+            v.append(otherGraph_sum[term]['ponderation'])
             v.append(otherGraph_sum[term]['distance'])
         else:
-            v.append(0) # frequency value equal to cero
+            v.append(0) # ponderation value equal to cero
             v.append(0) # distance value equal to cero
 
     # Calculate the cosine of the angle between the vectors
