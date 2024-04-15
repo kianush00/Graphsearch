@@ -673,10 +673,9 @@ def merge_dictionaries(
     return merged_dict
 
 
-def get_most_frequency_distance_list(
+def get_most_frequency_distance_list_by_refterm(
         unique_vecinity_list_by_doc: list[dict],
         reference_term: str,
-        limit_distance: int = 99,
         nr_of_graph_terms: int = 10
         ) -> list[dict[str, dict]]:
     """
@@ -684,15 +683,13 @@ def get_most_frequency_distance_list(
 
     Parameters
     ----------
-    first_sorted_terms_freq_list : list[dict[str, int]]
-        A list of dictionaries containing terms and their frequencies, sorted in descending order of frequency.
     unique_vecinity_list_by_doc : list[dict]
         A list of dictionaries representing unique vicinity lists for each document. Each dictionary should have
         a key "text", containing a nested dictionary of terms and their frequencies within a document.
     reference_term : str
         The reference term used to calculate distances.
-    limit_distance : int
-        The maximum distance allowed for calculating the mean distance.
+    nr_of_graph_terms : int
+        Configured number of terms in the graph
     
     Returns
     -------
@@ -701,7 +698,7 @@ def get_most_frequency_distance_list(
         Each dictionary has keys corresponding to terms, and values are dictionaries with keys 'frequency' and 'distance',
         representing the frequency and mean distance of the term respectively.
     """
-    first_sorted_terms_freq_list = get_first_sorted_terms_frequency_list(unique_vecinity_list_by_doc, nr_of_graph_terms)
+    first_sorted_terms_freq_list = get_first_sorted_terms_frequency_list(unique_vecinity_list_by_doc, nr_of_graph_terms, reference_term)
     most_freq_distance_list = []
 
     # Iterate over each term frequency dictionary
@@ -711,17 +708,11 @@ def get_most_frequency_distance_list(
         # Iterate over each term in the frequency dictionary
         for k in first_sorted_terms_freq_dict.keys():
             # Retrieve the list of frequencies by distance for the term
-            list_of_freq_by_distance = unique_vecinity_list_by_doc[idx_freq_list].get("text").get(k).get(reference_term, [0] * limit_distance)
+            list_of_freq_by_distance = unique_vecinity_list_by_doc[idx_freq_list].get("text").get(k).get(reference_term)
             distance_calculation_list = []
-
-            # Check if there are non-zero frequencies for distances
-            if any(x > 0 for x in list_of_freq_by_distance):
-                # Construct a list of distances multiplied by its frequencies
-                for idx, freq in enumerate(list_of_freq_by_distance):
-                    distance_calculation_list.extend([idx+1]*freq)
-            else:
-                # If no frequencies are found, use a default distance
-                distance_calculation_list = [np.mean([1, limit_distance])]
+            # Construct a list of distances multiplied by its frequencies
+            for idx, freq in enumerate(list_of_freq_by_distance):
+                distance_calculation_list.extend([idx+1]*freq)
             
              # Calculate the mean distance for the term
             most_freq_distance_dict[k] = {'frequency': first_sorted_terms_freq_dict.get(k), 'distance': np.mean(distance_calculation_list)}
@@ -734,7 +725,8 @@ def get_most_frequency_distance_list(
 
 def get_first_sorted_terms_frequency_list(
         unique_vecinity_list_by_doc: list[dict],
-        nr_of_graph_terms: int
+        nr_of_graph_terms: int,
+        reference_term: str
         ) -> list[dict[str, int]]:
     """
     Sort term frequency for each dictionary from a list of terms frequency in descending 
@@ -747,6 +739,8 @@ def get_first_sorted_terms_frequency_list(
         have a key "text", containing a nested dictionary of terms and their frequencies within a document.
     nr_of_graph_terms : int
         Configured number of terms in the graph
+    reference_term : str
+        The reference term used to calculate distances.
 
     Returns
     -------
@@ -755,23 +749,27 @@ def get_first_sorted_terms_frequency_list(
         corresponding to terms, and values represent the frequency of the term within the document.
 
     """
-    terms_freq_list = get_terms_frequency_list(unique_vecinity_list_by_doc)
+    terms_freq_list = get_terms_frequency_list(unique_vecinity_list_by_doc, reference_term)
     first_sorted_terms_freq_list = [sort_dictionary_and_limit_by_number_of_graph_terms(dictionary, nr_of_graph_terms) 
                                     for dictionary in terms_freq_list]
     return first_sorted_terms_freq_list
 
 
 def get_terms_frequency_list(
-        unique_vecinity_list_by_doc: list[dict]
+        unique_vecinity_list_by_doc: list[dict],
+        reference_term: str
         ) -> list[dict[str, int]]:
     """
-    This method calculates the frequency of terms in each dictionary from a list of unique vicinity lists.
+    This method calculates the frequency of terms by a specified reference term in each dictionary from a 
+    list of unique vicinity lists.
 
     Parameters
     ----------
     unique_vecinity_list_by_doc : list[dict]
         A list of dictionaries representing unique vicinity lists for each document. Each dictionary should
         have a key "text", containing a nested dictionary of terms and their frequencies within a document.
+    reference_term : str
+        The reference term used to calculate distances.
 
     Returns
     -------
@@ -788,15 +786,14 @@ def get_terms_frequency_list(
 
         # Iterate over each term and its frequencies in the document
         for neighbor_term, freq_by_query_term in document["text"].items():
-            terms_freq_dict[neighbor_term] = 0
-
-            # Sum up the frequencies of the term across all distances
-            for arr in freq_by_query_term.values():
-                terms_freq_dict[neighbor_term] += sum(arr) 
-        
-        # Append the term frequency dictionary for the current document to the result list
+            if reference_term in freq_by_query_term:
+                sum_freq_in_ref_term = sum(freq_by_query_term[reference_term])
+                if sum_freq_in_ref_term > 0:
+                    terms_freq_dict[neighbor_term] = sum_freq_in_ref_term
+                
+        # Append the term frequency dictionary for the current document to the result list        
         terms_freq_list.append(terms_freq_dict)
-    
+        
     return terms_freq_list
 
 
