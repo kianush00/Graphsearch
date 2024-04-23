@@ -30,34 +30,6 @@ class Text:
 
 
 
-class Document(Text):
-    
-    def __init__(self, raw_text: str, doc_id: int, weight: float, ranking_position: int, title: str, ranking: Ranking):
-        
-        super().__init__(raw_text)
-        self.__doc_id = doc_id
-        self.__weight = weight
-        self.__ranking_position = ranking_position
-        self.__title = title
-        self.__ranking = ranking
-        self.__sentences: list[Sentence] = []
-        self.__graph = Graph()
-
-
-
-class Sentence(Text):
-    
-    def __init__(self, raw_text: str, document: Document, position_in_doc: int):
-        super().__init__(raw_text)
-        self.__document = document
-        self.__position_in_doc = position_in_doc
-
-
-    def get_position_in_doc(self) -> int:
-        return self.__position_in_doc
-
-
-
 class Ranking:
     
     def __init__(self, query_text: str, nr_search_results: int = 10, stop_words: list[str] = [], ranking_weight_type: str = 'linear', lema: bool = True, stem: str = False):
@@ -77,7 +49,7 @@ class Ranking:
         sentences_list = self.__get_sentences_list_from_documents(list_of_documents)
 
 
-    def get_ranking(self) -> list[Document]:
+    def get_ranking(self) -> list:
         return self.__documents 
 
 
@@ -196,6 +168,34 @@ class Ranking:
         for document in list_of_documents:
             document['text'] = document['text'].split('. ')
         return list_of_documents
+
+
+
+class Document(Text):
+    
+    def __init__(self, raw_text: str, doc_id: int, weight: float, ranking_position: int, title: str, ranking: Ranking):
+        
+        super().__init__(raw_text)
+        self.__doc_id = doc_id
+        self.__weight = weight
+        self.__ranking_position = ranking_position
+        self.__title = title
+        self.__ranking = ranking
+        self.__sentences: list[Sentence] = []
+        self.__graph = Graph()
+
+
+
+class Sentence(Text):
+    
+    def __init__(self, raw_text: str, document: Document, position_in_doc: int):
+        super().__init__(raw_text)
+        self.__document = document
+        self.__position_in_doc = position_in_doc
+
+
+    def get_position_in_doc(self) -> int:
+        return self.__position_in_doc
 
 
 
