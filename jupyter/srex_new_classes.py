@@ -32,8 +32,10 @@ class Text:
 
 class Ranking:
     
-    def __init__(self, query_text: str, nr_search_results: int = 10, stop_words: list[str] = [], ranking_weight_type: str = 'linear', lema: bool = True, stem: str = False):
+    def __init__(self, query_text: str, reference_terms: list[str], nr_search_results: int = 10, stop_words: list[str] = [], 
+                 ranking_weight_type: str = 'linear', lema: bool = True, stem: str = False):
         self.__query_text = query_text
+        self.__reference_terms = reference_terms
         self.__nr_search_results = nr_search_results
         self.__stop_words = stop_words
         self.__ranking_weight_type = ranking_weight_type   # it can be: 'none', 'linear' or 'inverse'
@@ -44,9 +46,12 @@ class Ranking:
         self.__documents: list[Document] = []
         self.__graph = Graph()
 
-        results = self.__get_ieee_explore_ranking(query_text, nr_search_results)
-        list_of_documents = self.__get_ranking_as_weighted_documents(results, ranking_weight_type)
+        results = self.__get_ieee_explore_ranking(self.__query_text, self.__nr_search_results)
+        list_of_documents = self.__get_ranking_as_weighted_documents(results, self.__ranking_weight_type)
         sentences_list = self.__get_sentences_list_from_documents(list_of_documents)
+        processed_sentences_list = self.__do_text_transformations_by_document(sentences_list, self.__stop_words, self.__lema, self.__stem)
+        self.__reference_terms = self.__do_text_transformations_by_string_in_list(self.__reference_terms, self.__stop_words, self.__lema, self.__stem)
+        processed_sentences_list_with_refterms = self.__delete_sentences_without_refterms(processed_sentences_list, self.__reference_terms)
 
 
     def get_ranking(self) -> list:
@@ -150,6 +155,7 @@ class Ranking:
 
 
     def __get_sentences_list_from_documents(
+            self,
             list_of_documents: list[dict]
             ) -> list[dict]:
         """
@@ -168,19 +174,166 @@ class Ranking:
         for document in list_of_documents:
             document['text'] = document['text'].split('. ')
         return list_of_documents
+    
+
+    def __do_text_transformations_by_document(
+        self,
+        documents_list: list[dict],
+        stop_words_list: list[str], 
+        lema: bool = True, 
+        stem: bool = True
+        ) -> list[dict]:
+        """
+        Apply some text transformations to a list of documents. Remove stopwords, punctuation, stemming, lematization
+
+        Parameters
+        ----------
+        string_list : list[str]
+            A list of documents to be transformed.
+        stop_words_list : list[str]
+            List of stop words to be removed from the sentence
+        lema : bool
+            If True, lematization is applied
+        stem : bool
+            If True, stemming is applied
+
+        Returns
+        -------
+        transformed_documents_list : list[dict]
+            A list of transformed documents.
+        """
+        for document in documents_list:
+            document["text"] = list(map(lambda sentence: self.__text_transformations(sentence, stop_words_list, lema, stem), document["text"]))
+
+        return documents_list
+
+
+    def __do_text_transformations_by_string_in_list(
+            self,
+            string_list: list[str],
+            stop_words_list: list[str], 
+            lema: bool = True, 
+            stem: bool = True
+            ) -> list[str]:
+        """
+        Apply text transformations to a list of strings. Remove stopwords, punctuation, stemming, lematization.
+
+        Parameters
+        ----------
+        string_list : list[str]
+            A list of strings to be transformed.
+        stop_words_list : list[str]
+            List of stop words to be removed from the sentence
+        lema : bool
+            If True, lematization is applied
+        stem : bool
+            If True, stemming is applied
+
+        Returns
+        -------
+        processed_string_list : list[str]
+            A list of transformed strings.
+        """
+        processed_string_list = []
+        for term in string_list:
+            processed_string_list.append(self.__text_transformations(term, stop_words_list, lema, stem))
+
+        return processed_string_list
+
+
+    def __text_transformations(
+            self,
+            sentence: str, 
+            stop_words_list: list[str], 
+            lema: bool = True, 
+            stem: bool = True
+            ) -> str:
+        """
+        Apply some text transformations to a sentence. Remove stopwords, punctuation, stemming, lematization.
+
+        Parameters
+        ----------
+        sentence : str
+            String with the sentence to be transformed
+        stop_words_list : list[str]
+            List of stop words to be removed from the sentence
+        lema : bool
+            If True, lematization is applied
+        stem : bool
+            If True, stemming is applied
+        
+        Returns
+        -------
+        final_string : str
+            The transformed sentence
+        """
+        
+        # Low the string
+        sentence = sentence.lower()
+        
+        # Remove puntuation
+        tokens = nltk.word_tokenize(sentence)
+        filtered_sentence = [tk for tk in tokens if tk.isalnum()]
+        
+        # Remove Stopwords
+        if(len(stop_words_list)>0):
+            filtered_sentence = list(filter(lambda word_of_sentence: (word_of_sentence not in stop_words_list), filtered_sentence))
+        
+        # Apply lematization
+        if(lema):
+            filtered_sentence = list(map(lambda word_filtered_sentence: Word(word_filtered_sentence).lemmatize(), filtered_sentence))
+        
+        # Stemmer
+        if(stem):
+            filtered_sentence = list(map(lambda word: st.stem(word), filtered_sentence))
+        
+        final_string = ' ' . join(map(str, filtered_sentence))
+        
+        return final_string
+
+
+    def __delete_sentences_without_refterms(
+            self,
+            documents_list: list[dict],
+            reference_terms: list[str], 
+            ) -> list[dict]:
+        """
+        Delete sentences from a list of sentences by document that do not contain a reference term
+
+        Parameters
+        ----------
+        documents_list: list[dict]
+            List of dictionaries (articles), each one contains a list (array) of sentences
+        reference_terms: list[str]
+            List of reference terms that must be contained in the sentences
+        
+        Returns
+        -------
+        documents_list_with_refterms : list[dict]
+            List of documents that exclusively contain a reference term in its list of sentences
+        """
+        for document in documents_list:
+            sentences_with_refterms = []
+            for sentence in document['text']:
+                for term in reference_terms:
+                    if term in sentence:
+                        sentences_with_refterms.append(sentence)
+                        break
+            document['text'] = sentences_with_refterms
+
+        return documents_list
 
 
 
 class Document(Text):
     
-    def __init__(self, raw_text: str, doc_id: int, weight: float, ranking_position: int, title: str, ranking: Ranking):
+    def __init__(self, raw_text: str, doc_id: int, weight: float, ranking_position: int, title: str):
         
         super().__init__(raw_text)
         self.__doc_id = doc_id
         self.__weight = weight
         self.__ranking_position = ranking_position
         self.__title = title
-        self.__ranking = ranking
         self.__sentences: list[Sentence] = []
         self.__graph = Graph()
 
@@ -188,9 +341,8 @@ class Document(Text):
 
 class Sentence(Text):
     
-    def __init__(self, raw_text: str, document: Document, position_in_doc: int):
+    def __init__(self, raw_text: str, position_in_doc: int):
         super().__init__(raw_text)
-        self.__document = document
         self.__position_in_doc = position_in_doc
 
 
