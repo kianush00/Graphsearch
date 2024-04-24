@@ -39,8 +39,7 @@ class Sentence:
         self.__processed_text = processed_text
 
     
-    def do_text_transformations(
-            self,
+    def do_text_transformations(self,
             stop_words_list: list[str], 
             lema: bool = True, 
             stem: bool = True
@@ -120,8 +119,7 @@ class Document:
         return self.__graph
 
 
-    def get_ieee_explore_article(
-            self,
+    def get_ieee_explore_article(self,
             parameter: str, 
             value: str
             ) -> None:
@@ -146,9 +144,7 @@ class Document:
         self.__doc_id = data.get('articles', [{}])[0].get('article_number', "1")
 
 
-    def __calculate_sentences_list_from_documents(
-            self,
-            ) -> list[dict]:
+    def __calculate_sentences_list_from_documents(self) -> list[dict]:
         """
         Transform the text of each document in the input list into a list of sentences. Split the text by dots.
         """
@@ -160,8 +156,7 @@ class Document:
             self.__sentences.append(sentence_obj)
     
 
-    def do_text_transformations_by_sentence(
-            self,
+    def do_text_transformations_by_sentence(self,
             stop_words_list: list[str], 
             lema: bool,
             stem: bool
@@ -196,11 +191,12 @@ class Ranking:
         self.__stem = stem
         self.__documents: list[Document] = []
 
-        results = self.__get_ieee_explore_ranking()
         self.__do_text_transformations_to_refterms()
+        self.__graph = Graph(reference_terms=self.__reference_terms)
+
+        results = self.__get_ieee_explore_ranking()
         self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(results)
         self.__delete_sentences_without_refterms()
-        self.__graph = Graph(reference_terms=self.__reference_terms)
         
 
 
@@ -210,6 +206,32 @@ class Ranking:
 
     def get_graph(self) -> Graph:
         return self.__graph
+    
+
+    def set_graph_attributes_to_ranking_and_documents(self, 
+            nr_of_graph_terms: int = 5, 
+            limit_distance: int = 4, 
+            include_ref_terms: bool = True, 
+            format_adjac_refterms: bool = True
+            ) -> None:
+        """
+        Set graph attributes to the graph associated with the current object and each Document object from the documents attribute.
+
+        Parameters
+        ----------
+        nr_of_graph_terms : int
+            Configured number of terms in the graph
+        limit_distance : int
+            Maximal distance of terms used to calculate the vecinity
+        include_ref_terms : bool
+            If True, the reference term is included in the vecinity
+        format_adjacent_refterms : bool
+            If True, format terms only if they are adjacent
+        """
+        self.__graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_ref_terms, format_adjac_refterms)
+
+        for document in self.__documents:
+            document.get_graph().set_graph_attributes(nr_of_graph_terms, limit_distance, include_ref_terms, format_adjac_refterms)
 
 
     def __get_ieee_explore_ranking(self) -> list[dict]:
@@ -232,8 +254,20 @@ class Ranking:
         return results
 
 
-    def __calculate_ranking_as_weighted_documents_and_do_text_transformations(
-            self,
+    def __do_text_transformations_to_refterms(self) -> list[str]:
+        """
+        Apply text transformations to the reference terms of the ranking. Remove stopwords, punctuation, stemming, lematization.
+        """
+        processed_refterms_list = []
+        for ref_term in self.__reference_terms:
+            sentence = Sentence(ref_term)
+            sentence.do_text_transformations(self.__stop_words, self.__lema, self.__stem)
+            processed_refterms_list.append(sentence.get_processed_text())
+
+        self.__reference_terms = processed_refterms_list
+
+
+    def __calculate_ranking_as_weighted_documents_and_do_text_transformations(self,
             results: list[dict],
             ) -> None:
         """
@@ -259,8 +293,7 @@ class Ranking:
             self.__documents.append(new_doc)
 
 
-    def __calculate_weight(
-            self,
+    def __calculate_weight(self,
             weighted: str, 
             results_size: int, 
             index: int
@@ -293,19 +326,6 @@ class Ranking:
         return factor
 
 
-    def __do_text_transformations_to_refterms(self) -> list[str]:
-        """
-        Apply text transformations to the reference terms of the ranking. Remove stopwords, punctuation, stemming, lematization.
-        """
-        processed_refterms_list = []
-        for ref_term in self.__reference_terms:
-            sentence = Sentence(ref_term)
-            sentence.do_text_transformations(self.__stop_words, self.__lema, self.__stem)
-            processed_refterms_list.append(sentence.get_processed_text())
-
-        self.__reference_terms = processed_refterms_list
-
-
     def __delete_sentences_without_refterms(self) -> None:
         """
         Delete sentences from a list of sentences by document that do not contain a reference term
@@ -320,19 +340,47 @@ class Ranking:
 
 class Graph:
         
-    def __init__(self, reference_terms: list[str], nr_of_graph_terms: int = 5, limit_distance: int = 4, include_ref_term: bool = True, 
+    def __init__(self, reference_terms: list[str], nr_of_graph_terms: int = 5, limit_distance: int = 4, include_ref_terms: bool = True, 
                  format_adjac_refterms: bool = True):
 
         #self.nodes = {}
         self.__reference_terms = reference_terms
         self.__number_of_graph_terms = nr_of_graph_terms
         self.__limit_distance = limit_distance
-        self.__include_reference_term = include_ref_term
+        self.__include_reference_terms = include_ref_terms
         self.__format_adjacent_refterms = format_adjac_refterms
 
         self.__vecinity_matrix = []
         self.__most_freq_dist_list = []
         
+
+
+    def set_graph_attributes(self, 
+            nr_of_graph_terms: int = 5, 
+            limit_distance: int = 4, 
+            include_ref_terms: bool = True, 
+            format_adjac_refterms: bool  = True):
+        self.__number_of_graph_terms = nr_of_graph_terms
+        self.__limit_distance = limit_distance
+        self.__include_reference_terms = include_ref_terms
+        self.__format_adjacent_refterms = format_adjac_refterms
+
+
+    def get_number_of_graph_terms(self) -> int:
+        return self.__number_of_graph_terms
+
+
+    def get_limit_distance(self) -> int:
+        return self.__limit_distance
+
+
+    def get_include_reference_terms(self) -> bool:
+        return self.__include_reference_terms
+
+
+    def get_format_adjacent_refterms(self) -> bool:
+        return self.__format_adjacent_refterms
+    
 
     def get_vecinity_matrix(self) -> list[dict]:
         return self.__vecinity_matrix
