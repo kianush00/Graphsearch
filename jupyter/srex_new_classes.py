@@ -21,6 +21,7 @@ class Sentence:
         self.__raw_text = raw_text
         self.__position_in_doc = position_in_doc
         self.__processed_text: str = ""
+        self.__term_positions_dict: defaultdict[str, list[int]] = defaultdict(list)
 
 
     def get_raw_text(self) -> str:
@@ -35,10 +36,35 @@ class Sentence:
         return self.__processed_text
     
 
-    def set_processed_text(self, processed_text: str) -> None:
-        self.__processed_text = processed_text
-
+    def set_processed_text(self, value: str) -> None:
+        self.__processed_text = value
     
+
+    def get_term_positions_dict(self) -> defaultdict[str, list[int]]:
+        return self.__term_positions_dict
+
+
+    def do_text_transformations_and_term_positions_dict(self,
+            stop_words_list: list[str], 
+            lema: bool = True, 
+            stem: bool = True
+            ) -> None:
+        """
+        Apply some text transformations to the sentence and calculate term positions to the sentence.
+
+        Parameters
+        ----------
+        stop_words_list : list[str]
+            List of stop words to be removed from the sentence
+        lema : bool
+            If True, lematization is applied
+        stem : bool
+            If True, stemming is applied
+        """
+        self.do_text_transformations(stop_words_list, lema, stem)
+        self.__do_term_positions_dict()
+
+
     def do_text_transformations(self,
             stop_words_list: list[str], 
             lema: bool = True, 
@@ -80,6 +106,18 @@ class Sentence:
         final_string = ' ' . join(map(str, filtered_sentence))
         
         self.__processed_text = final_string
+
+
+    def __do_term_positions_dict(self) -> None:
+        """
+        Calculate a dictionary with the sentence's term positions.
+        """
+        vectorizer = CountVectorizer()
+        vector = vectorizer.build_tokenizer()(self.__processed_text)
+        sentence_positions_dict = defaultdict(list)
+        for i in range(len(vector)):
+            sentence_positions_dict[vector[i]].append(i)
+        self.__term_positions_dict = sentence_positions_dict
 
 
 
@@ -162,7 +200,7 @@ class Document:
             stem: bool
             ) -> None:
         """
-        Apply some text transformations to each sentence of the document. Remove stopwords, punctuation, stemming, lematization
+        Apply some text transformations to each sentence of the document and calculate term positions to the sentence.
 
         Parameters
         ----------
@@ -174,7 +212,7 @@ class Document:
             If True, stemming is applied
         """
         for sentence in self.__sentences:
-            sentence.do_text_transformations(stop_words_list, lema, stem)
+            sentence.do_text_transformations_and_term_positions_dict(stop_words_list, lema, stem)
 
 
 
