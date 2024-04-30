@@ -231,7 +231,7 @@ class Sentence:
         the vecinity of a list of reference terms in the current sentence, limited by a specified distance.
         """
         self.__do_term_positions_dict()
-        self.__do_ref_term_positions_dict()
+        self.__do_ref_term_positions_dict_conditioned_by_ref_type()
         self.__do_vecinity_matrix()
     
 
@@ -272,7 +272,7 @@ class Sentence:
         self.__term_positions_dict = sentence_positions_dict
 
     
-    def __do_ref_term_positions_dict(self) -> None:
+    def __do_ref_term_positions_dict_conditioned_by_ref_type(self) -> None:
         """
         Returns a dictionary to store the list of positions for each reference term, along with its splitted terms.
         This function takes a defaultdict containing term positions and a list of reference terms as input.
@@ -282,23 +282,44 @@ class Sentence:
         """
         ref_term_positions_dict = {}
 
-        for ref_term in self.__reference_terms.get_operands_str_list():
-            ref_term_words = ref_term.split(' ')
-            # If the reference term is within the term position dictionary
-            if ref_term_words[0] in self.__term_positions_dict.keys():
-                # If the reference term contains more than one word
-                if (len(ref_term_words) > 1):
-                    for splitted_ref_term in ref_term_words:   
-                        # Get the term positions of each splitted reference term
-                        ref_term_positions_dict[splitted_ref_term] = self.__term_positions_dict[splitted_ref_term]
-                    if self.__graphs[0].get_format_adjacent_refterms():
-                        ref_term_positions_dict.update(self.__format_adjacent_ref_term_positions_dict(ref_term_positions_dict, ref_term_words))
-                # If the reference term contains just one word
-                else:
-                    # Get the term positions of the reference term
-                    ref_term_positions_dict[ref_term] = self.__term_positions_dict[ref_term]    
+        if type(self.__reference_terms) == str:
+            if len(self.__reference_terms) > 0:
+                ref_term = self.__reference_terms
+                ref_term_positions_dict = self.__get_ref_term_positions_dict(ref_term)
+        elif type(self.__reference_terms) == BooleanOperation: 
+            for ref_term in self.__reference_terms.get_operands_str_list():
+                ref_term_positions_dict.update(self.__get_ref_term_positions_dict(ref_term))
         
         self.__ref_terms_positions_dict = ref_term_positions_dict
+
+
+    def __get_ref_term_positions_dict(self, ref_term: str) -> None:
+        """
+        Returns a dictionary to store the list of positions for each reference term, along with its splitted terms.
+        This function takes a defaultdict containing term positions and a list of reference terms as input.
+        It splits each reference term into individual words and retrieves the positions of each term from the defaultdict.
+        If a reference term contains multiple words, the function retrieves positions for each individual word and combines them.
+        The resulting dictionary stores each reference term along with its list of positions.
+        """
+        ref_term_positions_dict = {}
+
+        ref_term_words = ref_term.split(' ')
+        # If the reference term is within the term position dictionary
+        if ref_term_words[0] in self.__term_positions_dict.keys():
+            # If the reference term contains more than one word
+            if (len(ref_term_words) > 1):
+                for splitted_ref_term in ref_term_words:   
+                    # Get the term positions of each splitted reference term
+                    ref_term_positions_dict[splitted_ref_term] = self.__term_positions_dict[splitted_ref_term]
+                if self.__graphs[0].get_format_adjacent_refterms():
+                    ref_term_positions_dict.update(self.__format_adjacent_ref_term_positions_dict(ref_term_positions_dict, ref_term_words))
+            # If the reference term contains just one word
+            else:
+                # Get the term positions of the reference term
+                ref_term_positions_dict[ref_term] = self.__term_positions_dict[ref_term]
+        
+        return ref_term_positions_dict
+
 
 
     def __format_adjacent_ref_term_positions_dict(self,
