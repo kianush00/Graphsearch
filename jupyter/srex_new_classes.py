@@ -112,10 +112,10 @@ class Sentence:
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__processed_text: str = ""
+        self.__graphs: list[Graph] = self.__create_and_get_graph_list()
         self.__term_positions_dict: defaultdict[str, list[int]] = defaultdict(list)
         self.__ref_terms_positions_dict: dict[str, list[int]] = {}
-        self.__graphs: list[Graph] = self.__create_and_get_graph_list()
-        self.__vecinity_matrix = []
+        self.__vicinity_matrix: dict[str, dict[str, list[float]]] = []
 
 
     def get_raw_text(self) -> str:
@@ -142,19 +142,15 @@ class Sentence:
         self.__processed_text = value
     
 
-    def get_term_positions_dict(self) -> defaultdict[str, list[int]]:
-        return self.__term_positions_dict
-    
-
     def get_graphs(self) -> list[Graph]:
         return self.__graphs
     
 
-    def get_vecinity_matrix(self) -> list[dict]:
-        return self.__vecinity_matrix
+    def get_vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
+        return self.__vicinity_matrix
 
 
-    def do_text_transformations(self,
+    def do_text_transformations_if_any_refterm(self,
             stop_words_list: list[str], 
             lema: bool = True, 
             stem: bool = True
@@ -225,21 +221,100 @@ class Sentence:
         return final_string
     
 
-    def calculate_term_positions_and_vecinity_matrix(self) -> None:
+    def calculate_term_positions_and_vicinity_matrix(self) -> None:
         """
-        Calculate term positions dictionary for terms of the sentence and terms from the reference terms, also calculates 
-        the vecinity of a list of reference terms in the current sentence, limited by a specified distance.
+        Calculate term positions dictionary for terms of the sentence and terms from
+        the reference terms, also calculates the vicinity of a list of reference 
+        terms in the current sentence, limited by a specified distance.
         """
         self.__do_term_positions_dict()
         self.__do_ref_term_positions_dict_conditioned_by_ref_type()
-        self.__do_vecinity_matrix()
+        self.__do_vicinity_matrix()
     
 
-    def __do_vecinity_matrix(self) -> None:
+    def generate_graph_nodes_of_sentence(self) -> None:
         """
-        Calculate the vecinity of a list of reference terms in the current sentence, limited by a specified distance.
+        Generate nodes to all the graphs associated with the sentence, based on 
+        their isolated reference terms
         """
-        vecinity_matrix = {}  # Create the empty dictionary
+        for graph in self.__graphs:
+            self.__generate_graph_nodes(graph)
+    
+
+    def __generate_graph_nodes(self, graph: Graph) -> None:
+        """
+        Generate nodes for the graph associated with the sentence, based on the isolated reference term of 
+        the graph. This method calculates the ponderations of the terms associated with
+        the reference term of the graph, and adds each of them to their respective node.
+
+        Parameters
+        ----------
+        graph : Graph
+            A graph associated with the sentence
+        """
+        reference_term = graph.__reference_terms
+        terms_pond_dict = self.__get_terms_ponderation_dict(reference_term)
+
+        # Iterate over each term in the frequency dictionary
+        for neighbor_term in terms_pond_dict.keys():
+            # Retrieve the list of frequencies by distance for the term
+            list_of_freq_by_distance = self.__vicinity_matrix.get(neighbor_term).get(reference_term)
+            distance_calculation_list = []
+            # Construct a list of distances multiplied by its frequencies
+            for idx, freq_mult_by_weight in enumerate(list_of_freq_by_distance):
+                frequency = round(freq_mult_by_weight / self.__weight)
+                distance_calculation_list.extend([idx+1] * frequency)
+                
+             # Calculate the mean distance for the term
+            new_node = Node(term=neighbor_term, ponderation=terms_pond_dict.get(neighbor_term), distance=np.mean(distance_calculation_list))
+            graph.add_node(new_node)
+
+    
+
+    def __get_terms_ponderation_dict(self, 
+            reference_term: str
+            ) -> dict[str, float]:
+        """
+        This method calculates the ponderation (frequency * weight) of terms from the 
+        vecinity matrix of the sentence, by a specified reference term
+
+        Parameters
+        ----------
+        reference_term : str
+            The reference term of the graph
+
+        Returns
+        -------
+        terms_pond_dict : dict[str, float]
+            A dictionary containing the ponderation of terms. Each dictionary has keys corresponding 
+            to terms, and values represent the ponderation of the term within the sentence.
+
+        """
+        terms_pond_dict = {}
+
+        # Iterate over each term and its ponderations in the document
+        for neighbor_term, distance_pond_by_ref_term in self.__vicinity_matrix.items():
+            # Split the reference terms into a list of words
+            ref_term_splitted = reference_term.split(" ")
+            for ref_word in ref_term_splitted:
+                # Checks if the reference word is in the distance-ponderation 
+                # dictionary keys and if the neighbor term isn't a ref term
+                if (ref_word in distance_pond_by_ref_term) and (neighbor_term not in ref_term_splitted):
+                    sum_of_ponds_in_ref_term = sum(distance_pond_by_ref_term[ref_word])
+                    if sum_of_ponds_in_ref_term > 0:
+                        terms_pond_dict[neighbor_term] = sum_of_ponds_in_ref_term
+            
+        return terms_pond_dict
+
+
+    def __do_vicinity_matrix(self) -> None:
+        """
+        Calculate the vicinity of a list of reference terms in the current sentence, limited by a specified distance.
+
+        E.g. {'v_term_1': {'ref_term_1': [0.0, 1.8, 0.0, 0.9]}, 
+        'v_term_2': {'ref_term_1': [0.0, 0.0, 0.9, 0.0], 'ref_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
+        """
+        vicinity_matrix = {}  # Create the empty dictionary
         # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the reference_terms
         # and return a list of these terms and their corresponding distances
         for term, term_positions in self.__term_positions_dict.items():
@@ -249,15 +324,16 @@ class Sentence:
                 first_one = True
                 for ref_term, ref_positions in self.__ref_terms_positions_dict.items():
                     if ref_term != term:
-                        freq_neighborhood_positions = self.__calculate_frequency_term_positions_distances(ref_positions, term_positions)
+                        freq_neighborhood_positions = self.__calculate_ponderation_of_distances_between_term_positions(ref_positions, 
+                                                                                                                       term_positions)
 
                         if (any(frq > 0 for frq in freq_neighborhood_positions)):
                             if (first_one):
-                                vecinity_matrix[term] = {}
+                                vicinity_matrix[term] = {}
                                 first_one = False
-                            vecinity_matrix[term][ref_term] = freq_neighborhood_positions
+                            vicinity_matrix[term][ref_term] = freq_neighborhood_positions
 
-        self.__vecinity_matrix = vecinity_matrix
+        self.__vicinity_matrix = vicinity_matrix
 
 
     def __do_term_positions_dict(self) -> None:
@@ -327,7 +403,7 @@ class Sentence:
             reference_term_words: list[str]
             ) -> dict[str, list[int]]:
         """
-        Format the reference term positions dictionary, so that it can be used in the vecinity matrix.
+        Format the reference term positions dictionary, so that it can be used in the vicinity matrix.
         This function takes a reference term positions dictionary and a list of reference term words as input.
         It creates a new dictionary containing only the keys present in the reference term words list,
         along with their corresponding lists of positions.
@@ -392,13 +468,13 @@ class Sentence:
         return new_formatted_dict
     
 
-    def __calculate_frequency_term_positions_distances(self,
+    def __calculate_ponderation_of_distances_between_term_positions(self,
             term1_positions: list[int], 
             term2_positions: list[int]
             ) -> list[float]:
         """
-        Compare the positions vectors of two terms, and return the frequency quantity list 
-        per distance between query terms and vecinity terms
+        Compare the positions vectors of two terms, and return the ponderation 
+        (frequency * weight) list per distance between reference terms and vicinity terms
 
         Parameters
         ----------
@@ -406,32 +482,29 @@ class Sentence:
             List of positions of the first term
         term2_positions : list[int]
             List of positions of the second term
-        doc_weight : float
-            Weight of the document
-        limit_distance : float
-            Maximal distance of terms
 
         Returns
         -------
-        frequencies_per_distance : list[float]
-            List of frequencies per distance between query terms and vecinity terms
+        ponderations_per_distance : list[float]
+            List of ponderations per distance between reference terms and vicinity terms
         """
         limit_distance = self.__graphs[0].get_limit_distance()
-        frequencies_per_distance = [0] * limit_distance
+        ponderations_per_distance = [0] * limit_distance
 
         for term1_pos in term1_positions:
             for term2_pos in term2_positions:
                 absolute_distance = abs(term1_pos-term2_pos)
                 if (absolute_distance <= limit_distance):
-                    frequencies_per_distance[absolute_distance-1] += 1
+                    ponderations_per_distance[absolute_distance-1] += 1
         
-        frequencies_per_distance = [i * self.__weight for i in frequencies_per_distance]
-        return frequencies_per_distance
+        ponderations_per_distance = [i * self.__weight for i in ponderations_per_distance]
+        return ponderations_per_distance
     
 
     def __create_and_get_graph_list(self) -> list[Graph]:
         """
-        Create a list of graphs associated with the sentence
+        Create a list of graphs associated with the sentence. Each reference 
+        term per graph is a string value.
         """
         graph_list = []
         if type(self.__reference_terms) == str:
@@ -441,6 +514,14 @@ class Sentence:
                 graph_list.append(Graph(reference_terms=ref_term))
         
         return graph_list
+    
+
+    def __sort_terms_pond_dictionary(self,
+            dictionary: dict[str, float]
+            ) -> dict[str, float]:
+        """Function to sort the dictionary by values in descending order."""
+        sorted_terms_pond_dict = {k: v for k, v in sorted(dictionary.items(), key=lambda item: item[1], reverse=True)}
+        return sorted_terms_pond_dict
 
 
 
@@ -535,14 +616,15 @@ class Document:
             If True, stemming is applied
         """
         for sentence in self.__sentences:
-            sentence.do_text_transformations(stop_words_list, lema, stem)
+            sentence.do_text_transformations_if_any_refterm(stop_words_list, lema, stem)
     
 
     def set_graph_attributes_to_doc_and_sentences(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_ref_terms: bool = True, 
-            format_adjac_refterms: bool  = True):
+            include_refterms: bool = True, 
+            format_adjac_refterms: bool  = True
+            ) -> None:
         """
         Set graph attributes to the documents and sentences of the document
 
@@ -551,20 +633,21 @@ class Document:
         nr_of_graph_terms : int
             Configured number of terms in the graph
         limit_distance : int
-            Maximal distance of terms used to calculate the vecinity
+            Maximal distance of terms used to calculate the vicinity
         include_reference_term : bool
-            If True, the reference term is included in the vecinity
+            If True, the reference term is included in the vicinity
         format_adjacent_refterms : bool
             If True, format terms only if they are adjacent
         """
         #Set the attributes to the graphs of the document
         for graph in self.__graphs:
-            graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_ref_terms, format_adjac_refterms)
+            graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms, format_adjac_refterms)
         
-        #Set the attributes to the graphs of each sentence of the document
+        #Set the attributes to the graphs of each sentence of the document. Sentences have no graph term limit.
         for sentence in self.__sentences:
             for graph in sentence.get_graphs():
-                graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_ref_terms, format_adjac_refterms)
+                graph.set_graph_attributes(nr_of_graph_terms=999999, limit_distance=limit_distance, 
+                                           include_refterms=include_refterms, format_adjac_refterms=format_adjac_refterms)
         
     
     def do_text_transformations_to_refterms(self,
@@ -592,6 +675,15 @@ class Document:
             self.__reference_terms.do_text_transformations_to_operands(stop_words_list, lema, stem)
 
 
+    def generate_graph_nodes_of_doc_and_sentences(self) -> None:
+        """
+        Generate all the nodes associated with the document graphs, along with the graphs of their
+        sentences, based on their reference terms
+        """
+        for sentence in self.__sentences:
+            sentence.generate_graph_nodes_of_sentence()
+
+
     def __calculate_sentences_list_from_documents(self) -> None:
         """
         Transform the text of each document in the input list into a list of sentences. Split the text by dots.
@@ -606,7 +698,8 @@ class Document:
 
     def __create_and_get_graph_list(self) -> list[Graph]:
         """
-        Create a list of graphs associated with the document
+        Create a list of graphs associated with the sentence. Each reference 
+        term per graph is a string value.
         """
         graph_list = []
         if type(self.__reference_terms) == str:
@@ -651,10 +744,10 @@ class Ranking:
         return self.__reference_terms
     
 
-    def set_graph_attributes_to_all_graphs_and_calculate_vecinity_matrix(self, 
+    def set_attributes_to_all_graphs_and_calculate_vicinity_matrix(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_ref_terms: bool = True, 
+            include_refterms: bool = True, 
             format_adjac_refterms: bool = True
             ) -> None:
         """
@@ -665,20 +758,30 @@ class Ranking:
         nr_of_graph_terms : int
             Configured number of terms in the graph
         limit_distance : int
-            Maximal distance of terms used to calculate the vecinity
+            Maximal distance of terms used to calculate the vicinity
         include_ref_terms : bool
-            If True, the reference term is included in the vecinity
+            If True, the reference term is included in the vicinity
         format_adjacent_refterms : bool
             If True, format terms only if they are adjacent
         """
-        self.__graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_ref_terms, format_adjac_refterms)
+        self.__graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms, format_adjac_refterms)
 
         for document in self.__documents:
-            document.set_graph_attributes_to_doc_and_sentences(nr_of_graph_terms, limit_distance, include_ref_terms, format_adjac_refterms)
+            document.set_graph_attributes_to_doc_and_sentences(nr_of_graph_terms, limit_distance, include_refterms, format_adjac_refterms)
 
         for document in self.__documents:
             for sentence in document.get_sentences():
-                sentence.calculate_term_positions_and_vecinity_matrix()
+                sentence.calculate_term_positions_and_vicinity_matrix()
+    
+
+    def generate_all_node_graphs(self):
+        """
+        Generate all the nodes associated with the graphs from both the ranking and all the documents along with their 
+        sentences, based on the reference terms
+        """
+        for document in self.__documents:
+            document.generate_graph_nodes_of_doc_and_sentences()
+
 
 
     def __get_ieee_explore_ranking(self) -> list[dict]:
@@ -773,31 +876,48 @@ class Ranking:
 
 
 
+class Node:
+    
+    def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0):
+        self.__term = term
+        self.__ponderation = ponderation
+        self.__distance = distance
+    
+
+    def get_term(self) -> str:
+        return self.__term
+    
+
+    def get_ponderation(self) -> float:
+        return self.__ponderation
+    
+
+    def get_distance(self) -> float:
+        return self.__distance
+
+
+
 class Graph:
         
-    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, limit_distance: int = 4, include_ref_terms: bool = True, 
+    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, limit_distance: int = 4, include_refterms: bool = True, 
                  format_adjac_refterms: bool = True):
-
-        #self.nodes = {}
         self.__reference_terms = reference_terms
         self.__number_of_graph_terms = nr_of_graph_terms
         self.__limit_distance = limit_distance
-        self.__include_reference_terms = include_ref_terms
+        self.__include_reference_terms = include_refterms
         self.__format_adjacent_refterms = format_adjac_refterms
-
-        self.__most_freq_dist_list = []
-        
+        self.__nodes: list[Node] = []
 
 
     def set_graph_attributes(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_ref_terms: bool = True, 
+            include_refterms: bool = True, 
             format_adjac_refterms: bool  = True
             ) -> None:
         self.__number_of_graph_terms = nr_of_graph_terms
         self.__limit_distance = limit_distance
-        self.__include_reference_terms = include_ref_terms
+        self.__include_reference_terms = include_refterms
         self.__format_adjacent_refterms = format_adjac_refterms
 
 
@@ -821,5 +941,9 @@ class Graph:
         return self.__format_adjacent_refterms
     
 
-    def get_most_freq_dist_list(self) -> list[dict]:
-        return self.__most_freq_dist_list
+    def get_nodes(self) -> list[Node]:
+        return self.__nodes
+    
+
+    def add_node(self, node: Node) -> None:
+        self.__nodes.append(node)
