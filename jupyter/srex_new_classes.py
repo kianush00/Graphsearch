@@ -265,7 +265,7 @@ class Sentence:
         operands_str_list : list[str]
             List of operands from the reference terms
         transformed_sentence_str : str
-            Transformed sentence string to eliminate spaces
+            Transformed sentence string to remove spaces
 
         Returns
         -------
@@ -294,7 +294,10 @@ class Sentence:
         graph : Graph
             A graph associated with the sentence
         """
-        reference_term = graph.get_reference_terms() #the refterms of the sentences are only string type, they are not boolean operations
+        reference_term = graph.get_reference_terms() #the refterms of the sentence' graph are only string type, they are not boolean operations
+        # Remove spaces from the reference term
+        if (len(reference_term.split(" ")) > 1):
+                reference_term = reference_term.replace(" ", "")
         terms_pond_dict = self.__get_terms_ponderation_dict(reference_term)
 
         # Iterate over each term in the frequency dictionary
@@ -302,11 +305,11 @@ class Sentence:
             # Retrieve the list of frequencies by distance for the term
             #print(f"neighbor_term: {neighbor_term}")
             #print(f"reference_term: {reference_term}")
-            list_of_freq_by_distance = self.__vicinity_matrix.get(neighbor_term).get(reference_term)
-            #print(f"list_of_freq_by_distance: {list_of_freq_by_distance}")
+            list_of_pond_by_distance = self.__vicinity_matrix.get(neighbor_term).get(reference_term)
+            #print(f"list_of_pond_by_distance: {list_of_pond_by_distance}")
             distance_calculation_list = []
             # Construct a list of distances multiplied by its frequencies
-            for idx, freq_mult_by_weight in enumerate(list_of_freq_by_distance):
+            for idx, freq_mult_by_weight in enumerate(list_of_pond_by_distance):
                 frequency = round(freq_mult_by_weight / self.__weight)
                 distance_calculation_list.extend([idx+1] * frequency)
                 
@@ -321,7 +324,7 @@ class Sentence:
             ) -> dict[str, float]:
         """
         This method calculates the ponderation (frequency * weight) of terms from the 
-        vecinity matrix of the sentence, by a specified reference term
+        vicinity matrix of the sentence, by a specified reference term
 
         Parameters
         ----------
@@ -339,15 +342,12 @@ class Sentence:
 
         # Iterate over each term and its ponderations in the document
         for neighbor_term, distance_pond_by_ref_term in self.__vicinity_matrix.items():
-            # Split the reference terms into a list of words
-            ref_term_splitted = reference_term.split(" ")
-            for ref_word in ref_term_splitted:
-                # Checks if the reference word is in the distance-ponderation 
-                # dictionary keys and if the neighbor term isn't a ref term
-                if (ref_word in distance_pond_by_ref_term) and (neighbor_term not in ref_term_splitted):
-                    sum_of_ponds_in_ref_term = sum(distance_pond_by_ref_term[ref_word])
-                    if sum_of_ponds_in_ref_term > 0:
-                        terms_pond_dict[neighbor_term] = sum_of_ponds_in_ref_term
+            # Checks if the reference word is in the distance-ponderation 
+            # dictionary keys and if the neighbor term isn't a ref term
+            if (reference_term in distance_pond_by_ref_term):
+                sum_of_ponds_in_ref_term = sum(distance_pond_by_ref_term[reference_term])
+                if sum_of_ponds_in_ref_term > 0:
+                    terms_pond_dict[neighbor_term] = sum_of_ponds_in_ref_term
             
         return terms_pond_dict
 
