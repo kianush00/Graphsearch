@@ -156,7 +156,8 @@ class Sentence:
             stem: bool = True
             ) -> None:
         """
-        Apply some text transformations to the sentence and calculate term positions to the sentence.
+        Apply some text transformations to the sentence and calculate term positions to the 
+        sentence. Also removes spaces from the reference terms.
 
         Parameters
         ----------
@@ -168,9 +169,20 @@ class Sentence:
             If True, stemming is applied
         """
         transformed_sentence_str = self.get_transformed_sentence_str(stop_words_list, lema, stem)
-        operands_str_list = self.__reference_terms.get_operands_str_list()
-        if any(ref_term in transformed_sentence_str for ref_term in operands_str_list):
-            self.__processed_text = transformed_sentence_str
+        if type(self.__reference_terms) == str:
+            if len(self.__reference_terms) > 0:
+                if self.__reference_terms in transformed_sentence_str:
+                    transformed_sentence_str = self.__get_transformed_sentence_str_without_spaces_in_refterms([self.__reference_terms], 
+                                                                                                        transformed_sentence_str)
+                    self.__processed_text = transformed_sentence_str
+        elif type(self.__reference_terms) == BooleanOperation: 
+            operands_str_list = self.__reference_terms.get_operands_str_list()
+            #If there is any refterm in the transformed sentence string
+            if any(ref_term in transformed_sentence_str for ref_term in operands_str_list):  
+                transformed_sentence_str = self.__get_transformed_sentence_str_without_spaces_in_refterms(operands_str_list, 
+                                                                                                        transformed_sentence_str)
+                self.__processed_text = transformed_sentence_str
+        
 
 
     def get_transformed_sentence_str(self,
@@ -241,6 +253,36 @@ class Sentence:
             self.__generate_graph_nodes(graph)
     
 
+    def __get_transformed_sentence_str_without_spaces_in_refterms(
+            self,
+            operands_str_list: list[str],
+            transformed_sentence_str: str) -> str:
+        """
+        Get the transformed sentence string without spaces in the reference terms
+
+        Parameters
+        ----------
+        operands_str_list : list[str]
+            List of operands from the reference terms
+        transformed_sentence_str : str
+            Transformed sentence string to eliminate spaces
+
+        Returns
+        -------
+        sentence_str_without_spaces_in_refterms : str
+            Transformed sentence string without spaces in reference terms within the sentence
+        """
+        sentence_str_without_spaces_in_refterms = transformed_sentence_str
+
+        for ref_term in operands_str_list:
+            #If the refterm is in the transformed sentence string and the refterm contains more than a word
+            if (ref_term in transformed_sentence_str) and (len(ref_term.split(" ")) > 1): 
+                ref_term_without_spaces = ref_term.replace(" ", "")
+                sentence_str_without_spaces_in_refterms = sentence_str_without_spaces_in_refterms.replace(ref_term, 
+                                                                                                          ref_term_without_spaces)
+        return sentence_str_without_spaces_in_refterms
+    
+
     def __generate_graph_nodes(self, graph: Graph) -> None:
         """
         Generate nodes for the graph associated with the sentence, based on the isolated reference term of 
@@ -252,7 +294,7 @@ class Sentence:
         graph : Graph
             A graph associated with the sentence
         """
-        reference_term = graph.get_reference_terms() #the refterms of the sentences are only of type string, they are not boolean operations
+        reference_term = graph.get_reference_terms() #the refterms of the sentences are only string type, they are not boolean operations
         terms_pond_dict = self.__get_terms_ponderation_dict(reference_term)
 
         # Iterate over each term in the frequency dictionary
@@ -327,7 +369,6 @@ class Sentence:
         Returns a dictionary to store the list of positions for each reference term, along with its splitted terms.
         This function takes a defaultdict containing term positions and a list of reference terms as input.
         It splits each reference term into individual words and retrieves the positions of each term from the defaultdict.
-        If a reference term contains multiple words, the function retrieves positions for each individual word and combines them.
         The resulting dictionary stores each reference term along with its list of positions.
         """
         ref_term_positions_dict = {}
@@ -343,104 +384,26 @@ class Sentence:
         self.__ref_terms_positions_dict = ref_term_positions_dict
 
 
-    def __get_ref_term_positions_dict(self, ref_term: str) -> None:
+    def __get_ref_term_positions_dict(self,
+            ref_term: str
+            ) -> dict[str, list[int]]:
         """
         Returns a dictionary to store the list of positions for each reference term, along with its splitted terms.
         This function takes a defaultdict containing term positions and a list of reference terms as input.
         It splits each reference term into individual words and retrieves the positions of each term from the defaultdict.
-        If a reference term contains multiple words, the function retrieves positions for each individual word and combines them.
         The resulting dictionary stores each reference term along with its list of positions.
         """
         ref_term_positions_dict = {}
 
-        ref_term_words = ref_term.split(' ')
+        # If the reference term contains more than one word, remove its spaces
+        if (len(ref_term.split(" ")) > 1):
+            ref_term = ref_term.replace(" ", "")
         # If the reference term is within the term position dictionary
-        if ref_term_words[0] in self.__term_positions_dict.keys():
-            # If the reference term contains more than one word
-            if (len(ref_term_words) > 1):
-                for splitted_ref_term in ref_term_words:   
-                    # Get the term positions of each splitted reference term
-                    ref_term_positions_dict[splitted_ref_term] = self.__term_positions_dict[splitted_ref_term]
-                if self.__graphs[0].get_format_adjacent_refterms():
-                    ref_term_positions_dict.update(self.__format_adjacent_ref_term_positions_dict(ref_term_positions_dict, ref_term_words))
-            # If the reference term contains just one word
-            else:
-                # Get the term positions of the reference term
-                ref_term_positions_dict[ref_term] = self.__term_positions_dict[ref_term]
+        if ref_term in self.__term_positions_dict.keys():
+            # Get the term positions of the reference term
+            ref_term_positions_dict[ref_term] = self.__term_positions_dict[ref_term]
         
         return ref_term_positions_dict
-
-
-
-    def __format_adjacent_ref_term_positions_dict(self,
-            ref_term_positions_dict: dict[str, list[int]],
-            reference_term_words: list[str]
-            ) -> dict[str, list[int]]:
-        """
-        Format the reference term positions dictionary, so that it can be used in the vicinity matrix.
-        This function takes a reference term positions dictionary and a list of reference term words as input.
-        It creates a new dictionary containing only the keys present in the reference term words list,
-        along with their corresponding lists of positions.
-
-        Parameters
-        ----------
-        ref_term_positions_dict : dict[str, list[int]]
-            A dictionary containing term positions.
-        reference_term_words : list[str]
-            A list of reference term words.
-
-        Returns
-        -------
-        formatted_dict : dict[str, list[int]]
-            A formatted dictionary with reference term words as keys and lists of positions as values.
-        """
-        ref_term_positions_dict_splitted = defaultdict(list)
-
-        #Omit keys that are not in reference_term_words
-        for key, value in ref_term_positions_dict.items():
-            if key in reference_term_words:
-                ref_term_positions_dict_splitted[key] = value
-        
-        new_dict = self.__get_new_dict_formatted_adjacent_ref_term_positions(reference_term_words, ref_term_positions_dict_splitted)
-        formatted_dict_intermediate = self.__get_new_dict_formatted_adjacent_ref_term_positions(reference_term_words, new_dict)
-        formatted_dict = self.__get_new_dict_formatted_adjacent_ref_term_positions(reference_term_words, formatted_dict_intermediate)
-        
-        return formatted_dict
-
-
-    def __get_new_dict_formatted_adjacent_ref_term_positions(self,
-            reference_terms: list[str],
-            ref_term_positions_dict: dict[str, list[int]]
-            ) -> dict[str, list[int]]:
-        """
-        Get a new formatted reference term positions dictionary.
-        This function takes a list of reference terms and a dictionary containing term positions as input.
-        It iterates over the reference terms and retrieves the positions of adjacent terms in the reference terms list.
-        The resulting dictionary contains each reference term word as a key and its list of positions as the value.
-
-        Parameters
-        ----------
-        reference_terms : list[str]
-            A list of reference terms.
-        ref_term_positions_dict : dict[str, list[int]]
-            A dictionary containing term positions.
-
-        Returns
-        -------
-        new_formatted_dict : dict[str, list[int]]
-            A new formatted dictionary with reference term words as keys and lists of positions as values.
-        """
-        new_formatted_dict = defaultdict(list)
-
-        for index in range(len(reference_terms)-1):
-            for number1 in ref_term_positions_dict[reference_terms[index]]:
-                for number2 in ref_term_positions_dict[reference_terms[index+1]]:
-                    if ((number1 + 1) == number2):
-                        if index == 0:
-                            new_formatted_dict[reference_terms[index]].append(number1)
-                        new_formatted_dict[reference_terms[index+1]].append(number2)
-        
-        return new_formatted_dict
     
 
     def __do_vicinity_matrix(self) -> None:
@@ -458,6 +421,7 @@ class Sentence:
             if((term not in self.__ref_terms_positions_dict.keys()) or (self.__graphs[0].get_include_reference_terms())): 
                 # Calculate the distance between the reference term and the rest of terms
                 first_one = True
+                # Iterate refterms that do not contain spaces
                 for ref_term, ref_positions in self.__ref_terms_positions_dict.items():
                     if ref_term != term:
                         freq_neighborhood_positions = self.__calculate_ponderation_of_distances_between_term_positions(ref_positions, 
@@ -601,8 +565,7 @@ class Document:
     def set_graph_attributes_to_doc_and_sentences(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_refterms: bool = True, 
-            format_adjac_refterms: bool  = True
+            include_refterms: bool = True
             ) -> None:
         """
         Set graph attributes to the documents and sentences of the document
@@ -615,18 +578,16 @@ class Document:
             Maximal distance of terms used to calculate the vicinity
         include_reference_term : bool
             If True, the reference term is included in the vicinity
-        format_adjacent_refterms : bool
-            If True, format terms only if they are adjacent
         """
         #Set the attributes to the graphs of the document
         for graph in self.__graphs:
-            graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms, format_adjac_refterms)
+            graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms)
         
         #Set the attributes to the graphs of each sentence of the document. Sentences have no graph term limit.
         for sentence in self.__sentences:
             for graph in sentence.get_graphs():
                 graph.set_graph_attributes(nr_of_graph_terms=999999, limit_distance=limit_distance, 
-                                           include_refterms=include_refterms, format_adjac_refterms=format_adjac_refterms)
+                                           include_refterms=include_refterms)
 
 
     def generate_graph_nodes_of_doc_and_sentences(self) -> None:
@@ -771,8 +732,7 @@ class Ranking:
     def set_attributes_to_all_graphs_and_calculate_vicinity_matrix(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_refterms: bool = True, 
-            format_adjac_refterms: bool = True
+            include_refterms: bool = True
             ) -> None:
         """
         Set graph attributes to the graph associated with the current object and each Document object from the documents attribute.
@@ -785,15 +745,13 @@ class Ranking:
             Maximal distance of terms used to calculate the vicinity
         include_ref_terms : bool
             If True, the reference term is included in the vicinity
-        format_adjacent_refterms : bool
-            If True, format terms only if they are adjacent
         """
         #Set graph attributes of the ranking's graph
-        self.__graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms, format_adjac_refterms)
+        self.__graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms)
 
         #Set graph attributes to the graphs of each document and the sentences' graphs of each document
         for document in self.__documents:
-            document.set_graph_attributes_to_doc_and_sentences(nr_of_graph_terms, limit_distance, include_refterms, format_adjac_refterms)
+            document.set_graph_attributes_to_doc_and_sentences(nr_of_graph_terms, limit_distance, include_refterms)
 
         #Calculate term positions and vicinity matrix of each sentence by document
         for document in self.__documents:
@@ -951,26 +909,23 @@ class Node:
 
 class Graph:
         
-    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, limit_distance: int = 4, include_refterms: bool = True, 
-                 format_adjac_refterms: bool = True):
+    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, 
+                 limit_distance: int = 4, include_refterms: bool = True):
         self.__reference_terms = reference_terms
         self.__number_of_graph_terms = nr_of_graph_terms
         self.__limit_distance = limit_distance
         self.__include_reference_terms = include_refterms
-        self.__format_adjacent_refterms = format_adjac_refterms
         self.__nodes: list[Node] = []
 
 
     def set_graph_attributes(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_refterms: bool = True, 
-            format_adjac_refterms: bool  = True
+            include_refterms: bool = True
             ) -> None:
         self.__number_of_graph_terms = nr_of_graph_terms
         self.__limit_distance = limit_distance
         self.__include_reference_terms = include_refterms
-        self.__format_adjacent_refterms = format_adjac_refterms
 
 
     def get_reference_terms(self) -> BooleanOperation | str:
@@ -987,10 +942,6 @@ class Graph:
 
     def get_include_reference_terms(self) -> bool:
         return self.__include_reference_terms
-
-
-    def get_format_adjacent_refterms(self) -> bool:
-        return self.__format_adjacent_refterms
     
 
     def get_nodes(self) -> list[Node]:
