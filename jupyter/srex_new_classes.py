@@ -112,7 +112,7 @@ class Sentence:
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__processed_text: str = ""
-        self.__graphs: list[Graph] = self.__create_and_get_graph_list()
+        self.__graphs: list[Graph] = self.__create_and_get_empty_graph_list()
         self.__term_positions_dict: defaultdict[str, list[int]] = defaultdict(list)
         self.__ref_terms_positions_dict: dict[str, list[int]] = {}
         self.__vicinity_matrix: dict[str, dict[str, list[float]]] = []
@@ -252,13 +252,16 @@ class Sentence:
         graph : Graph
             A graph associated with the sentence
         """
-        reference_term = graph.__reference_terms
+        reference_term = graph.get_reference_terms() #the refterms of the sentences are only of type string, they are not boolean operations
         terms_pond_dict = self.__get_terms_ponderation_dict(reference_term)
 
         # Iterate over each term in the frequency dictionary
         for neighbor_term in terms_pond_dict.keys():
             # Retrieve the list of frequencies by distance for the term
+            #print(f"neighbor_term: {neighbor_term}")
+            #print(f"reference_term: {reference_term}")
             list_of_freq_by_distance = self.__vicinity_matrix.get(neighbor_term).get(reference_term)
+            #print(f"list_of_freq_by_distance: {list_of_freq_by_distance}")
             distance_calculation_list = []
             # Construct a list of distances multiplied by its frequencies
             for idx, freq_mult_by_weight in enumerate(list_of_freq_by_distance):
@@ -501,10 +504,10 @@ class Sentence:
         return ponderations_per_distance
     
 
-    def __create_and_get_graph_list(self) -> list[Graph]:
+    def __create_and_get_empty_graph_list(self) -> list[Graph]:
         """
-        Create a list of graphs associated with the sentence. Each reference 
-        term per graph is a string value.
+        Create an empty list of graphs associated with the sentence (empty means without 
+        attributes). Each reference term per graph is a string value.
         """
         graph_list = []
         if type(self.__reference_terms) == str:
@@ -536,7 +539,7 @@ class Document:
         self.__weight = weight
         self.__ranking_position = ranking_position
         self.__sentences: list[Sentence] = []
-        self.__graphs: list[Graph] = self.__create_and_get_graph_list()
+        self.__graphs: list[Graph] = self.__create_and_get_empty_graph_list()
 
         self.__calculate_sentences_list_from_documents()
     
@@ -688,18 +691,39 @@ class Document:
         """
         Transform the text of each document in the input list into a list of sentences. Split the text by dots.
         """
-        sentence_list = [self.__title]
-        abstract_sentence_list = self.__abstract.split('. ')
-        sentence_list.extend(abstract_sentence_list)
-        for index, sentence_str in enumerate(sentence_list):
-            sentence_obj = Sentence(raw_text=sentence_str, reference_terms=self.__reference_terms, position_in_doc=index, weight=self.__weight)
+        list_of_sentence_str = self.__get_list_of_sentence_strings()
+        for index, sentence_str in enumerate(list_of_sentence_str):
+            sentence_obj = Sentence(raw_text=sentence_str, reference_terms=self.__reference_terms, 
+                                    position_in_doc=index, weight=self.__weight)
             self.__sentences.append(sentence_obj)
+
+    
+    def __get_list_of_sentence_strings(self) -> list[str]:
+        """
+        Transform the text of the current document (title + abstract) into a list of string 
+        sentences. Split the text by dots.
+
+        Returns
+        -------
+        list_of_sentence_str : list[str]
+            List of sentence strings
+        """
+        list_of_sentence_str = [self.__title]
+        abstract_list_of_sentence_str = self.__abstract.split('. ')
+        list_of_sentence_str.extend(abstract_list_of_sentence_str)
+        return list_of_sentence_str
+
     
 
-    def __create_and_get_graph_list(self) -> list[Graph]:
+    def __create_and_get_empty_graph_list(self) -> list[Graph]:
         """
-        Create a list of graphs associated with the sentence. Each reference 
-        term per graph is a string value.
+        Create an empty list of graphs associated with the sentence (empty means without 
+        attributes). Each reference term per graph is a string value.
+
+         Returns
+        -------
+        graph_list : list[Graph]
+            List of empty graphs
         """
         graph_list = []
         if type(self.__reference_terms) == str:
@@ -764,17 +788,20 @@ class Ranking:
         format_adjacent_refterms : bool
             If True, format terms only if they are adjacent
         """
+        #Set graph attributes of the ranking's graph
         self.__graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms, format_adjac_refterms)
 
+        #Set graph attributes to the graphs of each document and the sentences' graphs of each document
         for document in self.__documents:
             document.set_graph_attributes_to_doc_and_sentences(nr_of_graph_terms, limit_distance, include_refterms, format_adjac_refterms)
 
+        #Calculate term positions and vicinity matrix of each sentence by document
         for document in self.__documents:
             for sentence in document.get_sentences():
                 sentence.calculate_term_positions_and_vicinity_matrix()
     
 
-    def generate_all_node_graphs(self):
+    def generate_nodes_of_all_graphs(self) -> None:
         """
         Generate all the nodes associated with the graphs from both the ranking and all the documents along with their 
         sentences, based on the reference terms
@@ -782,6 +809,17 @@ class Ranking:
         for document in self.__documents:
             document.generate_graph_nodes_of_doc_and_sentences()
 
+
+    def __do_text_transformations_to_refterms(self) -> None:
+        """
+        Apply text transformations to the reference terms of the ranking. Remove stopwords, punctuation, stemming, lematization.
+        """
+        if type(self.__reference_terms) == str:
+            if len(self.__reference_terms) > 0:
+                sentence_from_refterm = Sentence(raw_text=self.__reference_terms)
+                self.__reference_terms = sentence_from_refterm.get_transformed_sentence_str(self.__stop_words, self.__lema, self.__stem)
+        elif type(self.__reference_terms) == BooleanOperation: 
+            self.__reference_terms.do_text_transformations_to_operands(self.__stop_words, self.__lema, self.__stem)
 
 
     def __get_ieee_explore_ranking(self) -> list[dict]:
@@ -804,18 +842,6 @@ class Ranking:
         return results
 
 
-    def __do_text_transformations_to_refterms(self) -> None:
-        """
-        Apply text transformations to the reference terms of the ranking. Remove stopwords, punctuation, stemming, lematization.
-        """
-        if type(self.__reference_terms) == str:
-            if len(self.__reference_terms) > 0:
-                sentence_from_refterm = Sentence(raw_text=self.__reference_terms)
-                self.__reference_terms = sentence_from_refterm.get_transformed_sentence_str(self.__stop_words, self.__lema, self.__stem)
-        elif type(self.__reference_terms) == BooleanOperation: 
-            self.__reference_terms.do_text_transformations_to_operands(self.__stop_words, self.__lema, self.__stem)
-
-
     def __calculate_ranking_as_weighted_documents_and_do_text_transformations(self,
             results: list[dict],
             ) -> None:
@@ -828,18 +854,44 @@ class Ranking:
         results : list[dict]
             Array of documents (articles)
         """
-        results_size = len(results)
         for index, article in enumerate(results):
-            # Calculate the weight depending on the argument value and the position of the document in the ranking
-            _weight = self.__calculate_weight(self.__ranking_weight_type, results_size, index)
-            _abstract = article.get('abstract', "")
-            _title = article.get('title', "")
-            _doc_id = article.get('article_number', "1")
-            _ranking_pos = article.get('rank', 1)
-            new_doc = Document(reference_terms=self.__reference_terms, abstract=_abstract, title=_title, doc_id=_doc_id, 
-                               weight=_weight, ranking_position=_ranking_pos)
+            new_doc = self.__get_new_document_by_article(article, index, results_size=len(results))
             new_doc.do_text_transformations_by_sentence(self.__stop_words, self.__lema, self.__stem)
             self.__documents.append(new_doc)
+    
+
+    def __get_new_document_by_article(self, 
+            article : dict, 
+            index : int,
+            results_size : int,
+            ) -> Document:
+        """
+        Create and get a new Document object from an article.
+
+        Parameters
+        ----------
+        article : dict
+            Article obtained by the ranking from IEEE Xplore API
+        index : int
+            Index (position) of the document in the ranking
+        results_size : int
+            Number of ranking documents
+
+        Returns
+        -------
+        new_doc : Document
+            A new document obtained from the attributes of the article
+        """
+        # Calculate the weight depending on the argument value and the position of the document in the ranking
+        _weight = self.__calculate_weight(self.__ranking_weight_type, results_size, index)
+        _abstract = article.get('abstract', "")
+        _title = article.get('title', "")
+        _doc_id = article.get('article_number', "1")
+        _ranking_pos = article.get('rank', 1)
+        new_doc = Document(reference_terms=self.__reference_terms, abstract=_abstract, title=_title, doc_id=_doc_id, 
+                            weight=_weight, ranking_position=_ranking_pos)
+        
+        return new_doc
 
 
     def __calculate_weight(self,
