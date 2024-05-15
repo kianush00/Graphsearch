@@ -402,7 +402,8 @@ class Sentence:
                 ref_term_positions_dict_splitted[key] = value
         
         new_dict = self.__get_new_dict_formatted_adjacent_ref_term_positions(reference_term_words, ref_term_positions_dict_splitted)
-        formatted_dict = self.__get_new_dict_formatted_adjacent_ref_term_positions(reference_term_words, new_dict)
+        formatted_dict_intermediate = self.__get_new_dict_formatted_adjacent_ref_term_positions(reference_term_words, new_dict)
+        formatted_dict = self.__get_new_dict_formatted_adjacent_ref_term_positions(reference_term_words, formatted_dict_intermediate)
         
         return formatted_dict
 
