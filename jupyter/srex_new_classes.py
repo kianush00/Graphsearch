@@ -310,35 +310,6 @@ class Sentence:
         return terms_pond_dict
 
 
-    def __do_vicinity_matrix(self) -> None:
-        """
-        Calculate the vicinity of a list of reference terms in the current sentence, limited by a specified distance.
-
-        E.g. {'v_term_1': {'ref_term_1': [0.0, 1.8, 0.0, 0.9]}, 
-        'v_term_2': {'ref_term_1': [0.0, 0.0, 0.9, 0.0], 'ref_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
-        """
-        vicinity_matrix = {}  # Create the empty dictionary
-        # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the reference_terms
-        # and return a list of these terms and their corresponding distances
-        for term, term_positions in self.__term_positions_dict.items():
-            #Avoid comparing the ref term with itself (if bool false)
-            if((term not in self.__ref_terms_positions_dict.keys()) or (self.__graphs[0].get_include_reference_terms())): 
-                # Calculate the distance between the reference term and the rest of terms
-                first_one = True
-                for ref_term, ref_positions in self.__ref_terms_positions_dict.items():
-                    if ref_term != term:
-                        freq_neighborhood_positions = self.__calculate_ponderation_of_distances_between_term_positions(ref_positions, 
-                                                                                                                       term_positions)
-
-                        if (any(frq > 0 for frq in freq_neighborhood_positions)):
-                            if (first_one):
-                                vicinity_matrix[term] = {}
-                                first_one = False
-                            vicinity_matrix[term][ref_term] = freq_neighborhood_positions
-
-        self.__vicinity_matrix = vicinity_matrix
-
-
     def __do_term_positions_dict(self) -> None:
         """
         Calculate a dictionary with the sentence's term positions.
@@ -471,6 +442,35 @@ class Sentence:
         return new_formatted_dict
     
 
+    def __do_vicinity_matrix(self) -> None:
+        """
+        Calculate the vicinity of a list of reference terms in the current sentence, limited by a specified distance.
+
+        E.g. {'v_term_1': {'ref_term_1': [0.0, 1.8, 0.0, 0.9]}, 
+        'v_term_2': {'ref_term_1': [0.0, 0.0, 0.9, 0.0], 'ref_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
+        """
+        vicinity_matrix = {}  # Create the empty dictionary
+        # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the reference_terms
+        # and return a list of these terms and their corresponding distances
+        for term, term_positions in self.__term_positions_dict.items():
+            #Avoid comparing the ref term with itself (if bool false)
+            if((term not in self.__ref_terms_positions_dict.keys()) or (self.__graphs[0].get_include_reference_terms())): 
+                # Calculate the distance between the reference term and the rest of terms
+                first_one = True
+                for ref_term, ref_positions in self.__ref_terms_positions_dict.items():
+                    if ref_term != term:
+                        freq_neighborhood_positions = self.__calculate_ponderation_of_distances_between_term_positions(ref_positions, 
+                                                                                                                       term_positions)
+
+                        if (any(frq > 0 for frq in freq_neighborhood_positions)):
+                            if (first_one):
+                                vicinity_matrix[term] = {}
+                                first_one = False
+                            vicinity_matrix[term][ref_term] = freq_neighborhood_positions
+
+        self.__vicinity_matrix = vicinity_matrix
+
+
     def __calculate_ponderation_of_distances_between_term_positions(self,
             term1_positions: list[int], 
             term2_positions: list[int]
@@ -574,31 +574,6 @@ class Document:
 
     def get_graphs(self) -> list[Graph]:
         return self.__graphs
-
-
-    def get_ieee_explore_article(self,
-            parameter: str, 
-            value: str
-            ) -> None:
-        """
-        Get an article from IEEE-Xplore.
-        
-        Parameters
-        ----------
-        parameter
-            Parameter used to search the article (e.g. 'article_number')
-        value
-            Value of the parameter used to search the article (e.g. '8600704')
-
-        """
-        xplore_id = '6g7w4kfgteeqvy2jur3ak9mn'
-        query = XPLORE(xplore_id)
-        query.outputDataFormat='object'
-        query.addParameter(parameter, value)
-        data = query.callAPI()
-        self.__abstract = data.get('articles', [{}])[0].get('abstract', "")
-        self.__title = data.get('articles', [{}])[0].get('title', "")
-        self.__doc_id = data.get('articles', [{}])[0].get('article_number', "1")
     
 
     def do_text_transformations_by_sentence(self,
@@ -651,8 +626,42 @@ class Document:
             for graph in sentence.get_graphs():
                 graph.set_graph_attributes(nr_of_graph_terms=999999, limit_distance=limit_distance, 
                                            include_refterms=include_refterms, format_adjac_refterms=format_adjac_refterms)
-        
+
+
+    def generate_graph_nodes_of_doc_and_sentences(self) -> None:
+        """
+        Generate all the nodes associated with the document graphs, along with the graphs of their
+        sentences, based on their reference terms
+        """
+        for sentence in self.__sentences:
+            sentence.generate_graph_nodes_of_sentence()
     
+
+    def get_ieee_explore_article(self,
+            parameter: str, 
+            value: str
+            ) -> None:
+        """
+        Get an article from IEEE-Xplore.
+        
+        Parameters
+        ----------
+        parameter
+            Parameter used to search the article (e.g. 'article_number')
+        value
+            Value of the parameter used to search the article (e.g. '8600704')
+
+        """
+        xplore_id = '6g7w4kfgteeqvy2jur3ak9mn'
+        query = XPLORE(xplore_id)
+        query.outputDataFormat='object'
+        query.addParameter(parameter, value)
+        data = query.callAPI()
+        self.__abstract = data.get('articles', [{}])[0].get('abstract', "")
+        self.__title = data.get('articles', [{}])[0].get('title', "")
+        self.__doc_id = data.get('articles', [{}])[0].get('article_number', "1")
+    
+
     def do_text_transformations_to_refterms(self,
             stop_words_list: list[str], 
             lema: bool = True, 
@@ -676,15 +685,6 @@ class Document:
                 self.__reference_terms = sentence_from_refterm.get_transformed_sentence_str(stop_words_list, lema, stem)
         elif type(self.__reference_terms) == BooleanOperation: 
             self.__reference_terms.do_text_transformations_to_operands(stop_words_list, lema, stem)
-
-
-    def generate_graph_nodes_of_doc_and_sentences(self) -> None:
-        """
-        Generate all the nodes associated with the document graphs, along with the graphs of their
-        sentences, based on their reference terms
-        """
-        for sentence in self.__sentences:
-            sentence.generate_graph_nodes_of_sentence()
 
 
     def __calculate_sentences_list_from_documents(self) -> None:
@@ -712,7 +712,6 @@ class Document:
         abstract_list_of_sentence_str = self.__abstract.split('. ')
         list_of_sentence_str.extend(abstract_list_of_sentence_str)
         return list_of_sentence_str
-
     
 
     def __create_and_get_empty_graph_list(self) -> list[Graph]:
