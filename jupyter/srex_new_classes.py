@@ -14,6 +14,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from numpy.linalg import norm
 from numpy import dot
 from enum import Enum
+import copy
 
 
 class Operation(Enum):
@@ -283,7 +284,9 @@ class Sentence:
         return sentence_str_without_spaces_in_refterms
     
 
-    def __generate_graph_nodes(self, graph: Graph) -> None:
+    def __generate_graph_nodes(self, 
+            graph: Graph
+            ) -> None:
         """
         Generate nodes for the graph associated with the sentence, based on the isolated reference term of 
         the graph. This method calculates the ponderations of the terms associated with
@@ -294,19 +297,17 @@ class Sentence:
         graph : Graph
             A graph associated with the sentence
         """
-        reference_term = graph.get_reference_terms() #the refterms of the sentence' graph are only string type, they are not boolean operations
+        #the refterms of the sentence' graph are only string type, they are not boolean operations
+        reference_term = graph.get_reference_terms() 
         # Remove spaces from the reference term
         if (len(reference_term.split(" ")) > 1):
-                reference_term = reference_term.replace(" ", "")
+            reference_term = reference_term.replace(" ", "")
         terms_pond_dict = self.__get_terms_ponderation_dict(reference_term)
 
         # Iterate over each term in the frequency dictionary
         for neighbor_term in terms_pond_dict.keys():
             # Retrieve the list of frequencies by distance for the term
-            #print(f"neighbor_term: {neighbor_term}")
-            #print(f"reference_term: {reference_term}")
             list_of_pond_by_distance = self.__vicinity_matrix.get(neighbor_term).get(reference_term)
-            #print(f"list_of_pond_by_distance: {list_of_pond_by_distance}")
             distance_calculation_list = []
             # Construct a list of distances multiplied by its frequencies
             for idx, freq_mult_by_weight in enumerate(list_of_pond_by_distance):
@@ -541,6 +542,13 @@ class Document:
         return self.__graphs
     
 
+    def get_graph_by_reference_term(self, reference_term: str) -> Graph:
+        for graph in self.__graphs:
+            if graph.get_reference_terms() == reference_term:
+                return graph
+        return None
+    
+
     def do_text_transformations_by_sentence(self,
             stop_words_list: list[str], 
             lema: bool,
@@ -597,6 +605,19 @@ class Document:
         """
         for sentence in self.__sentences:
             sentence.generate_graph_nodes_of_sentence()
+        
+        # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
+        # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
+        for ref_term in self.__reference_terms.get_operands_str_list():
+            graphs_from_sentences_with_refterm = self.__get_graphs_from_sentences_with_reference_term(ref_term)
+            document_graph = reduce((lambda graph1, graph2: graph1.get_union_to_graph(graph2)), graphs_from_sentences_with_refterm)
+            graph_by_ref_term = self.get_graph_by_reference_term(ref_term) # the graph by refterm starts without nodes
+            if graph_by_ref_term is not None:   #added extra validation
+                graph_by_ref_term.set_union_to_graph(document_graph)   #add the nodes from document_graph to the graph by refterm
+            for graph in self.__graphs:
+                if graph.get_reference_terms() == ref_term:
+                    graph.set_union_to_graph(document_graph)
+                    break
     
 
     def get_ieee_explore_article(self,
@@ -681,7 +702,7 @@ class Document:
         Create an empty list of graphs associated with the sentence (empty means without 
         attributes). Each reference term per graph is a string value.
 
-         Returns
+        Returns
         -------
         graph_list : list[Graph]
             List of empty graphs
@@ -694,6 +715,16 @@ class Document:
                 graph_list.append(Graph(reference_terms=ref_term))
         
         return graph_list
+    
+
+    def __get_graphs_from_sentences_with_reference_term(self, reference_term: str) -> list[Graph]:
+        graphs_from_sentences_with_reference_term = []
+        for sentence in self.get_sentences():
+            for graph in sentence.get_graphs():
+                if reference_term == graph.get_reference_terms():   #the graph only contains one refterm string
+                    graphs_from_sentences_with_reference_term.append(graph)
+                    break
+        return graphs_from_sentences_with_reference_term
 
 
 
@@ -902,8 +933,16 @@ class Node:
         return self.__ponderation
     
 
+    def set_ponderation(self, ponderation: float) -> None:
+        self.__ponderation = ponderation
+    
+
     def get_distance(self) -> float:
         return self.__distance
+    
+
+    def set_distance(self, distance: float) -> None:
+        self.__distance = distance
 
 
 
@@ -948,5 +987,92 @@ class Graph:
         return self.__nodes
     
 
+    def get_node_by_term(self, term: str) -> Node:
+        for node in self.__nodes:
+            if node.get_term() == term:
+                return node
+        return None
+    
+
+    def get_node_terms(self) -> list[str]:
+        node_terms = []
+        for node in self.__nodes:
+            node_terms.append(node.get_term())
+        return node_terms
+
+
     def add_node(self, node: Node) -> None:
         self.__nodes.append(node)
+    
+
+    def get_union_to_graph(self,
+            graph: Graph
+            ) -> Graph:
+        """
+        Unites an external graph with the own graph and obtains a new graph
+        The merging process involves iterating through the nodes of both graphs, calculating 
+        the sum of weights and the average distances between each one.
+        
+        Parameters
+        ----------
+        graph : Graph
+            The external graph to be united
+
+        Returns
+        -------
+        graph_united : Graph
+            The union between copy of the graph itself and an external graph
+        """
+        graph_united = copy.deepcopy(self)
+        
+        node_terms_from_copy_graph = graph_united.get_node_terms()
+        node_terms_from_ext_graph = graph.get_node_terms()
+
+        #if the graph copy term is already in the external graph
+        for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
+            node_from_copy_graph = graph_united.get_node_by_term(node_term)
+            node_from_ext_graph = graph.get_node_by_term(node_term)
+            #then calculate the sum of the weights and the average distances between the two nodes
+            distance = np.mean([node_from_copy_graph.get_distance(), node_from_ext_graph.get_distance()])
+            ponderation = node_from_copy_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
+            node_from_copy_graph.set_distance(distance)
+            node_from_copy_graph.set_ponderation(ponderation)
+        
+        #if the external graph hasn't the graph copy term
+        for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
+            node_from_ext_graph = graph.get_node_by_term(node_term)
+            graph_united.add_node(node_from_ext_graph)
+
+        return graph_united
+    
+
+    def set_union_to_graph(self,
+            graph: Graph
+            ) -> None:
+        """
+        Unites an external graph with the own graph and obtains a new graph
+        The merging process involves iterating through the nodes of both graphs, calculating 
+        the sum of weights and the average distances between each one.
+        
+        Parameters
+        ----------
+        graph : Graph
+            The external graph to be united
+        """
+        node_terms_from_self_graph = self.get_node_terms()
+        node_terms_from_ext_graph = graph.get_node_terms()
+
+        #first, iterates if the self-graph term is already in the external graph
+        for node_term in set(node_terms_from_self_graph) & set(node_terms_from_ext_graph):
+            node_from_self_graph = self.get_node_by_term(node_term)
+            node_from_ext_graph = graph.get_node_by_term(node_term)
+            #then calculate the sum of the weights and the average distances between the two nodes
+            distance = np.mean([node_from_self_graph.get_distance(), node_from_ext_graph.get_distance()])
+            ponderation = node_from_self_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
+            node_from_self_graph.set_distance(distance)
+            node_from_self_graph.set_ponderation(ponderation)
+        
+        #later, iterates if the external graph hasn't the self-graph term
+        for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_self_graph):
+            node_from_ext_graph = graph.get_node_by_term(node_term)
+            self.add_node(node_from_ext_graph)
