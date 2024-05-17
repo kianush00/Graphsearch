@@ -614,10 +614,10 @@ class Document:
             graph_by_ref_term = self.get_graph_by_reference_term(ref_term) # the graph by refterm starts without nodes
             if graph_by_ref_term is not None:   #added extra validation
                 graph_by_ref_term.set_union_to_graph(document_graph)   #add the nodes from document_graph to the graph by refterm
-            for graph in self.__graphs:
-                if graph.get_reference_terms() == ref_term:
-                    graph.set_union_to_graph(document_graph)
-                    break
+            #for graph in self.__graphs:
+            #    if graph.get_reference_terms() == ref_term:
+            #        graph.set_union_to_graph(document_graph)
+            #        break
     
 
     def get_ieee_explore_article(self,
