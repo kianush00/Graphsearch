@@ -289,7 +289,7 @@ class Sentence:
         for ref_term in operands_str_list:
             #If the refterm is in the transformed sentence string and the refterm contains more than a word
             if (ref_term in transformed_sentence_str) and (len(ref_term.split(" ")) > 1): 
-                ref_term_without_spaces = ref_term.replace(" ", "")
+                ref_term_without_spaces = self.__remove_spaces(ref_term)
                 sentence_str_without_spaces_in_refterms = sentence_str_without_spaces_in_refterms.replace(ref_term, 
                                                                                                           ref_term_without_spaces)
         return sentence_str_without_spaces_in_refterms
@@ -311,8 +311,7 @@ class Sentence:
         #the refterms of the sentence' graph are only string type, they are not boolean operations
         reference_term = graph.get_reference_terms() 
         # Remove spaces from the reference term
-        if (len(reference_term.split(" ")) > 1):
-            reference_term = reference_term.replace(" ", "")
+        reference_term = self.__remove_spaces(reference_term) 
         terms_pond_dict = self.__get_terms_ponderation_dict(reference_term)
 
         # Iterate over each term in the frequency dictionary
@@ -407,9 +406,8 @@ class Sentence:
         """
         ref_term_positions_dict = {}
 
-        # If the reference term contains more than one word, remove its spaces
-        if (len(ref_term.split(" ")) > 1):
-            ref_term = ref_term.replace(" ", "")
+        # Remove refterm spaces, if any
+        ref_term = self.__remove_spaces(ref_term)
         # If the reference term is within the term position dictionary
         if ref_term in self.__term_positions_dict.keys():
             # Get the term positions of the reference term
@@ -446,6 +444,13 @@ class Sentence:
                             vicinity_matrix[term][ref_term] = freq_neighborhood_positions
 
         self.__vicinity_matrix = vicinity_matrix
+    
+
+    def __remove_spaces(self, term: str) -> str:
+        if (len(term.split(" ")) > 1):
+            term = term.replace(" ", "")
+        return term
+
 
 
     def __calculate_ponderation_of_distances_between_term_positions(self,
@@ -770,14 +775,15 @@ class Ranking:
         return self.__reference_terms
     
 
-    def initialize_sentence_graphs_and_calculate_vicinity_matrix(self, 
+    def generate_all_graphs(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
             include_refterms: bool = True
             ) -> None:
         """
         Initialize graphs associated to all the sentences of each document from the ranking. Sentences 
-        have no graph term limit. Also calculates the vicinity matrix for each sentence.
+        have no graph term limit. Also calculates the vicinity matrix for each sentence. Finally,
+        generates nodes of all graphs.
 
         Parameters
         ----------
@@ -795,9 +801,11 @@ class Ranking:
         for document in self.__documents:
             for sentence in document.get_sentences():
                 sentence.calculate_term_positions_and_vicinity_matrix()
+        
+        self.__generate_nodes_of_all_graphs()
     
 
-    def generate_nodes_of_all_graphs(self) -> None:
+    def __generate_nodes_of_all_graphs(self) -> None:
         """
         Generate all the nodes associated with the graphs from both the ranking and all the documents 
         along with their sentences, based on the reference terms.
