@@ -113,7 +113,7 @@ class Sentence:
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__processed_text: str = ""
-        self.__graphs: list[Graph] = self.__create_and_get_empty_graph_list()
+        self.__graphs: list[Graph] = []
         self.__term_positions_dict: defaultdict[str, list[int]] = defaultdict(list)
         self.__ref_terms_positions_dict: dict[str, list[int]] = {}
         self.__vicinity_matrix: dict[str, dict[str, list[float]]] = []
@@ -145,6 +145,17 @@ class Sentence:
 
     def get_graphs(self) -> list[Graph]:
         return self.__graphs
+    
+
+    def get_graph_by_reference_term(self, reference_term: str) -> Graph:
+        for graph in self.__graphs:
+            if graph.get_reference_terms() == reference_term:
+                return graph
+        return None
+    
+
+    def add_graph(self, graph: Graph) -> None:
+        self.__graphs.append(graph)
     
 
     def get_vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
@@ -470,21 +481,6 @@ class Sentence:
         return ponderations_per_distance
     
 
-    def __create_and_get_empty_graph_list(self) -> list[Graph]:
-        """
-        Create an empty list of graphs associated with the sentence (empty means without 
-        attributes). Each reference term per graph is a string value.
-        """
-        graph_list = []
-        if type(self.__reference_terms) == str:
-            graph_list.append(Graph(reference_terms=self.__reference_terms))
-        elif type(self.__reference_terms) == BooleanOperation: 
-            for ref_term in self.__reference_terms.get_operands_str_list():
-                graph_list.append(Graph(reference_terms=ref_term))
-        
-        return graph_list
-    
-
     def __sort_terms_pond_dictionary(self,
             dictionary: dict[str, float]
             ) -> dict[str, float]:
@@ -505,7 +501,7 @@ class Document:
         self.__weight = weight
         self.__ranking_position = ranking_position
         self.__sentences: list[Sentence] = []
-        self.__graphs: list[Graph] = self.__create_and_get_empty_graph_list()
+        self.__graphs: list[Graph] = []
 
         self.__calculate_sentences_list_from_documents()
     
@@ -549,6 +545,10 @@ class Document:
         return None
     
 
+    def add_graph(self, graph: Graph) -> None:
+        self.__graphs.append(graph)
+    
+
     def do_text_transformations_by_sentence(self,
             stop_words_list: list[str], 
             lema: bool,
@@ -568,15 +568,32 @@ class Document:
         """
         for sentence in self.__sentences:
             sentence.do_text_transformations_if_any_refterm(stop_words_list, lema, stem)
+
+
+    def generate_graph_nodes_of_doc_and_sentences(self) -> None:
+        """
+        Generate all the nodes associated with the document graphs, along with the graphs of their
+        sentences, based on their reference terms
+        """
+        #Generate graph nodes of sentences
+        for sentence in self.__sentences:
+            sentence.generate_graph_nodes_of_sentence()
+        
+        #Generate graph nodes of the current document
+        for ref_term in self.__reference_terms.get_operands_str_list():
+            graphs_from_sentences_with_refterm = self.__get_graphs_from_sentences_with_reference_term(ref_term)
+            document_graph = self.__get_union_of_graphs(graphs_from_sentences_with_refterm)
+            self.add_graph(document_graph)
     
 
-    def set_graph_attributes_to_doc_and_sentences(self, 
+    def initialize_sentence_graphs(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
             include_refterms: bool = True
             ) -> None:
         """
-        Set graph attributes to the documents and sentences of the document
+        Initialize graphs associated to each sentence of the document. Sentences 
+        have no graph term limit.
 
         Parameters
         ----------
@@ -587,37 +604,39 @@ class Document:
         include_reference_term : bool
             If True, the reference term is included in the vicinity
         """
-        #Set the attributes to the graphs of the document
-        for graph in self.__graphs:
-            graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms)
-        
-        #Set the attributes to the graphs of each sentence of the document. Sentences have no graph term limit.
         for sentence in self.__sentences:
-            for graph in sentence.get_graphs():
-                graph.set_graph_attributes(nr_of_graph_terms=999999, limit_distance=limit_distance, 
-                                           include_refterms=include_refterms)
+            if type(self.__reference_terms) == str:
+                new_graph = Graph(self.__reference_terms, nr_of_graph_terms, limit_distance, include_refterms)
+                sentence.add_graph(new_graph)
+            elif type(self.__reference_terms) == BooleanOperation: 
+                for ref_term in self.__reference_terms.get_operands_str_list():
+                    new_graph = Graph(ref_term, nr_of_graph_terms, limit_distance, include_refterms)
+                    sentence.add_graph(new_graph)
 
 
-    def generate_graph_nodes_of_doc_and_sentences(self) -> None:
+    def do_text_transformations_to_refterms(self,
+            stop_words_list: list[str], 
+            lema: bool = True, 
+            stem: bool = True
+            ) -> None:
         """
-        Generate all the nodes associated with the document graphs, along with the graphs of their
-        sentences, based on their reference terms
+        Apply some text transformations to the document. Remove stopwords, punctuation, stemming, lematization.
+
+        Parameters
+        ----------
+        stop_words_list : list[str]
+            List of stop words to be removed from the sentence
+        lema : bool
+            If True, lematization is applied
+        stem : bool
+            If True, stemming is applied
         """
-        for sentence in self.__sentences:
-            sentence.generate_graph_nodes_of_sentence()
-        
-        # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
-        # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
-        for ref_term in self.__reference_terms.get_operands_str_list():
-            graphs_from_sentences_with_refterm = self.__get_graphs_from_sentences_with_reference_term(ref_term)
-            document_graph = reduce((lambda graph1, graph2: graph1.get_union_to_graph(graph2)), graphs_from_sentences_with_refterm)
-            graph_by_ref_term = self.get_graph_by_reference_term(ref_term) # the graph by refterm starts without nodes
-            if graph_by_ref_term is not None:   #added extra validation
-                graph_by_ref_term.set_union_to_graph(document_graph)   #add the nodes from document_graph to the graph by refterm
-            #for graph in self.__graphs:
-            #    if graph.get_reference_terms() == ref_term:
-            #        graph.set_union_to_graph(document_graph)
-            #        break
+        if type(self.__reference_terms) == str:
+            if len(self.__reference_terms) > 0:
+                sentence_from_refterm = Sentence(raw_text=self.__reference_terms)
+                self.__reference_terms = sentence_from_refterm.get_transformed_sentence_str(stop_words_list, lema, stem)
+        elif type(self.__reference_terms) == BooleanOperation: 
+            self.__reference_terms.do_text_transformations_to_operands(stop_words_list, lema, stem)
     
 
     def get_ieee_explore_article(self,
@@ -643,31 +662,6 @@ class Document:
         self.__abstract = data.get('articles', [{}])[0].get('abstract', "")
         self.__title = data.get('articles', [{}])[0].get('title', "")
         self.__doc_id = data.get('articles', [{}])[0].get('article_number', "1")
-    
-
-    def do_text_transformations_to_refterms(self,
-            stop_words_list: list[str], 
-            lema: bool = True, 
-            stem: bool = True
-            ) -> None:
-        """
-        Apply some text transformations to the document. Remove stopwords, punctuation, stemming, lematization.
-
-        Parameters
-        ----------
-        stop_words_list : list[str]
-            List of stop words to be removed from the sentence
-        lema : bool
-            If True, lematization is applied
-        stem : bool
-            If True, stemming is applied
-        """
-        if type(self.__reference_terms) == str:
-            if len(self.__reference_terms) > 0:
-                sentence_from_refterm = Sentence(raw_text=self.__reference_terms)
-                self.__reference_terms = sentence_from_refterm.get_transformed_sentence_str(stop_words_list, lema, stem)
-        elif type(self.__reference_terms) == BooleanOperation: 
-            self.__reference_terms.do_text_transformations_to_operands(stop_words_list, lema, stem)
 
 
     def __calculate_sentences_list_from_documents(self) -> None:
@@ -697,34 +691,50 @@ class Document:
         return list_of_sentence_str
     
 
-    def __create_and_get_empty_graph_list(self) -> list[Graph]:
+    def __get_graphs_from_sentences_with_reference_term(self, 
+            reference_term: str
+            ) -> list[Graph]:
         """
-        Create an empty list of graphs associated with the sentence (empty means without 
-        attributes). Each reference term per graph is a string value.
+        Get all the graphs from the sentences of the current document that have the indicated reference term.
+
+        Parameters
+        ----------
+        reference_term : str
+            Reference term to compare the graphs from the sentences
 
         Returns
         -------
-        graph_list : list[Graph]
-            List of empty graphs
+        graphs_from_sentences_with_refterm : list[Graph]
+            List of graphs from sentences with the indicated reference term
         """
-        graph_list = []
-        if type(self.__reference_terms) == str:
-            graph_list.append(Graph(reference_terms=self.__reference_terms))
-        elif type(self.__reference_terms) == BooleanOperation: 
-            for ref_term in self.__reference_terms.get_operands_str_list():
-                graph_list.append(Graph(reference_terms=ref_term))
-        
-        return graph_list
+        graphs_from_sentences_with_refterm = []
+        for sentence in self.__sentences:
+            graph_by_refterm = sentence.get_graph_by_reference_term(reference_term)
+            graphs_from_sentences_with_refterm.append(graph_by_refterm)
+        return graphs_from_sentences_with_refterm
     
 
-    def __get_graphs_from_sentences_with_reference_term(self, reference_term: str) -> list[Graph]:
-        graphs_from_sentences_with_reference_term = []
-        for sentence in self.get_sentences():
-            for graph in sentence.get_graphs():
-                if reference_term == graph.get_reference_terms():   #the graph only contains one refterm string
-                    graphs_from_sentences_with_reference_term.append(graph)
-                    break
-        return graphs_from_sentences_with_reference_term
+    def __get_union_of_graphs(
+            self, 
+            graphs: list[Graph]
+            ) -> Graph:
+        """
+        Get the union between the indicated graphs.
+
+        Parameters
+        ----------
+        graphs : list[Graph]
+            List of graphs to be united.
+
+        Returns
+        -------
+        union_of_graphs : Graph
+            The union between the graphs.
+        """
+        # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
+        # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
+        union_of_graphs = reduce((lambda graph1, graph2: graph1.get_union_to_graph(graph2)), graphs)
+        return union_of_graphs
 
 
 
@@ -760,13 +770,14 @@ class Ranking:
         return self.__reference_terms
     
 
-    def set_attributes_to_all_graphs_and_calculate_vicinity_matrix(self, 
+    def initialize_sentence_graphs_and_calculate_vicinity_matrix(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
             include_refterms: bool = True
             ) -> None:
         """
-        Set graph attributes to the graph associated with the current object and each Document object from the documents attribute.
+        Initialize graphs associated to all the sentences of each document from the ranking. Sentences 
+        have no graph term limit. Also calculates the vicinity matrix for each sentence.
 
         Parameters
         ----------
@@ -777,12 +788,8 @@ class Ranking:
         include_ref_terms : bool
             If True, the reference term is included in the vicinity
         """
-        #Set graph attributes of the ranking's graph
-        self.__graph.set_graph_attributes(nr_of_graph_terms, limit_distance, include_refterms)
-
         #Set graph attributes to the graphs of each document and the sentences' graphs of each document
-        for document in self.__documents:
-            document.set_graph_attributes_to_doc_and_sentences(nr_of_graph_terms, limit_distance, include_refterms)
+        self.__initialize_sentence_graphs(nr_of_graph_terms, limit_distance, include_refterms)
 
         #Calculate term positions and vicinity matrix of each sentence by document
         for document in self.__documents:
@@ -792,11 +799,33 @@ class Ranking:
 
     def generate_nodes_of_all_graphs(self) -> None:
         """
-        Generate all the nodes associated with the graphs from both the ranking and all the documents along with their 
-        sentences, based on the reference terms
+        Generate all the nodes associated with the graphs from both the ranking and all the documents 
+        along with their sentences, based on the reference terms.
         """
         for document in self.__documents:
             document.generate_graph_nodes_of_doc_and_sentences()
+    
+
+    def __initialize_sentence_graphs(self, 
+            nr_of_graph_terms: int = 5, 
+            limit_distance: int = 4, 
+            include_refterms: bool = True
+            ) -> None:
+        """
+        Initialize graphs associated to each sentence of each document from the ranking. Sentences 
+        have no graph term limit.
+
+        Parameters
+        ----------
+        nr_of_graph_terms : int
+            Configured number of terms in the graph
+        limit_distance : int
+            Maximal distance of terms used to calculate the vicinity
+        include_reference_term : bool
+            If True, the reference term is included in the vicinity
+        """
+        for document in self.__documents:
+            document.initialize_sentence_graphs(nr_of_graph_terms, limit_distance, include_refterms)
 
 
     def __do_text_transformations_to_refterms(self) -> None:
@@ -957,16 +986,6 @@ class Graph:
         self.__nodes: list[Node] = []
 
 
-    def set_graph_attributes(self, 
-            nr_of_graph_terms: int = 5, 
-            limit_distance: int = 4, 
-            include_refterms: bool = True
-            ) -> None:
-        self.__number_of_graph_terms = nr_of_graph_terms
-        self.__limit_distance = limit_distance
-        self.__include_reference_terms = include_refterms
-
-
     def get_reference_terms(self) -> BooleanOperation | str:
         return self.__reference_terms
 
@@ -1005,8 +1024,15 @@ class Graph:
         self.__nodes.append(node)
     
 
+    def delete_node_by_term(self, term: str) -> None:
+        for node in self.__nodes:
+            if node.get_term() == term:
+                self.__nodes.remove(node)
+                break
+    
+
     def get_union_to_graph(self,
-            graph: Graph
+            external_graph: Graph
             ) -> Graph:
         """
         Unites an external graph with the own graph and obtains a new graph
@@ -1015,64 +1041,85 @@ class Graph:
         
         Parameters
         ----------
-        graph : Graph
+        external_graph : Graph
             The external graph to be united
 
         Returns
         -------
-        graph_united : Graph
+        united_graph : Graph
             The union between copy of the graph itself and an external graph
         """
-        graph_united = copy.deepcopy(self)
+        united_graph = self.__get_calculation_of_intersected_terms(external_graph)
         
-        node_terms_from_copy_graph = graph_united.get_node_terms()
-        node_terms_from_ext_graph = graph.get_node_terms()
-
-        #if the graph copy term is already in the external graph
-        for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
-            node_from_copy_graph = graph_united.get_node_by_term(node_term)
-            node_from_ext_graph = graph.get_node_by_term(node_term)
-            #then calculate the sum of the weights and the average distances between the two nodes
-            distance = np.mean([node_from_copy_graph.get_distance(), node_from_ext_graph.get_distance()])
-            ponderation = node_from_copy_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
-            node_from_copy_graph.set_distance(distance)
-            node_from_copy_graph.set_ponderation(ponderation)
-        
-        #if the external graph hasn't the graph copy term
+        node_terms_from_copy_graph = united_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+        #if the external graph has exclusive terms, then it needs to be added to the united graph
         for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
-            node_from_ext_graph = graph.get_node_by_term(node_term)
-            graph_united.add_node(node_from_ext_graph)
+            node_from_ext_graph = external_graph.get_node_by_term(node_term)
+            united_graph.add_node(node_from_ext_graph)
 
-        return graph_united
+        return united_graph
     
 
-    def set_union_to_graph(self,
-            graph: Graph
-            ) -> None:
+    def get_intersection_to_graph(self,
+            external_graph: Graph
+            ) -> Graph:
         """
-        Unites an external graph with the own graph and obtains a new graph
+        Intersects an external graph with the own graph and obtains a new graph
         The merging process involves iterating through the nodes of both graphs, calculating 
         the sum of weights and the average distances between each one.
         
         Parameters
         ----------
-        graph : Graph
-            The external graph to be united
-        """
-        node_terms_from_self_graph = self.get_node_terms()
-        node_terms_from_ext_graph = graph.get_node_terms()
+        external_graph : Graph
+            The external graph to be intersected
 
-        #first, iterates if the self-graph term is already in the external graph
-        for node_term in set(node_terms_from_self_graph) & set(node_terms_from_ext_graph):
-            node_from_self_graph = self.get_node_by_term(node_term)
-            node_from_ext_graph = graph.get_node_by_term(node_term)
-            #then calculate the sum of the weights and the average distances between the two nodes
-            distance = np.mean([node_from_self_graph.get_distance(), node_from_ext_graph.get_distance()])
-            ponderation = node_from_self_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
-            node_from_self_graph.set_distance(distance)
-            node_from_self_graph.set_ponderation(ponderation)
+        Returns
+        -------
+        intersected_graph : Graph
+            The intersection between copy of the graph itself and an external graph
+        """
+        #if the graph copy term is already in the external graph
+        intersected_graph = self.__get_calculation_of_intersected_terms(external_graph)
+
+        node_terms_from_copy_graph = intersected_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+        #if the graph copy has exclusive terms, then it needs to be deleted
+        for node_term in set(node_terms_from_copy_graph) - set(node_terms_from_ext_graph):
+            intersected_graph.delete_node_by_term(node_term)
+
+        return intersected_graph
+    
+
+    def __get_calculation_of_intersected_terms(self,
+            external_graph: Graph
+            ) -> Graph:
+        """
+        Calculates the sum of weights and the average distances of the nodes between 
+        the external graph and itself.
         
-        #later, iterates if the external graph hasn't the self-graph term
-        for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_self_graph):
-            node_from_ext_graph = graph.get_node_by_term(node_term)
-            self.add_node(node_from_ext_graph)
+        Parameters
+        ----------
+        external_graph : Graph
+            The external graph to calculate the intersected terms
+
+        Returns
+        -------
+        copy_graph : Graph
+            The copied graph that contain the calculation of the intersected terms
+        """
+        copy_graph = copy.deepcopy(self)
+
+        node_terms_from_copy_graph = copy_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+
+        for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
+            node_from_copy_graph = copy_graph.get_node_by_term(node_term)
+            node_from_ext_graph = external_graph.get_node_by_term(node_term)
+            #then calculate the average distances between the two nodes and the sum of the ponderations
+            distance = np.mean([node_from_copy_graph.get_distance(), node_from_ext_graph.get_distance()])
+            ponderation = node_from_copy_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
+            node_from_copy_graph.set_distance(distance)
+            node_from_copy_graph.set_ponderation(ponderation)
+        
+        return copy_graph
