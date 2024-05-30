@@ -19,6 +19,40 @@ from collections import deque
 
 
 class TextUtils:
+
+    @staticmethod
+    def get_transformed_text_if_it_has_underscores(
+            text_with_underscores: str,
+            stop_words_list: list[str], 
+            lema: bool = True, 
+            stem: bool = True
+            ) -> str:
+        """
+        Apply some transformations to the text with underscores. First the underscores are replaced, then 
+        the text is transformed, and finally the underscores are reinserted into the text
+
+        Parameters
+        ----------
+        text_with_underscores : str
+            Text with underscores to be transformed
+        stop_words_list : list[str]
+            List of stop words to be removed from the sentence
+        lema : bool
+            If True, lemmatization is applied
+        stem : bool
+            If True, stemming is applied
+        
+        Returns
+        -------
+        transformed_text : str
+            The transformed sentence
+        """
+        text_with_underscores = text_with_underscores.replace('_', ' ')
+        transformed_text = TextUtils.get_transformed_text(text_with_underscores, stop_words_list, lema, stem)
+        transformed_text = transformed_text.replace(' ', '_')
+        
+        return transformed_text
+
     
     @staticmethod
     def get_transformed_text(
@@ -70,6 +104,7 @@ class TextUtils:
         transformed_text = ' '.join(filtered_sentence)
         
         return transformed_text
+
 
 
 class Operation(Enum):
@@ -161,6 +196,186 @@ class BooleanOperation:
 
 
 
+class VicinityNode:
+    
+    def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0):
+        self.__term = term
+        self.__ponderation = ponderation
+        self.__distance = distance
+    
+
+    def get_term(self) -> str:
+        return self.__term
+    
+
+    def get_ponderation(self) -> float:
+        return self.__ponderation
+    
+
+    def set_ponderation(self, ponderation: float) -> None:
+        self.__ponderation = ponderation
+    
+
+    def get_distance(self) -> float:
+        return self.__distance
+    
+
+    def set_distance(self, distance: float) -> None:
+        self.__distance = distance
+
+
+
+class VicinityGraph:
+        
+    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, 
+                 limit_distance: int = 4, include_refterms: bool = True):
+        self.__reference_terms = reference_terms
+        self.__number_of_graph_terms = nr_of_graph_terms
+        self.__limit_distance = limit_distance
+        self.__include_reference_terms = include_refterms
+        self.__nodes: list[VicinityNode] = []
+
+
+    def get_reference_terms(self) -> BooleanOperation | str:
+        return self.__reference_terms
+
+
+    def get_number_of_graph_terms(self) -> int:
+        return self.__number_of_graph_terms
+
+
+    def get_limit_distance(self) -> int:
+        return self.__limit_distance
+
+
+    def get_include_reference_terms(self) -> bool:
+        return self.__include_reference_terms
+    
+
+    def get_nodes(self) -> list[VicinityNode]:
+        return self.__nodes
+    
+
+    def get_node_by_term(self, term: str) -> VicinityNode:
+        for node in self.__nodes:
+            if node.get_term() == term:
+                return node
+        return None
+    
+
+    def get_node_terms(self) -> list[str]:
+        node_terms = []
+        for node in self.__nodes:
+            node_terms.append(node.get_term())
+        return node_terms
+
+
+    def add_node(self, node: VicinityNode) -> None:
+        self.__nodes.append(node)
+    
+
+    def delete_node_by_term(self, term: str) -> None:
+        for node in self.__nodes:
+            if node.get_term() == term:
+                self.__nodes.remove(node)
+                break
+    
+
+    def get_union_to_graph(self,
+            external_graph
+            ):
+        """
+        Unites an external graph with the own graph and obtains a new graph
+        The merging process involves iterating through the nodes of both graphs, calculating 
+        the sum of weights and the average distances between each one.
+        
+        Parameters
+        ----------
+        external_graph : VicinityGraph
+            The external graph to be united
+
+        Returns
+        -------
+        united_graph : VicinityGraph
+            The union between copy of the graph itself and an external graph
+        """
+        united_graph = self.__get_calculation_of_intersected_terms(external_graph)
+        
+        node_terms_from_copy_graph = united_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+        #if the external graph has exclusive terms, then it needs to be added to the united graph
+        for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
+            node_from_ext_graph = external_graph.get_node_by_term(node_term)
+            united_graph.add_node(node_from_ext_graph)
+
+        return united_graph
+    
+
+    def get_intersection_to_graph(self,
+            external_graph
+            ):
+        """
+        Intersects an external graph with the own graph and obtains a new graph
+        The merging process involves iterating through the nodes of both graphs, calculating 
+        the sum of weights and the average distances between each one.
+        
+        Parameters
+        ----------
+        external_graph : VicinityGraph
+            The external graph to be intersected
+
+        Returns
+        -------
+        intersected_graph : VicinityGraph
+            The intersection between copy of the graph itself and an external graph
+        """
+        #if the graph copy term is already in the external graph
+        intersected_graph = self.__get_calculation_of_intersected_terms(external_graph)
+
+        node_terms_from_copy_graph = intersected_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+        #if the graph copy has exclusive terms, then it needs to be deleted
+        for node_term in set(node_terms_from_copy_graph) - set(node_terms_from_ext_graph):
+            intersected_graph.delete_node_by_term(node_term)
+
+        return intersected_graph
+    
+
+    def __get_calculation_of_intersected_terms(self,
+            external_graph
+            ):
+        """
+        Calculates the sum of weights and the average distances of the nodes between 
+        the external graph and itself.
+        
+        Parameters
+        ----------
+        external_graph : VicinityGraph
+            The external graph to calculate the intersected terms
+
+        Returns
+        -------
+        copy_graph : VicinityGraph
+            The copied graph that contain the calculation of the intersected terms
+        """
+        copy_graph = copy.deepcopy(self)
+
+        node_terms_from_copy_graph = copy_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+
+        for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
+            node_from_copy_graph = copy_graph.get_node_by_term(node_term)
+            node_from_ext_graph = external_graph.get_node_by_term(node_term)
+            #then calculate the average distances between the two nodes and the sum of the ponderations
+            distance = np.mean([node_from_copy_graph.get_distance(), node_from_ext_graph.get_distance()])
+            ponderation = node_from_copy_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
+            node_from_copy_graph.set_distance(distance)
+            node_from_copy_graph.set_ponderation(ponderation)
+        
+        return copy_graph
+
+
+
 class Sentence:
     
     def __init__(self, raw_text: str, reference_terms: BooleanOperation | str = "", position_in_doc: int = 0, weight: float = 1.0):
@@ -169,7 +384,7 @@ class Sentence:
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__processed_text: str = ""
-        self.__graphs: list[Graph] = []
+        self.__graphs: list[VicinityGraph] = []
         self.__term_positions_dict: defaultdict[str, list[int]] = defaultdict(list)
         self.__ref_terms_positions_dict: dict[str, list[int]] = {}
         self.__vicinity_matrix: dict[str, dict[str, list[float]]] = []
@@ -199,18 +414,18 @@ class Sentence:
         self.__processed_text = value
     
 
-    def get_graphs(self) -> list[Graph]:
+    def get_graphs(self) -> list[VicinityGraph]:
         return self.__graphs
     
 
-    def get_graph_by_reference_term(self, reference_term: str) -> Graph:
+    def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
         for graph in self.__graphs:
             if graph.get_reference_terms() == reference_term:
                 return graph
         return None
     
 
-    def add_graph(self, graph: Graph) -> None:
+    def add_graph(self, graph: VicinityGraph) -> None:
         self.__graphs.append(graph)
     
 
@@ -303,7 +518,7 @@ class Sentence:
     
 
     def __generate_graph_nodes(self, 
-            graph: Graph
+            graph: VicinityGraph
             ) -> None:
         """
         Generate nodes for the graph associated with the sentence, based on the isolated reference term of 
@@ -312,7 +527,7 @@ class Sentence:
 
         Parameters
         ----------
-        graph : Graph
+        graph : VicinityGraph
             A graph associated with the sentence
         """
         #the refterms of the sentence' graph are only string type, they are not boolean operations
@@ -332,7 +547,7 @@ class Sentence:
                 distance_calculation_list.extend([idx+1] * frequency)
                 
              # Calculate the mean distance for the term
-            new_node = Node(term=neighbor_term, ponderation=terms_pond_dict.get(neighbor_term), distance=np.mean(distance_calculation_list))
+            new_node = VicinityNode(term=neighbor_term, ponderation=terms_pond_dict.get(neighbor_term), distance=np.mean(distance_calculation_list))
             graph.add_node(new_node)
 
     
@@ -513,7 +728,7 @@ class Document:
         self.__weight = weight
         self.__ranking_position = ranking_position
         self.__sentences: list[Sentence] = []
-        self.__graphs: list[Graph] = []
+        self.__graphs: list[VicinityGraph] = []
 
         self.__calculate_sentences_list_from_documents()
     
@@ -546,18 +761,18 @@ class Document:
         return self.__ranking_position
     
 
-    def get_graphs(self) -> list[Graph]:
+    def get_graphs(self) -> list[VicinityGraph]:
         return self.__graphs
     
 
-    def get_graph_by_reference_term(self, reference_term: str) -> Graph:
+    def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
         for graph in self.__graphs:
             if graph.get_reference_terms() == reference_term:
                 return graph
         return None
     
 
-    def add_graph(self, graph: Graph) -> None:
+    def add_graph(self, graph: VicinityGraph) -> None:
         self.__graphs.append(graph)
     
 
@@ -618,11 +833,11 @@ class Document:
         """
         for sentence in self.__sentences:
             if type(self.__reference_terms) == str:
-                new_graph = Graph(self.__reference_terms, nr_of_graph_terms, limit_distance, include_refterms)
+                new_graph = VicinityGraph(self.__reference_terms, nr_of_graph_terms, limit_distance, include_refterms)
                 sentence.add_graph(new_graph)
             elif type(self.__reference_terms) == BooleanOperation: 
                 for ref_term in self.__reference_terms.get_operands_str_list():
-                    new_graph = Graph(ref_term, nr_of_graph_terms, limit_distance, include_refterms)
+                    new_graph = VicinityGraph(ref_term, nr_of_graph_terms, limit_distance, include_refterms)
                     sentence.add_graph(new_graph)
 
 
@@ -706,7 +921,7 @@ class Document:
 
     def __get_graphs_from_sentences_with_reference_term(self, 
             reference_term: str
-            ) -> list[Graph]:
+            ) -> list[VicinityGraph]:
         """
         Get all the graphs from the sentences of the current document that have the indicated reference term.
 
@@ -717,7 +932,7 @@ class Document:
 
         Returns
         -------
-        graphs_from_sentences_with_refterm : list[Graph]
+        graphs_from_sentences_with_refterm : list[VicinityGraph]
             List of graphs from sentences with the indicated reference term
         """
         graphs_from_sentences_with_refterm = []
@@ -729,14 +944,14 @@ class Document:
 
     def __get_union_of_graphs(
             self, 
-            graphs: list[Graph]
-            ) -> Graph:
+            graphs: list[VicinityGraph]
+            ) -> VicinityGraph:
         """
         Get the union between the indicated graphs.
 
         Parameters
         ----------
-        graphs : list[Graph]
+        graphs : list[VicinityGraph]
             List of graphs to be united.
 
         Returns
@@ -768,14 +983,14 @@ class Ranking:
         results = self.__get_ieee_explore_ranking()
         self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(results)
 
-        self.__graph = Graph(reference_terms=self.__reference_terms)
+        self.__graph = VicinityGraph(reference_terms=self.__reference_terms)
 
 
     def get_documents(self) -> list[Document]:
         return self.__documents 
     
 
-    def get_graph(self) -> Graph:
+    def get_graph(self) -> VicinityGraph:
         return self.__graph
     
 
@@ -960,183 +1175,3 @@ class Ranking:
             factor = 1.0
 
         return factor
-
-
-
-class Node:
-    
-    def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0):
-        self.__term = term
-        self.__ponderation = ponderation
-        self.__distance = distance
-    
-
-    def get_term(self) -> str:
-        return self.__term
-    
-
-    def get_ponderation(self) -> float:
-        return self.__ponderation
-    
-
-    def set_ponderation(self, ponderation: float) -> None:
-        self.__ponderation = ponderation
-    
-
-    def get_distance(self) -> float:
-        return self.__distance
-    
-
-    def set_distance(self, distance: float) -> None:
-        self.__distance = distance
-
-
-
-class Graph:
-        
-    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, 
-                 limit_distance: int = 4, include_refterms: bool = True):
-        self.__reference_terms = reference_terms
-        self.__number_of_graph_terms = nr_of_graph_terms
-        self.__limit_distance = limit_distance
-        self.__include_reference_terms = include_refterms
-        self.__nodes: list[Node] = []
-
-
-    def get_reference_terms(self) -> BooleanOperation | str:
-        return self.__reference_terms
-
-
-    def get_number_of_graph_terms(self) -> int:
-        return self.__number_of_graph_terms
-
-
-    def get_limit_distance(self) -> int:
-        return self.__limit_distance
-
-
-    def get_include_reference_terms(self) -> bool:
-        return self.__include_reference_terms
-    
-
-    def get_nodes(self) -> list[Node]:
-        return self.__nodes
-    
-
-    def get_node_by_term(self, term: str) -> Node:
-        for node in self.__nodes:
-            if node.get_term() == term:
-                return node
-        return None
-    
-
-    def get_node_terms(self) -> list[str]:
-        node_terms = []
-        for node in self.__nodes:
-            node_terms.append(node.get_term())
-        return node_terms
-
-
-    def add_node(self, node: Node) -> None:
-        self.__nodes.append(node)
-    
-
-    def delete_node_by_term(self, term: str) -> None:
-        for node in self.__nodes:
-            if node.get_term() == term:
-                self.__nodes.remove(node)
-                break
-    
-
-    def get_union_to_graph(self,
-            external_graph: Graph
-            ) -> Graph:
-        """
-        Unites an external graph with the own graph and obtains a new graph
-        The merging process involves iterating through the nodes of both graphs, calculating 
-        the sum of weights and the average distances between each one.
-        
-        Parameters
-        ----------
-        external_graph : Graph
-            The external graph to be united
-
-        Returns
-        -------
-        united_graph : Graph
-            The union between copy of the graph itself and an external graph
-        """
-        united_graph = self.__get_calculation_of_intersected_terms(external_graph)
-        
-        node_terms_from_copy_graph = united_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
-        #if the external graph has exclusive terms, then it needs to be added to the united graph
-        for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
-            node_from_ext_graph = external_graph.get_node_by_term(node_term)
-            united_graph.add_node(node_from_ext_graph)
-
-        return united_graph
-    
-
-    def get_intersection_to_graph(self,
-            external_graph: Graph
-            ) -> Graph:
-        """
-        Intersects an external graph with the own graph and obtains a new graph
-        The merging process involves iterating through the nodes of both graphs, calculating 
-        the sum of weights and the average distances between each one.
-        
-        Parameters
-        ----------
-        external_graph : Graph
-            The external graph to be intersected
-
-        Returns
-        -------
-        intersected_graph : Graph
-            The intersection between copy of the graph itself and an external graph
-        """
-        #if the graph copy term is already in the external graph
-        intersected_graph = self.__get_calculation_of_intersected_terms(external_graph)
-
-        node_terms_from_copy_graph = intersected_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
-        #if the graph copy has exclusive terms, then it needs to be deleted
-        for node_term in set(node_terms_from_copy_graph) - set(node_terms_from_ext_graph):
-            intersected_graph.delete_node_by_term(node_term)
-
-        return intersected_graph
-    
-
-    def __get_calculation_of_intersected_terms(self,
-            external_graph: Graph
-            ) -> Graph:
-        """
-        Calculates the sum of weights and the average distances of the nodes between 
-        the external graph and itself.
-        
-        Parameters
-        ----------
-        external_graph : Graph
-            The external graph to calculate the intersected terms
-
-        Returns
-        -------
-        copy_graph : Graph
-            The copied graph that contain the calculation of the intersected terms
-        """
-        copy_graph = copy.deepcopy(self)
-
-        node_terms_from_copy_graph = copy_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
-
-        for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
-            node_from_copy_graph = copy_graph.get_node_by_term(node_term)
-            node_from_ext_graph = external_graph.get_node_by_term(node_term)
-            #then calculate the average distances between the two nodes and the sum of the ponderations
-            distance = np.mean([node_from_copy_graph.get_distance(), node_from_ext_graph.get_distance()])
-            ponderation = node_from_copy_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
-            node_from_copy_graph.set_distance(distance)
-            node_from_copy_graph.set_ponderation(ponderation)
-        
-        return copy_graph
