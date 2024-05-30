@@ -116,10 +116,6 @@ class BooleanOperation:
     def __init__(self, operation: Operation, operands: list):
         self.__operation: Operation = operation   # e.g. Operation.UNION
         self.__operands: list[BooleanOperation | str] = operands
-
-
-    def get_operation(self) -> Operation: 
-        return self.__operation
     
 
     def get_operands_str_list(self) -> list[str]:
@@ -153,46 +149,9 @@ class BooleanOperation:
         for index, operand in enumerate(self.__operands):
             if type(operand) == str:
                 if len(operand) > 0:
-                    sentence_from_operand = Sentence(raw_text=operand)
-                    self.__operands[index] = TextUtils.get_transformed_text(sentence_from_operand.get_raw_text(), 
-                                                                            stop_words_list, lema, stem)
+                    self.__operands[index] = TextUtils.get_transformed_text(operand, stop_words_list, lema, stem)
             elif type(operand) == BooleanOperation: 
                 operand.do_text_transformations_to_operands()
-
-    
-    def __str__(self) -> str:
-        try:
-            return self.recursive_str()
-        except:
-            return "ErrorUnknownOperandsType"
-    
-
-    def recursive_str(self) -> str:
-        string = "("
-        for index, operand in enumerate(self.__operands):
-            #print(f"INICIO str: {string}, index: {index}, len: {len(self.__operands)-1}")
-            if index < (len(self.__operands)-1):
-                if self.__operation == Operation.UNION:
-                    string += self.__get_operand_chain(operand) + "|"
-                elif self.__operation == Operation.INTERSECTION:
-                    string += self.__get_operand_chain(operand) + "&"
-            else:
-                string += self.__get_operand_chain(operand)
-        #print(f"FINAL str: {string}, index: {index}, len: {len(self.__operands)-1}")
-        string += ")"
-        return string
-    
-
-    def __get_operand_chain(self, operand) -> str:
-        if type(operand) == str:
-            if len(operand) > 0:
-                return operand
-            else:
-                raise TypeError("Empty string operand")
-        elif type(operand) == BooleanOperation: 
-            return operand.recursive_str()
-        else:
-            raise TypeError("Unknown operand type")
 
 
 
@@ -452,19 +411,12 @@ class Sentence:
             If True, stemming is applied
         """
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
-        if type(self.__reference_terms) == str:
-            if len(self.__reference_terms) > 0:
-                if self.__reference_terms in transformed_sentence_str:
-                    transformed_sentence_str = self.__get_transformed_sentence_str_without_spaces_in_refterms([self.__reference_terms], 
-                                                                                                        transformed_sentence_str)
-                    self.__processed_text = transformed_sentence_str
-        elif type(self.__reference_terms) == BooleanOperation: 
-            operands_str_list = self.__reference_terms.get_operands_str_list()
-            #If there is any refterm in the transformed sentence string
-            if any(ref_term in transformed_sentence_str for ref_term in operands_str_list):  
-                transformed_sentence_str = self.__get_transformed_sentence_str_without_spaces_in_refterms(operands_str_list, 
-                                                                                                        transformed_sentence_str)
-                self.__processed_text = transformed_sentence_str
+        operands_str_list = self.__reference_terms.get_operands_str_list()
+        #If there is any refterm in the transformed sentence string
+        if any(ref_term in transformed_sentence_str for ref_term in operands_str_list):  
+            transformed_sentence_str = self.__get_transformed_sentence_str_without_spaces_in_refterms(operands_str_list, 
+                                                                                                    transformed_sentence_str)
+            self.__processed_text = transformed_sentence_str
     
 
     def calculate_term_positions_and_vicinity_matrix(self) -> None:
@@ -606,13 +558,8 @@ class Sentence:
         """
         ref_term_positions_dict = {}
 
-        if type(self.__reference_terms) == str:
-            if len(self.__reference_terms) > 0:
-                ref_term = self.__reference_terms
-                ref_term_positions_dict = self.__get_ref_term_positions_dict(ref_term)
-        elif type(self.__reference_terms) == BooleanOperation: 
-            for ref_term in self.__reference_terms.get_operands_str_list():
-                ref_term_positions_dict.update(self.__get_ref_term_positions_dict(ref_term))
+        for ref_term in self.__reference_terms.get_operands_str_list():
+            ref_term_positions_dict.update(self.__get_ref_term_positions_dict(ref_term))
         
         self.__ref_terms_positions_dict = ref_term_positions_dict
 
@@ -832,39 +779,9 @@ class Document:
             If True, the reference term is included in the vicinity
         """
         for sentence in self.__sentences:
-            if type(self.__reference_terms) == str:
-                new_graph = VicinityGraph(self.__reference_terms, nr_of_graph_terms, limit_distance, include_refterms)
+            for ref_term in self.__reference_terms.get_operands_str_list():
+                new_graph = VicinityGraph(ref_term, nr_of_graph_terms, limit_distance, include_refterms)
                 sentence.add_graph(new_graph)
-            elif type(self.__reference_terms) == BooleanOperation: 
-                for ref_term in self.__reference_terms.get_operands_str_list():
-                    new_graph = VicinityGraph(ref_term, nr_of_graph_terms, limit_distance, include_refterms)
-                    sentence.add_graph(new_graph)
-
-
-    def do_text_transformations_to_refterms(self,
-            stop_words_list: list[str], 
-            lema: bool = True, 
-            stem: bool = True
-            ) -> None:
-        """
-        Apply some text transformations to the document. Remove stopwords, punctuation, stemming, lematization.
-
-        Parameters
-        ----------
-        stop_words_list : list[str]
-            List of stop words to be removed from the sentence
-        lema : bool
-            If True, lematization is applied
-        stem : bool
-            If True, stemming is applied
-        """
-        if type(self.__reference_terms) == str:
-            if len(self.__reference_terms) > 0:
-                sentence_from_refterm = Sentence(raw_text=self.__reference_terms)
-                self.__reference_terms = TextUtils.get_transformed_text(sentence_from_refterm.get_raw_text(), 
-                                                                        stop_words_list, lema, stem)
-        elif type(self.__reference_terms) == BooleanOperation: 
-            self.__reference_terms.do_text_transformations_to_operands(stop_words_list, lema, stem)
     
 
     def get_ieee_explore_article(self,
@@ -1063,13 +980,7 @@ class Ranking:
         """
         Apply text transformations to the reference terms of the ranking. Remove stopwords, punctuation, stemming, lematization.
         """
-        if type(self.__reference_terms) == str:
-            if len(self.__reference_terms) > 0:
-                sentence_from_refterm = Sentence(raw_text=self.__reference_terms)
-                self.__reference_terms = TextUtils.get_transformed_text(sentence_from_refterm.get_raw_text(), self.__stop_words, 
-                                                                        self.__lema, self.__stem)
-        elif type(self.__reference_terms) == BooleanOperation: 
-            self.__reference_terms.do_text_transformations_to_operands(self.__stop_words, self.__lema, self.__stem)
+        self.__reference_terms.do_text_transformations_to_operands(self.__stop_words, self.__lema, self.__stem)
 
 
     def __get_ieee_explore_ranking(self) -> list[dict]:
