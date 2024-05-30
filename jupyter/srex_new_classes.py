@@ -4,7 +4,7 @@ import numpy as np
 import math
 from collections import defaultdict
 #import pandas as pd
-from nltk.stem import PorterStemmer as st #Stemmer
+from nltk.stem import PorterStemmer   #Stemmer
 from textblob import Word #Lemmatize
 from graphviz import Graph
 import nltk
@@ -15,6 +15,61 @@ from numpy.linalg import norm
 from numpy import dot
 from enum import Enum
 import copy
+from collections import deque 
+
+
+class TextUtils:
+    
+    @staticmethod
+    def get_transformed_text(
+            text: str,
+            stop_words_list: list[str], 
+            lema: bool = True, 
+            stem: bool = True
+            ) -> str:
+        """
+        Apply some transformations to the text. Remove stopwords, punctuation, stemming, lemmatization.
+
+        Parameters
+        ----------
+        text : str
+            Text to be transformed
+        stop_words_list : list[str]
+            List of stop words to be removed from the sentence
+        lema : bool
+            If True, lemmatization is applied
+        stem : bool
+            If True, stemming is applied
+        
+        Returns
+        -------
+        transformed_text : str
+            The transformed sentence
+        """
+        # Convert the string to lowercase
+        sentence = text.lower()
+        
+        # Tokenize and remove punctuation
+        tokens = nltk.word_tokenize(sentence)
+        filtered_sentence = [token for token in tokens if token.isalnum()]
+        
+        # Remove stopwords
+        if len(stop_words_list) > 0:
+            filtered_sentence = [word for word in filtered_sentence if word not in stop_words_list]
+        
+        # Apply lemmatization
+        if lema:
+            filtered_sentence = [Word(word).lemmatize() for word in filtered_sentence]
+        
+        # Apply stemming
+        if stem:
+            st = PorterStemmer()
+            filtered_sentence = [st.stem(word) for word in filtered_sentence]
+        
+        # Join the tokens back into a single string
+        transformed_text = ' '.join(filtered_sentence)
+        
+        return transformed_text
 
 
 class Operation(Enum):
@@ -64,7 +119,8 @@ class BooleanOperation:
             if type(operand) == str:
                 if len(operand) > 0:
                     sentence_from_operand = Sentence(raw_text=operand)
-                    self.__operands[index] = sentence_from_operand.get_transformed_sentence_str(stop_words_list, lema, stem)
+                    self.__operands[index] = TextUtils.get_transformed_text(sentence_from_operand.get_raw_text(), 
+                                                                            stop_words_list, lema, stem)
             elif type(operand) == BooleanOperation: 
                 operand.do_text_transformations_to_operands()
 
@@ -180,7 +236,7 @@ class Sentence:
         stem : bool
             If True, stemming is applied
         """
-        transformed_sentence_str = self.get_transformed_sentence_str(stop_words_list, lema, stem)
+        transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
         if type(self.__reference_terms) == str:
             if len(self.__reference_terms) > 0:
                 if self.__reference_terms in transformed_sentence_str:
@@ -194,55 +250,6 @@ class Sentence:
                 transformed_sentence_str = self.__get_transformed_sentence_str_without_spaces_in_refterms(operands_str_list, 
                                                                                                         transformed_sentence_str)
                 self.__processed_text = transformed_sentence_str
-        
-
-
-    def get_transformed_sentence_str(self,
-            stop_words_list: list[str], 
-            lema: bool = True, 
-            stem: bool = True
-            ) -> str:
-        """
-        Apply some text transformations to the sentence. Remove stopwords, punctuation, stemming, lematization.
-
-        Parameters
-        ----------
-        stop_words_list : list[str]
-            List of stop words to be removed from the sentence
-        lema : bool
-            If True, lematization is applied
-        stem : bool
-            If True, stemming is applied
-        
-        Returns
-        -------
-        final_string : str
-            The transformed sentence
-        """
-        sentence = self.__raw_text
-
-        # Low the string
-        sentence = sentence.lower()
-        
-        # Remove puntuation
-        tokens = nltk.word_tokenize(sentence)
-        filtered_sentence = [token for token in tokens if token.isalnum()]
-        
-        # Remove Stopwords
-        if(len(stop_words_list)>0):
-            filtered_sentence = list(filter(lambda word_of_sentence: (word_of_sentence not in stop_words_list), filtered_sentence))
-        
-        # Apply lematization
-        if(lema):
-            filtered_sentence = list(map(lambda word_filtered_sentence: Word(word_filtered_sentence).lemmatize(), filtered_sentence))
-        
-        # Stemmer
-        if(stem):
-            filtered_sentence = list(map(lambda word: st.stem(word), filtered_sentence))
-        
-        final_string = ' ' . join(map(str, filtered_sentence))
-        
-        return final_string
     
 
     def calculate_term_positions_and_vicinity_matrix(self) -> None:
@@ -639,7 +646,8 @@ class Document:
         if type(self.__reference_terms) == str:
             if len(self.__reference_terms) > 0:
                 sentence_from_refterm = Sentence(raw_text=self.__reference_terms)
-                self.__reference_terms = sentence_from_refterm.get_transformed_sentence_str(stop_words_list, lema, stem)
+                self.__reference_terms = TextUtils.get_transformed_text(sentence_from_refterm.get_raw_text(), 
+                                                                        stop_words_list, lema, stem)
         elif type(self.__reference_terms) == BooleanOperation: 
             self.__reference_terms.do_text_transformations_to_operands(stop_words_list, lema, stem)
     
@@ -843,7 +851,8 @@ class Ranking:
         if type(self.__reference_terms) == str:
             if len(self.__reference_terms) > 0:
                 sentence_from_refterm = Sentence(raw_text=self.__reference_terms)
-                self.__reference_terms = sentence_from_refterm.get_transformed_sentence_str(self.__stop_words, self.__lema, self.__stem)
+                self.__reference_terms = TextUtils.get_transformed_text(sentence_from_refterm.get_raw_text(), self.__stop_words, 
+                                                                        self.__lema, self.__stem)
         elif type(self.__reference_terms) == BooleanOperation: 
             self.__reference_terms.do_text_transformations_to_operands(self.__stop_words, self.__lema, self.__stem)
 
