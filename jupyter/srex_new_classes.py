@@ -282,8 +282,8 @@ class VicinityGraph:
     
 
     def get_union_to_graph(self,
-            external_graph
-            ):
+            external_graph: 'VicinityGraph'
+            ) -> 'VicinityGraph':
         """
         Unites an external graph with the own graph and obtains a new graph
         The merging process involves iterating through the nodes of both graphs, calculating 
@@ -312,8 +312,8 @@ class VicinityGraph:
     
 
     def get_intersection_to_graph(self,
-            external_graph
-            ):
+            external_graph: 'VicinityGraph'
+            ) -> 'VicinityGraph':
         """
         Intersects an external graph with the own graph and obtains a new graph
         The merging process involves iterating through the nodes of both graphs, calculating 
@@ -342,8 +342,8 @@ class VicinityGraph:
     
 
     def __get_calculation_of_intersected_terms(self,
-            external_graph
-            ):
+            external_graph: 'VicinityGraph'
+            ) -> 'VicinityGraph':
         """
         Calculates the sum of weights and the average distances of the nodes between 
         the external graph and itself.
