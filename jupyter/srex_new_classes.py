@@ -675,7 +675,7 @@ class Sentence:
         self.__reference_terms = reference_terms
         self.__position_in_doc = position_in_doc
         self.__weight = weight
-        self.__processed_text: str = ""
+        self.__preprocessed_text: str = ""
         self.__graphs: list[VicinityGraph] = []
         self.__term_positions_dict: defaultdict[str, list[int]] = defaultdict(list)
         self.__ref_terms_positions_dict: dict[str, list[int]] = {}
@@ -698,12 +698,12 @@ class Sentence:
         return self.__weight
 
 
-    def get_processed_text(self) -> str:
-        return self.__processed_text
+    def get_preprocessed_text(self) -> str:
+        return self.__preprocessed_text
     
 
-    def set_processed_text(self, value: str) -> None:
-        self.__processed_text = value
+    def set_preprocessed_text(self, value: str) -> None:
+        self.__preprocessed_text = value
     
 
     def get_graphs(self) -> list[VicinityGraph]:
@@ -749,7 +749,7 @@ class Sentence:
         if any(ref_term in transformed_sentence_str for ref_term in operands_str_list):  
             transformed_sentence_str = self.__get_transformed_sentence_str_without_spaces_in_refterms(operands_str_list, 
                                                                                                     transformed_sentence_str)
-            self.__processed_text = transformed_sentence_str
+            self.__preprocessed_text = transformed_sentence_str
     
 
     def calculate_term_positions_and_vicinity_matrix(self) -> None:
@@ -875,7 +875,7 @@ class Sentence:
         Calculate a dictionary with the sentence's term positions.
         """
         vectorizer = CountVectorizer()
-        vector = vectorizer.build_tokenizer()(self.__processed_text)
+        vector = vectorizer.build_tokenizer()(self.__preprocessed_text)
         sentence_positions_dict = defaultdict(list)
         for i in range(len(vector)):
             sentence_positions_dict[vector[i]].append(i)
