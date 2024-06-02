@@ -224,9 +224,7 @@ class BinaryExpressionTree:
             If True, the reference term is included in the vicinity
         """
         def initialize_graph(node: BinaryTreeNode):
-            #node.graph = VicinityGraph(nr_of_graph_terms, limit_distance, include_refterms)
-            node.graph = (nr_of_graph_terms, limit_distance, include_refterms)
-            print(node.graph)
+            node.graph = VicinityGraph(self.__raw_query, VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms))
             if not node.is_leaf():
                 initialize_graph(node.left)
                 initialize_graph(node.right)
@@ -488,6 +486,26 @@ class BooleanOperation:
 
 
 
+class VicinityGraphConfig:
+    def __init__(self, nr_of_graph_terms: int = 5, limit_distance: int = 4, include_refterms: bool = True):
+        self.__number_of_graph_terms = nr_of_graph_terms
+        self.__limit_distance = limit_distance
+        self.__include_reference_terms = include_refterms
+    
+
+    def get_number_of_graph_terms(self) -> int:
+        return self.__number_of_graph_terms
+
+
+    def get_limit_distance(self) -> int:
+        return self.__limit_distance
+
+
+    def get_include_reference_terms(self) -> bool:
+        return self.__include_reference_terms
+
+
+
 class VicinityNode:
     
     def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0):
@@ -519,12 +537,9 @@ class VicinityNode:
 
 class VicinityGraph:
         
-    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, 
-                 limit_distance: int = 4, include_refterms: bool = True):
+    def __init__(self, reference_terms: BooleanOperation | str, config: VicinityGraphConfig = VicinityGraphConfig()):
         self.__reference_terms = reference_terms
-        self.__number_of_graph_terms = nr_of_graph_terms
-        self.__limit_distance = limit_distance
-        self.__include_reference_terms = include_refterms
+        self.__config = config
         self.__nodes: list[VicinityNode] = []
 
 
@@ -532,16 +547,8 @@ class VicinityGraph:
         return self.__reference_terms
 
 
-    def get_number_of_graph_terms(self) -> int:
-        return self.__number_of_graph_terms
-
-
-    def get_limit_distance(self) -> int:
-        return self.__limit_distance
-
-
-    def get_include_reference_terms(self) -> bool:
-        return self.__include_reference_terms
+    def get_config(self) -> VicinityGraphConfig:
+        return self.__config
     
 
     def get_nodes(self) -> list[VicinityNode]:
@@ -930,7 +937,7 @@ class Sentence:
         # and return a list of these terms and their corresponding distances
         for term, term_positions in self.__term_positions_dict.items():
             #Avoid comparing the ref term with itself (if bool false)
-            if((term not in self.__ref_terms_positions_dict.keys()) or (self.__graphs[0].get_include_reference_terms())): 
+            if((term not in self.__ref_terms_positions_dict.keys()) or (self.__graphs[0].get_config().get_include_reference_terms())): 
                 # Calculate the distance between the reference term and the rest of terms
                 first_one = True
                 # Iterate refterms that do not contain spaces
@@ -975,7 +982,7 @@ class Sentence:
         ponderations_per_distance : list[float]
             List of ponderations per distance between reference terms and vicinity terms
         """
-        limit_distance = self.__graphs[0].get_limit_distance()
+        limit_distance = self.__graphs[0].get_config().get_limit_distance()
         ponderations_per_distance = [0] * limit_distance
 
         for term1_pos in term1_positions:
@@ -1113,7 +1120,7 @@ class Document:
         """
         for sentence in self.__sentences:
             for ref_term in self.__reference_terms.get_operands_str_list():
-                new_graph = VicinityGraph(ref_term, nr_of_graph_terms, limit_distance, include_refterms)
+                new_graph = VicinityGraph(ref_term, VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms))
                 sentence.add_graph(new_graph)
     
 
