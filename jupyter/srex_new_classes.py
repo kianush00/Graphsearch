@@ -63,7 +63,8 @@ class TextUtils:
             stem: bool = True
             ) -> str:
         """
-        Apply some transformations to the text. Remove stopwords, punctuation, stemming, lemmatization.
+        Apply some transformations to the text. Lower the text, tokenize, remove punctuation, stopwords, 
+        finally do stemming and lemmatization if specified.
 
         Parameters
         ----------
@@ -111,7 +112,7 @@ class TextUtils:
 class BinaryTreeNode:
     def __init__(self, value: str):
         self.value = value
-        self.graph = None
+        self.graph: VicinityGraph | None = None
         self.left: BinaryTreeNode | None = None
         self.right: BinaryTreeNode | None = None
     
@@ -224,7 +225,7 @@ class BinaryExpressionTree:
             If True, the reference term is included in the vicinity
         """
         def initialize_graph(node: BinaryTreeNode):
-            node.graph = VicinityGraph(self.__raw_query, VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms))
+            node.graph = VicinityGraph(self.__raw_query, nr_of_graph_terms, limit_distance, include_refterms)
             if not node.is_leaf():
                 initialize_graph(node.left)
                 initialize_graph(node.right)
@@ -537,9 +538,10 @@ class VicinityNode:
 
 class VicinityGraph:
         
-    def __init__(self, reference_terms: BooleanOperation | str, config: VicinityGraphConfig = VicinityGraphConfig()):
+    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, 
+                 limit_distance: int = 4, include_refterms: bool = True):
         self.__reference_terms = reference_terms
-        self.__config = config
+        self.__config = VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms)
         self.__nodes: list[VicinityNode] = []
 
 
@@ -1120,7 +1122,7 @@ class Document:
         """
         for sentence in self.__sentences:
             for ref_term in self.__reference_terms.get_operands_str_list():
-                new_graph = VicinityGraph(ref_term, VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms))
+                new_graph = VicinityGraph(ref_term, nr_of_graph_terms, limit_distance, include_refterms)
                 sentence.add_graph(new_graph)
     
 
@@ -1223,17 +1225,27 @@ class Document:
 
 
 
+class TextTransformationsConfig:
+    def __init__(self, stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
+        self.__stop_words = stop_words
+        self.__lemmatization = lemmatization
+        self.__stemming = stemming
+    
+
+    def get_transformations_params(self):
+        return self.__stop_words, self.__lemmatization, self.__stemming
+
+
+
 class Ranking:
     
     def __init__(self, query_text: str, reference_terms: BooleanOperation | str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
-                 stop_words: list[str] = [], lema: bool = True, stem: str = False):
+                 stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
         self.__query_text = query_text
         self.__reference_terms = reference_terms
         self.__nr_search_results = nr_search_results
         self.__ranking_weight_type = ranking_weight_type   #Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
-        self.__stop_words = stop_words
-        self.__lema = lema
-        self.__stem = stem
+        self.__text_transformations_config = TextTransformationsConfig(stop_words, lemmatization, stemming)
         self.__documents: list[Document] = []
 
         self.__do_text_transformations_to_refterms()
@@ -1253,6 +1265,10 @@ class Ranking:
 
     def get_reference_terms(self) -> BooleanOperation | str:
         return self.__reference_terms
+    
+
+    def get_text_transformations_config(self) -> TextTransformationsConfig:
+        return self.__text_transformations_config
     
 
     def generate_all_graphs(self, 
@@ -1320,7 +1336,7 @@ class Ranking:
         """
         Apply text transformations to the reference terms of the ranking. Remove stopwords, punctuation, stemming, lematization.
         """
-        self.__reference_terms.do_text_transformations_to_operands(self.__stop_words, self.__lema, self.__stem)
+        self.__reference_terms.do_text_transformations_to_operands(*self.__text_transformations_config.get_transformations_params())
 
 
     def __get_ieee_explore_ranking(self) -> list[dict]:
@@ -1357,7 +1373,7 @@ class Ranking:
         """
         for index, article in enumerate(results):
             new_doc = self.__get_new_document_by_article(article, index, results_size=len(results))
-            new_doc.do_text_transformations_by_sentence(self.__stop_words, self.__lema, self.__stem)
+            new_doc.do_text_transformations_by_sentence(*self.__text_transformations_config.get_transformations_params())
             self.__documents.append(new_doc)
     
 
