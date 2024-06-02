@@ -538,15 +538,15 @@ class VicinityNode:
 
 class VicinityGraph:
         
-    def __init__(self, reference_terms: BooleanOperation | str, nr_of_graph_terms: int = 5, 
+    def __init__(self, subquery: str, nr_of_graph_terms: int = 5, 
                  limit_distance: int = 4, include_refterms: bool = True):
-        self.__reference_terms = reference_terms
+        self.__subquery = subquery
         self.__config = VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms)
         self.__nodes: list[VicinityNode] = []
 
 
-    def get_reference_terms(self) -> BooleanOperation | str:
-        return self.__reference_terms
+    def get_subquery_str(self) -> str:
+        return self.__subquery
 
 
     def get_config(self) -> VicinityGraphConfig:
@@ -721,7 +721,7 @@ class Sentence:
 
     def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
         for graph in self.__graphs:
-            if graph.get_reference_terms() == reference_term:
+            if graph.get_subquery_str() == reference_term:
                 return graph
         return None
     
@@ -825,7 +825,7 @@ class Sentence:
             A graph associated with the sentence
         """
         #the refterms of the sentence' graph are only string type, they are not boolean operations
-        reference_term = graph.get_reference_terms() 
+        reference_term = graph.get_subquery_str() 
         # Remove spaces from the reference term
         reference_term = self.__remove_spaces(reference_term) 
         terms_pond_dict = self.__get_terms_ponderation_dict(reference_term)
@@ -1056,7 +1056,7 @@ class Document:
 
     def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
         for graph in self.__graphs:
-            if graph.get_reference_terms() == reference_term:
+            if graph.get_subquery_str() == reference_term:
                 return graph
         return None
     
@@ -1252,7 +1252,7 @@ class Ranking:
         results = self.__get_ieee_explore_ranking()
         self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(results)
 
-        self.__graph = VicinityGraph(reference_terms=self.__reference_terms)
+        self.__graph = VicinityGraph(subquery=self.__reference_terms)
 
 
     def get_documents(self) -> list[Document]:
