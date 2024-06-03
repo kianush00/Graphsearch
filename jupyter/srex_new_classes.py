@@ -109,6 +109,196 @@ class TextUtils:
 
 
 
+class VicinityGraphConfig:
+    def __init__(self, nr_of_graph_terms: int = 5, limit_distance: int = 4, include_query_terms: bool = True):
+        self.__number_of_graph_terms = nr_of_graph_terms
+        self.__limit_distance = limit_distance
+        self.__include_query_terms = include_query_terms
+    
+
+    def get_number_of_graph_terms(self) -> int:
+        return self.__number_of_graph_terms
+
+
+    def get_limit_distance(self) -> int:
+        return self.__limit_distance
+
+
+    def get_include_query_terms(self) -> bool:
+        return self.__include_query_terms
+
+
+
+class VicinityNode:
+    
+    def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0):
+        self.__term = term
+        self.__ponderation = ponderation
+        self.__distance = distance
+    
+
+    def get_term(self) -> str:
+        return self.__term
+    
+
+    def get_ponderation(self) -> float:
+        return self.__ponderation
+    
+
+    def set_ponderation(self, ponderation: float) -> None:
+        self.__ponderation = ponderation
+    
+
+    def get_distance(self) -> float:
+        return self.__distance
+    
+
+    def set_distance(self, distance: float) -> None:
+        self.__distance = distance
+
+
+
+class VicinityGraph:
+        
+    def __init__(self, subquery: str, nr_of_graph_terms: int = 5, 
+                 limit_distance: int = 4, include_refterms: bool = True):
+        self.__subquery = subquery
+        self.__config = VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms)
+        self.__nodes: list[VicinityNode] = []
+
+
+    def get_subquery_str(self) -> str:
+        return self.__subquery
+
+
+    def get_config(self) -> VicinityGraphConfig:
+        return self.__config
+    
+
+    def get_nodes(self) -> list[VicinityNode]:
+        return self.__nodes
+    
+
+    def get_node_by_term(self, term: str) -> VicinityNode:
+        for node in self.__nodes:
+            if node.get_term() == term:
+                return node
+        return None
+    
+
+    def get_node_terms(self) -> list[str]:
+        node_terms = []
+        for node in self.__nodes:
+            node_terms.append(node.get_term())
+        return node_terms
+
+
+    def add_node(self, node: VicinityNode) -> None:
+        self.__nodes.append(node)
+
+
+    def delete_node_by_term(self, term: str) -> None:
+        for node in self.__nodes:
+            if node.get_term() == term:
+                self.__nodes.remove(node)
+                break
+    
+
+    def get_union_to_graph(self,
+            external_graph: 'VicinityGraph'
+            ) -> 'VicinityGraph':
+        """
+        Unites an external graph with the own graph and obtains a new graph
+        The merging process involves iterating through the nodes of both graphs, calculating 
+        the sum of weights and the average distances between each one.
+        
+        Parameters
+        ----------
+        external_graph : VicinityGraph
+            The external graph to be united
+
+        Returns
+        -------
+        united_graph : VicinityGraph
+            The union between copy of the graph itself and an external graph
+        """
+        united_graph = self.__get_calculation_of_intersected_terms(external_graph)
+        
+        node_terms_from_copy_graph = united_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+        #if the external graph has exclusive terms, then it needs to be added to the united graph
+        for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
+            node_from_ext_graph = external_graph.get_node_by_term(node_term)
+            united_graph.add_node(node_from_ext_graph)
+
+        return united_graph
+    
+
+    def get_intersection_to_graph(self,
+            external_graph: 'VicinityGraph'
+            ) -> 'VicinityGraph':
+        """
+        Intersects an external graph with the own graph and obtains a new graph
+        The merging process involves iterating through the nodes of both graphs, calculating 
+        the sum of weights and the average distances between each one.
+        
+        Parameters
+        ----------
+        external_graph : VicinityGraph
+            The external graph to be intersected
+
+        Returns
+        -------
+        intersected_graph : VicinityGraph
+            The intersection between copy of the graph itself and an external graph
+        """
+        #if the graph copy term is already in the external graph
+        intersected_graph = self.__get_calculation_of_intersected_terms(external_graph)
+
+        node_terms_from_copy_graph = intersected_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+        #if the graph copy has exclusive terms, then it needs to be deleted
+        for node_term in set(node_terms_from_copy_graph) - set(node_terms_from_ext_graph):
+            intersected_graph.delete_node_by_term(node_term)
+
+        return intersected_graph
+    
+
+    def __get_calculation_of_intersected_terms(self,
+            external_graph: 'VicinityGraph'
+            ) -> 'VicinityGraph':
+        """
+        Calculates the sum of weights and the average distances of the nodes between 
+        the external graph and itself.
+        
+        Parameters
+        ----------
+        external_graph : VicinityGraph
+            The external graph to calculate the intersected terms
+
+        Returns
+        -------
+        copy_graph : VicinityGraph
+            The copied graph that contain the calculation of the intersected terms
+        """
+        copy_graph = copy.deepcopy(self)
+
+        node_terms_from_copy_graph = copy_graph.get_node_terms()
+        node_terms_from_ext_graph = external_graph.get_node_terms()
+
+        for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
+            node_from_copy_graph = copy_graph.get_node_by_term(node_term)
+            node_from_ext_graph = external_graph.get_node_by_term(node_term)
+            #then calculate the average distances between the two nodes and the sum of the ponderations
+            distance = np.mean([node_from_copy_graph.get_distance(), node_from_ext_graph.get_distance()])
+            ponderation = node_from_copy_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
+            node_from_copy_graph.set_distance(distance)
+            node_from_copy_graph.set_ponderation(ponderation)
+        
+        return copy_graph
+
+
+
 class BinaryTreeNode:
     def __init__(self, value: str):
         self.value = value
@@ -128,30 +318,92 @@ class BinaryTreeNode:
         return self.left.get_values_from_leaves() + self.right.get_values_from_leaves()
     
 
+    def get_leaves(self) -> list['BinaryTreeNode']:
+        if self.is_leaf():
+            return [self]
+        return self.left.get_leaves() + self.right.get_leaves()
+    
+
+    def do_graph_operation_from_subtrees(self) -> None:
+        if not self.is_leaf():
+            #Validate if the tree has no empty vicinity graphs in leaves
+            try:
+                self.__set_and_get_graph_operated_from_subtrees()
+            except Exception as e:
+                print('Error at do_graph_operation_from_subtrees(): ' + repr(e))
+
+
+    def __set_and_get_graph_operated_from_subtrees(self) -> VicinityGraph:
+        graph = None
+        left_graph = None
+        right_graph = None
+        
+        if self.left.is_leaf():
+            if self.left.graph:
+                left_graph = self.left.graph
+            else:
+                raise Exception('Empty vicinity graphs in leaves')
+        else:
+            left_graph = self.left.__set_and_get_graph_operated_from_subtrees()
+        
+        if self.right.is_leaf():
+            if self.right.graph:
+                right_graph = self.right.graph
+            else:
+                raise Exception('Empty vicinity graphs in leaves')
+        else:
+            right_graph = self.right.__set_and_get_graph_operated_from_subtrees()
+
+        if left_graph and right_graph:
+            if self.value == 'AND':
+                graph = left_graph.get_intersection_to_graph(right_graph)
+            elif self.value == 'OR':
+                graph = left_graph.get_union_to_graph(right_graph)
+            self.graph = graph
+            return graph
+
+        
+    
+
     def __str__(self) -> str:
-        return ' '.join(self.inorder_traversal())
+        return ''.join(self.__inorder_traversal())
     
 
     def tree_str(self) -> str:
-        return self.generate_tree_str()
+        return self.__generate_tree_str()
     
 
-    def inorder_traversal(self) -> list[str]:
+    def __inorder_traversal(self, level: int = 0) -> list[str]:
         result = []
+
+        # Traverse left subtree
         if self.left:
-            result.extend(self.left.inorder_traversal())
-        result.append(self.value)
+            # Add opening parenthesis if not at root level
+            if level > 0: result.append('(')
+            # Recursively traverse left subtree and increase level
+            result.extend(self.left.__inorder_traversal(level + 1))
+
+        # Append current node value with spaces if it's 'AND' or 'OR'
+        if self.value in ['AND', 'OR']:    
+            result.append(f' {self.value} ')
+        else:
+            result.append(self.value)
+
+        # Traverse right subtree
         if self.right:
-            result.extend(self.right.inorder_traversal())
+            # Recursively traverse right subtree and increase level
+            result.extend(self.right.__inorder_traversal(level + 1))
+            # Add closing parenthesis if not at root level
+            if level > 0: result.append(')')
         return result
     
 
-    def generate_tree_str(self, level: int = 0) -> str:
+    def __generate_tree_str(self, level: int = 0) -> str:
         output = "\t" * level + self.value + "\n"
         if self.left:
-            output += self.left.generate_tree_str(level + 1)
+            output += self.left.__generate_tree_str(level + 1)
         if self.right:
-            output += self.right.generate_tree_str(level + 1)
+            output += self.right.__generate_tree_str(level + 1)
         return output
 
 
@@ -167,16 +419,28 @@ class BinaryExpressionTree:
             postfix_tokens = self.__infix_to_postfix(infix_tokens)
             self.__construct_tree_from_postfix(postfix_tokens)
         except Exception as e:
-            print('Error: ' + repr(e))
+            print('Error initializing BinaryExpressionTree instance: ' + repr(e))
     
 
     def get_raw_query(self):
         return self.__raw_query
     
 
-    def get_query_terms(self) -> list[str]:
+    def get_query_terms_str_with_underscores(self) -> list[str]:
+        if not self.root:
+            return []
+        return self.root.get_values_from_leaves()
+    
+
+    def get_query_terms_as_leaves(self) -> list[BinaryTreeNode]:
+        if not self.root:
+            return []
+        return self.root.get_leaves()
+    
+
+    def operate_graphs_from_leaves(self) -> None:
         if self.root:
-            return self.root.get_values_from_leaves()
+            self.root.do_graph_operation_from_subtrees()
     
 
     def do_text_transformations_to_query_terms(self, 
@@ -207,7 +471,7 @@ class BinaryExpressionTree:
             transform_node_if_leaf(self.root)
     
 
-    def initialize_graph_for_all_nodes(self, 
+    def initialize_graph_for_each_node(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
             include_refterms: bool = True
@@ -222,10 +486,10 @@ class BinaryExpressionTree:
         limit_distance : int
             Maximal distance of terms used to calculate the vicinity
         include_reference_term : bool
-            If True, the reference term is included in the vicinity
+            If True, the query term is included in the vicinity
         """
         def initialize_graph(node: BinaryTreeNode):
-            node.graph = VicinityGraph(self.__raw_query, nr_of_graph_terms, limit_distance, include_refterms)
+            node.graph = VicinityGraph(str(node), nr_of_graph_terms, limit_distance, include_refterms)
             if not node.is_leaf():
                 initialize_graph(node.left)
                 initialize_graph(node.right)
@@ -237,13 +501,13 @@ class BinaryExpressionTree:
     def __str__(self) -> str:
         if not self.root:
             return ''
-        return ' '.join(self.root.inorder_traversal())
+        return str(self.root)
     
 
     def tree_str(self) -> str:
         if not self.root:
             return ''
-        return self.root.generate_tree_str()
+        return self.root.tree_str()
     
 
     def __separate_boolean_query(self, query: str) -> list[str]:
@@ -439,255 +703,16 @@ class BinaryExpressionTree:
 
 
 
-class Operation(Enum):
-    UNION = 1
-    INTERSECTION = 2
-
-
-class BooleanOperation:
-    def __init__(self, operation: Operation, operands: list):
-        self.__operation: Operation = operation   # e.g. Operation.UNION
-        self.__operands: list[BooleanOperation | str] = operands
-    
-
-    def get_operands_str_list(self) -> list[str]:
-        try:
-            return self.recursive_get_operands()
-        except:
-            return ["ErrorUnknownOperandsType"]
-    
-
-    def recursive_get_operands(self) -> list[str]:
-        operands_str_list = []
-        for operand in self.__operands:
-            if type(operand) == str:
-                if len(operand) > 0:
-                    operands_str_list.append(operand)
-                else:
-                    raise TypeError("Empty string operand")
-            elif type(operand) == BooleanOperation: 
-                operands_str_list.extend(operand.recursive_get_operands())
-            else:
-                raise TypeError("Unknown operand type")
-            
-        return operands_str_list
-    
-
-    def do_text_transformations_to_operands(self,
-            stop_words_list: list[str], 
-            lema: bool = True, 
-            stem: bool = True
-            ) -> None:
-        for index, operand in enumerate(self.__operands):
-            if type(operand) == str:
-                if len(operand) > 0:
-                    self.__operands[index] = TextUtils.get_transformed_text(operand, stop_words_list, lema, stem)
-            elif type(operand) == BooleanOperation: 
-                operand.do_text_transformations_to_operands()
-
-
-
-class VicinityGraphConfig:
-    def __init__(self, nr_of_graph_terms: int = 5, limit_distance: int = 4, include_refterms: bool = True):
-        self.__number_of_graph_terms = nr_of_graph_terms
-        self.__limit_distance = limit_distance
-        self.__include_reference_terms = include_refterms
-    
-
-    def get_number_of_graph_terms(self) -> int:
-        return self.__number_of_graph_terms
-
-
-    def get_limit_distance(self) -> int:
-        return self.__limit_distance
-
-
-    def get_include_reference_terms(self) -> bool:
-        return self.__include_reference_terms
-
-
-
-class VicinityNode:
-    
-    def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0):
-        self.__term = term
-        self.__ponderation = ponderation
-        self.__distance = distance
-    
-
-    def get_term(self) -> str:
-        return self.__term
-    
-
-    def get_ponderation(self) -> float:
-        return self.__ponderation
-    
-
-    def set_ponderation(self, ponderation: float) -> None:
-        self.__ponderation = ponderation
-    
-
-    def get_distance(self) -> float:
-        return self.__distance
-    
-
-    def set_distance(self, distance: float) -> None:
-        self.__distance = distance
-
-
-
-class VicinityGraph:
-        
-    def __init__(self, subquery: str, nr_of_graph_terms: int = 5, 
-                 limit_distance: int = 4, include_refterms: bool = True):
-        self.__subquery = subquery
-        self.__config = VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms)
-        self.__nodes: list[VicinityNode] = []
-
-
-    def get_subquery_str(self) -> str:
-        return self.__subquery
-
-
-    def get_config(self) -> VicinityGraphConfig:
-        return self.__config
-    
-
-    def get_nodes(self) -> list[VicinityNode]:
-        return self.__nodes
-    
-
-    def get_node_by_term(self, term: str) -> VicinityNode:
-        for node in self.__nodes:
-            if node.get_term() == term:
-                return node
-        return None
-    
-
-    def get_node_terms(self) -> list[str]:
-        node_terms = []
-        for node in self.__nodes:
-            node_terms.append(node.get_term())
-        return node_terms
-
-
-    def add_node(self, node: VicinityNode) -> None:
-        self.__nodes.append(node)
-    
-
-    def delete_node_by_term(self, term: str) -> None:
-        for node in self.__nodes:
-            if node.get_term() == term:
-                self.__nodes.remove(node)
-                break
-    
-
-    def get_union_to_graph(self,
-            external_graph: 'VicinityGraph'
-            ) -> 'VicinityGraph':
-        """
-        Unites an external graph with the own graph and obtains a new graph
-        The merging process involves iterating through the nodes of both graphs, calculating 
-        the sum of weights and the average distances between each one.
-        
-        Parameters
-        ----------
-        external_graph : VicinityGraph
-            The external graph to be united
-
-        Returns
-        -------
-        united_graph : VicinityGraph
-            The union between copy of the graph itself and an external graph
-        """
-        united_graph = self.__get_calculation_of_intersected_terms(external_graph)
-        
-        node_terms_from_copy_graph = united_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
-        #if the external graph has exclusive terms, then it needs to be added to the united graph
-        for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
-            node_from_ext_graph = external_graph.get_node_by_term(node_term)
-            united_graph.add_node(node_from_ext_graph)
-
-        return united_graph
-    
-
-    def get_intersection_to_graph(self,
-            external_graph: 'VicinityGraph'
-            ) -> 'VicinityGraph':
-        """
-        Intersects an external graph with the own graph and obtains a new graph
-        The merging process involves iterating through the nodes of both graphs, calculating 
-        the sum of weights and the average distances between each one.
-        
-        Parameters
-        ----------
-        external_graph : VicinityGraph
-            The external graph to be intersected
-
-        Returns
-        -------
-        intersected_graph : VicinityGraph
-            The intersection between copy of the graph itself and an external graph
-        """
-        #if the graph copy term is already in the external graph
-        intersected_graph = self.__get_calculation_of_intersected_terms(external_graph)
-
-        node_terms_from_copy_graph = intersected_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
-        #if the graph copy has exclusive terms, then it needs to be deleted
-        for node_term in set(node_terms_from_copy_graph) - set(node_terms_from_ext_graph):
-            intersected_graph.delete_node_by_term(node_term)
-
-        return intersected_graph
-    
-
-    def __get_calculation_of_intersected_terms(self,
-            external_graph: 'VicinityGraph'
-            ) -> 'VicinityGraph':
-        """
-        Calculates the sum of weights and the average distances of the nodes between 
-        the external graph and itself.
-        
-        Parameters
-        ----------
-        external_graph : VicinityGraph
-            The external graph to calculate the intersected terms
-
-        Returns
-        -------
-        copy_graph : VicinityGraph
-            The copied graph that contain the calculation of the intersected terms
-        """
-        copy_graph = copy.deepcopy(self)
-
-        node_terms_from_copy_graph = copy_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
-
-        for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
-            node_from_copy_graph = copy_graph.get_node_by_term(node_term)
-            node_from_ext_graph = external_graph.get_node_by_term(node_term)
-            #then calculate the average distances between the two nodes and the sum of the ponderations
-            distance = np.mean([node_from_copy_graph.get_distance(), node_from_ext_graph.get_distance()])
-            ponderation = node_from_copy_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
-            node_from_copy_graph.set_distance(distance)
-            node_from_copy_graph.set_ponderation(ponderation)
-        
-        return copy_graph
-
-
-
 class Sentence:
     
-    def __init__(self, raw_text: str, reference_terms: BooleanOperation | str = "", position_in_doc: int = 0, weight: float = 1.0):
+    def __init__(self, raw_text: str, query: BinaryExpressionTree, position_in_doc: int = 0, weight: float = 1.0):
         self.__raw_text = raw_text
-        self.__reference_terms = reference_terms
+        self.__query = query
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__preprocessed_text: str = ""
-        self.__graphs: list[VicinityGraph] = []
         self.__term_positions_dict: defaultdict[str, list[int]] = defaultdict(list)
-        self.__ref_terms_positions_dict: dict[str, list[int]] = {}
+        self.__query_terms_positions_dict: dict[str, list[int]] = {}
         self.__vicinity_matrix: dict[str, dict[str, list[float]]] = []
 
 
@@ -695,8 +720,8 @@ class Sentence:
         return self.__raw_text
     
 
-    def get_reference_terms(self) -> BooleanOperation | str:
-        return self.__reference_terms
+    def get_query(self) -> BinaryExpressionTree:
+        return self.__query
 
 
     def get_position_in_doc(self) -> int:
@@ -715,10 +740,6 @@ class Sentence:
         self.__preprocessed_text = value
     
 
-    def get_graphs(self) -> list[VicinityGraph]:
-        return self.__graphs
-    
-
     def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
         for graph in self.__graphs:
             if graph.get_subquery_str() == reference_term:
@@ -726,22 +747,18 @@ class Sentence:
         return None
     
 
-    def add_graph(self, graph: VicinityGraph) -> None:
-        self.__graphs.append(graph)
-    
-
     def get_vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
         return self.__vicinity_matrix
 
 
-    def do_text_transformations_if_any_refterm(self,
+    def do_text_transformations_if_any_query_term(self,
             stop_words_list: list[str], 
             lema: bool = True, 
             stem: bool = True
             ) -> None:
         """
         Apply some text transformations to the sentence and calculate term positions to the 
-        sentence. Also removes spaces from the reference terms.
+        sentence. Also replaces underscores with spaces from the query terms.
 
         Parameters
         ----------
@@ -753,10 +770,11 @@ class Sentence:
             If True, stemming is applied
         """
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
-        operands_str_list = self.__reference_terms.get_operands_str_list()
-        #If there is any refterm in the transformed sentence string
-        if any(ref_term in transformed_sentence_str for ref_term in operands_str_list):  
-            transformed_sentence_str = self.__get_transformed_sentence_str_without_spaces_in_refterms(operands_str_list, 
+        query_terms_with_underscores = self.__query.get_query_terms_str_with_underscores()
+        query_terms_with_spaces = [term.replace('_', ' ') for term in query_terms_with_underscores]
+        #If there is any query term in the transformed sentence string
+        if any(query_term in transformed_sentence_str for query_term in query_terms_with_spaces):  
+            transformed_sentence_str = self.__get_transformed_sentence_str_with_underscores_in_query_terms(query_terms_with_underscores, 
                                                                                                     transformed_sentence_str)
             self.__preprocessed_text = transformed_sentence_str
     
@@ -764,99 +782,98 @@ class Sentence:
     def calculate_term_positions_and_vicinity_matrix(self) -> None:
         """
         Calculate term positions dictionary for terms of the sentence and terms from
-        the reference terms, also calculates the vicinity of a list of reference 
+        the query terms, also calculates the vicinity of a list of query 
         terms in the current sentence, limited by a specified distance.
         """
         self.__do_term_positions_dict()
-        self.__do_ref_term_positions_dict_conditioned_by_ref_type()
+        self.__do_query_term_positions_dict()
         self.__do_vicinity_matrix()
     
 
     def generate_graph_nodes_of_sentence(self) -> None:
         """
         Generate nodes to all the graphs associated with the sentence, based on 
-        their isolated reference terms
+        their isolated query terms as leaves from the query tree.
         """
-        for graph in self.__graphs:
-            self.__generate_graph_nodes(graph)
+        #First, generate nodes to the graphs associated with the leaves from the query tree
+        for leaf_node in self.__query.get_query_terms_as_leaves():
+            self.__generate_nodes_in_leaves_graphs(leaf_node)
+        
+        #Then, generate nodes to the graphs associated with the rest of the nodes in the tree
+        self.__query.operate_graphs_from_leaves()
     
 
-    def __get_transformed_sentence_str_without_spaces_in_refterms(
-            self,
-            operands_str_list: list[str],
+    def __get_transformed_sentence_str_with_underscores_in_query_terms(self,
+            query_terms_with_underscores: list[str],
             transformed_sentence_str: str) -> str:
         """
-        Get the transformed sentence string without spaces in the reference terms
+        Get the transformed sentence string with underscores in the query terms.
 
         Parameters
         ----------
-        operands_str_list : list[str]
-            List of operands from the reference terms
+        query_terms_with_underscores : list[str]
+            List of operands from the query
         transformed_sentence_str : str
-            Transformed sentence string to remove spaces
+            Transformed sentence string to replace spaces with underscores
 
         Returns
         -------
-        sentence_str_without_spaces_in_refterms : str
-            Transformed sentence string without spaces in reference terms within the sentence
+        sentence_str_with_underscores_in_query_terms : str
+            Transformed sentence string without spaces in query terms within the sentence
         """
-        sentence_str_without_spaces_in_refterms = transformed_sentence_str
-
-        for ref_term in operands_str_list:
-            #If the refterm is in the transformed sentence string and the refterm contains more than a word
-            if (ref_term in transformed_sentence_str) and (len(ref_term.split(" ")) > 1): 
-                ref_term_without_spaces = self.__remove_spaces(ref_term)
-                sentence_str_without_spaces_in_refterms = sentence_str_without_spaces_in_refterms.replace(ref_term, 
-                                                                                                          ref_term_without_spaces)
-        return sentence_str_without_spaces_in_refterms
+        sentence_str_with_underscores_in_query_terms = query_terms_with_underscores
+        
+        for query_term_with_underscores in query_terms_with_underscores:
+            query_term_with_spaces = query_term_with_underscores.replace('_', ' ')
+            #If the query term is in the transformed sentence string and the query term contains more than a word
+            if (query_term_with_spaces in transformed_sentence_str) and (len(query_term_with_underscores.split('_')) > 1): 
+                sentence_str_with_underscores_in_query_terms = transformed_sentence_str.replace(query_term_with_spaces, query_term_with_underscores)
+        return sentence_str_with_underscores_in_query_terms
     
 
-    def __generate_graph_nodes(self, 
-            graph: VicinityGraph
+    def __generate_nodes_in_leaves_graphs(self, 
+            leaf_node: BinaryTreeNode,
             ) -> None:
         """
-        Generate nodes for the graph associated with the sentence, based on the isolated reference term of 
-        the graph. This method calculates the ponderations of the terms associated with
-        the reference term of the graph, and adds each of them to their respective node.
+        Generate nodes for the graph associated with the sentence, based on the isolated query term of 
+        the leaf from the query tree. This method calculates the ponderations of the terms associated 
+        with the query term of the graph, and adds each of them to their respective node.
 
         Parameters
         ----------
-        graph : VicinityGraph
-            A graph associated with the sentence
+        leaf_node : BinaryTreeNode
+            A leaf node associated with the sentence tree
         """
-        #the refterms of the sentence' graph are only string type, they are not boolean operations
-        reference_term = graph.get_subquery_str() 
-        # Remove spaces from the reference term
-        reference_term = self.__remove_spaces(reference_term) 
-        terms_pond_dict = self.__get_terms_ponderation_dict(reference_term)
+        query_term = leaf_node.value  
+        terms_pond_dict = self.__get_terms_ponderation_dict(query_term)
 
-        # Iterate over each term in the frequency dictionary
+        # Iterate over each term in the ponderation dictionary
         for neighbor_term in terms_pond_dict.keys():
-            # Retrieve the list of frequencies by distance for the term
-            list_of_pond_by_distance = self.__vicinity_matrix.get(neighbor_term).get(reference_term)
+            # Retrieve the list of ponderations by distance for the term
+            list_of_pond_by_distance = self.__vicinity_matrix.get(neighbor_term).get(query_term)
             distance_calculation_list = []
             # Construct a list of distances multiplied by its frequencies
             for idx, freq_mult_by_weight in enumerate(list_of_pond_by_distance):
                 frequency = round(freq_mult_by_weight / self.__weight)
                 distance_calculation_list.extend([idx+1] * frequency)
                 
-             # Calculate the mean distance for the term
+            # Calculate the mean distance for the term
             new_node = VicinityNode(term=neighbor_term, ponderation=terms_pond_dict.get(neighbor_term), distance=np.mean(distance_calculation_list))
-            graph.add_node(new_node)
+            leaf_node.graph.add_node(new_node)
 
     
 
     def __get_terms_ponderation_dict(self, 
-            reference_term: str
+            query_term: str
             ) -> dict[str, float]:
         """
         This method calculates the ponderation (frequency * weight) of terms from the 
-        vicinity matrix of the sentence, by a specified reference term
+        vicinity matrix of the sentence, by a specified query term
 
         Parameters
         ----------
-        reference_term : str
-            The reference term of the graph
+        query_term : str
+            The query term of the graph
 
         Returns
         -------
@@ -869,10 +886,10 @@ class Sentence:
 
         # Iterate over each term and its ponderations in the document
         for neighbor_term, distance_pond_by_ref_term in self.__vicinity_matrix.items():
-            # Checks if the reference word is in the distance-ponderation 
+            # Checks if the query word is in the distance-ponderation 
             # dictionary keys and if the neighbor term isn't a ref term
-            if (reference_term in distance_pond_by_ref_term):
-                sum_of_ponds_in_ref_term = sum(distance_pond_by_ref_term[reference_term])
+            if (query_term in distance_pond_by_ref_term):
+                sum_of_ponds_in_ref_term = sum(distance_pond_by_ref_term[query_term])
                 if sum_of_ponds_in_ref_term > 0:
                     terms_pond_dict[neighbor_term] = sum_of_ponds_in_ref_term
             
@@ -891,77 +908,52 @@ class Sentence:
         self.__term_positions_dict = sentence_positions_dict
 
     
-    def __do_ref_term_positions_dict_conditioned_by_ref_type(self) -> None:
+    def __do_query_term_positions_dict(self) -> None:
         """
-        Returns a dictionary to store the list of positions for each reference term, along with its splitted terms.
-        This function takes a defaultdict containing term positions and a list of reference terms as input.
-        It splits each reference term into individual words and retrieves the positions of each term from the defaultdict.
-        The resulting dictionary stores each reference term along with its list of positions.
+        Returns a dictionary to store the list of positions for each query term, along with its splitted terms.
+        This function takes a defaultdict containing term positions and a list of query terms as input.
+        It splits each query term into individual words and retrieves the positions of each term from the defaultdict.
+        The resulting dictionary stores each query term along with its list of positions.
         """
-        ref_term_positions_dict = {}
+        query_term_positions_dict = {}
 
-        for ref_term in self.__reference_terms.get_operands_str_list():
-            ref_term_positions_dict.update(self.__get_ref_term_positions_dict(ref_term))
+        for query_term in self.__query.get_query_terms_str_with_underscores():
+            # If the query term is within the term position dictionary
+            if query_term in self.__term_positions_dict.keys():
+                # Get the term positions of the query term
+                query_term_positions_dict[query_term] = self.__term_positions_dict[query_term]
         
-        self.__ref_terms_positions_dict = ref_term_positions_dict
-
-
-    def __get_ref_term_positions_dict(self,
-            ref_term: str
-            ) -> dict[str, list[int]]:
-        """
-        Returns a dictionary to store the list of positions for each reference term, along with its splitted terms.
-        This function takes a defaultdict containing term positions and a list of reference terms as input.
-        It splits each reference term into individual words and retrieves the positions of each term from the defaultdict.
-        The resulting dictionary stores each reference term along with its list of positions.
-        """
-        ref_term_positions_dict = {}
-
-        # Remove refterm spaces, if any
-        ref_term = self.__remove_spaces(ref_term)
-        # If the reference term is within the term position dictionary
-        if ref_term in self.__term_positions_dict.keys():
-            # Get the term positions of the reference term
-            ref_term_positions_dict[ref_term] = self.__term_positions_dict[ref_term]
-        
-        return ref_term_positions_dict
+        self.__query_terms_positions_dict = query_term_positions_dict
     
 
     def __do_vicinity_matrix(self) -> None:
         """
-        Calculate the vicinity of a list of reference terms in the current sentence, limited by a specified distance.
+        Calculate the vicinity of a list of query terms in the current sentence, limited by a specified distance.
 
-        E.g. {'v_term_1': {'ref_term_1': [0.0, 1.8, 0.0, 0.9]}, 
-        'v_term_2': {'ref_term_1': [0.0, 0.0, 0.9, 0.0], 'ref_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
+        E.g. {'v_term_1': {'query_term_1': [0.0, 1.8, 0.0, 0.9]}, 
+        'v_term_2': {'query_term_1': [0.0, 0.0, 0.9, 0.0], 'query_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
         """
         vicinity_matrix = {}  # Create the empty dictionary
-        # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the reference_terms
+        # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the query_terms
         # and return a list of these terms and their corresponding distances
         for term, term_positions in self.__term_positions_dict.items():
-            #Avoid comparing the ref term with itself (if bool false)
-            if((term not in self.__ref_terms_positions_dict.keys()) or (self.__graphs[0].get_config().get_include_reference_terms())): 
-                # Calculate the distance between the reference term and the rest of terms
+            #Avoid comparing the query term with itself (if bool false)
+            if((term not in self.__query_terms_positions_dict.keys()) or (self.__query.root.graph.get_config().get_include_query_terms())): 
+                # Calculate the distance between the query term and the rest of terms
                 first_one = True
-                # Iterate refterms that do not contain spaces
-                for ref_term, ref_positions in self.__ref_terms_positions_dict.items():
-                    if ref_term != term:
-                        freq_neighborhood_positions = self.__calculate_ponderation_of_distances_between_term_positions(ref_positions, 
+                # Iterate query terms that do not contain spaces
+                for query_term, query_positions in self.__query_terms_positions_dict.items():
+                    if query_term != term:
+                        freq_neighborhood_positions = self.__calculate_ponderation_of_distances_between_term_positions(query_positions, 
                                                                                                                        term_positions)
 
                         if (any(frq > 0 for frq in freq_neighborhood_positions)):
                             if (first_one):
                                 vicinity_matrix[term] = {}
                                 first_one = False
-                            vicinity_matrix[term][ref_term] = freq_neighborhood_positions
+                            vicinity_matrix[term][query_term] = freq_neighborhood_positions
 
         self.__vicinity_matrix = vicinity_matrix
-    
-
-    def __remove_spaces(self, term: str) -> str:
-        if (len(term.split(" ")) > 1):
-            term = term.replace(" ", "")
-        return term
-
 
 
     def __calculate_ponderation_of_distances_between_term_positions(self,
@@ -970,7 +962,7 @@ class Sentence:
             ) -> list[float]:
         """
         Compare the positions vectors of two terms, and return the ponderation 
-        (frequency * weight) list per distance between reference terms and vicinity terms
+        (frequency * weight) list per distance between query terms and vicinity terms
 
         Parameters
         ----------
@@ -982,9 +974,9 @@ class Sentence:
         Returns
         -------
         ponderations_per_distance : list[float]
-            List of ponderations per distance between reference terms and vicinity terms
+            List of ponderations per distance between query terms and vicinity terms
         """
-        limit_distance = self.__graphs[0].get_config().get_limit_distance()
+        limit_distance = self.__query.root.graph.get_config().get_limit_distance()
         ponderations_per_distance = [0] * limit_distance
 
         for term1_pos in term1_positions:
@@ -1008,16 +1000,15 @@ class Sentence:
 
 class Document:
     
-    def __init__(self, reference_terms: BooleanOperation | str, abstract: str = "", title: str = "", doc_id: str = "1", 
+    def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", doc_id: str = "1", 
                  weight: float = 1.0, ranking_position: int = 1):
-        self.__reference_terms = reference_terms
+        self.__query = query
         self.__abstract = abstract
         self.__title = title
         self.__doc_id = doc_id
         self.__weight = weight
         self.__ranking_position = ranking_position
         self.__sentences: list[Sentence] = []
-        self.__graphs: list[VicinityGraph] = []
 
         self.__calculate_sentences_list_from_documents()
     
@@ -1034,8 +1025,8 @@ class Document:
         return self.__doc_id
     
 
-    def get_reference_terms(self) -> BooleanOperation | str:
-        return self.__reference_terms
+    def get_query(self) -> BinaryExpressionTree:
+        return self.__query
     
 
     def get_sentences(self) -> list[Sentence]:
@@ -1050,19 +1041,11 @@ class Document:
         return self.__ranking_position
     
 
-    def get_graphs(self) -> list[VicinityGraph]:
-        return self.__graphs
-    
-
     def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
         for graph in self.__graphs:
             if graph.get_subquery_str() == reference_term:
                 return graph
         return None
-    
-
-    def add_graph(self, graph: VicinityGraph) -> None:
-        self.__graphs.append(graph)
     
 
     def do_text_transformations_by_sentence(self,
@@ -1083,47 +1066,33 @@ class Document:
             If True, stemming is applied
         """
         for sentence in self.__sentences:
-            sentence.do_text_transformations_if_any_refterm(stop_words_list, lema, stem)
+            sentence.do_text_transformations_if_any_query_term(stop_words_list, lema, stem)
 
 
     def generate_graph_nodes_of_doc_and_sentences(self) -> None:
         """
         Generate all the nodes associated with the document graphs, along with the graphs of their
-        sentences, based on their reference terms
+        sentences, based on their query trees
         """
         #Generate graph nodes of sentences
         for sentence in self.__sentences:
             sentence.generate_graph_nodes_of_sentence()
         
         #Generate graph nodes of the current document
-        for ref_term in self.__reference_terms.get_operands_str_list():
-            graphs_from_sentences_with_refterm = self.__get_graphs_from_sentences_with_reference_term(ref_term)
-            document_graph = self.__get_union_of_graphs(graphs_from_sentences_with_refterm)
-            self.add_graph(document_graph)
+        #for ref_term in self.__query.get_query_terms_str_with_underscores():
+        #    graphs_from_sentences_with_refterm = self.__get_graphs_from_sentences_with_reference_term(ref_term)
+        #    document_graph = self.__get_union_of_graphs(graphs_from_sentences_with_refterm)
+        #    self.add_graph(document_graph)
     
 
-    def initialize_sentence_graphs(self, 
-            nr_of_graph_terms: int = 5, 
-            limit_distance: int = 4, 
-            include_refterms: bool = True
-            ) -> None:
+    def calculate_term_positions_and_vicinity_matrix(self) -> None:
         """
-        Initialize graphs associated to each sentence of the document. Sentences 
-        have no graph term limit.
-
-        Parameters
-        ----------
-        nr_of_graph_terms : int
-            Configured number of terms in the graph
-        limit_distance : int
-            Maximal distance of terms used to calculate the vicinity
-        include_reference_term : bool
-            If True, the reference term is included in the vicinity
+        Calculate term positions dictionary for terms of the sentence and terms from
+        the query terms, also calculates the vicinity of a list of query 
+        terms in the current document, limited by a specified distance.
         """
         for sentence in self.__sentences:
-            for ref_term in self.__reference_terms.get_operands_str_list():
-                new_graph = VicinityGraph(ref_term, nr_of_graph_terms, limit_distance, include_refterms)
-                sentence.add_graph(new_graph)
+            sentence.calculate_term_positions_and_vicinity_matrix()
     
 
     def get_ieee_explore_article(self,
@@ -1156,9 +1125,9 @@ class Document:
         Transform the text of each document in the input list into a list of sentences. Split the text by dots.
         """
         list_of_sentence_str = self.__get_list_of_sentence_strings()
+        query_copy = copy.deepcopy(self.__query)
         for index, sentence_str in enumerate(list_of_sentence_str):
-            sentence_obj = Sentence(raw_text=sentence_str, reference_terms=self.__reference_terms, 
-                                    position_in_doc=index, weight=self.__weight)
+            sentence_obj = Sentence(raw_text=sentence_str, query=query_copy, position_in_doc=index, weight=self.__weight)
             self.__sentences.append(sentence_obj)
 
     
@@ -1182,17 +1151,17 @@ class Document:
             reference_term: str
             ) -> list[VicinityGraph]:
         """
-        Get all the graphs from the sentences of the current document that have the indicated reference term.
+        Get all the graphs from the sentences of the current document that have the indicated query term.
 
         Parameters
         ----------
         reference_term : str
-            Reference term to compare the graphs from the sentences
+            Query term to compare the graphs from the sentences
 
         Returns
         -------
         graphs_from_sentences_with_refterm : list[VicinityGraph]
-            List of graphs from sentences with the indicated reference term
+            List of graphs from sentences with the indicated query term
         """
         graphs_from_sentences_with_refterm = []
         for sentence in self.__sentences:
@@ -1232,17 +1201,16 @@ class TextTransformationsConfig:
         self.__stemming = stemming
     
 
-    def get_transformations_params(self):
+    def get_transformations_params(self) -> tuple[list[str], bool, str]:
         return self.__stop_words, self.__lemmatization, self.__stemming
 
 
 
 class Ranking:
     
-    def __init__(self, query_text: str, reference_terms: BooleanOperation | str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
+    def __init__(self, query_text: str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
                  stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
-        self.__query_text = query_text
-        self.__reference_terms = reference_terms
+        self.__query = BinaryExpressionTree(query_text)
         self.__nr_search_results = nr_search_results
         self.__ranking_weight_type = ranking_weight_type   #Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
         self.__text_transformations_config = TextTransformationsConfig(stop_words, lemmatization, stemming)
@@ -1252,19 +1220,13 @@ class Ranking:
         results = self.__get_ieee_explore_ranking()
         self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(results)
 
-        self.__graph = VicinityGraph(subquery=self.__reference_terms)
-
 
     def get_documents(self) -> list[Document]:
         return self.__documents 
     
 
-    def get_graph(self) -> VicinityGraph:
-        return self.__graph
-    
-
-    def get_reference_terms(self) -> BooleanOperation | str:
-        return self.__reference_terms
+    def get_query(self) -> BinaryExpressionTree:
+        return self.__query
     
 
     def get_text_transformations_config(self) -> TextTransformationsConfig:
@@ -1288,55 +1250,56 @@ class Ranking:
         limit_distance : int
             Maximal distance of terms used to calculate the vicinity
         include_ref_terms : bool
-            If True, the reference term is included in the vicinity
+            If True, the query term is included in the vicinity
         """
         #Set graph attributes to the graphs of each document and the sentences' graphs of each document
-        self.__initialize_sentence_graphs(nr_of_graph_terms, limit_distance, include_refterms)
+        self.__initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, include_refterms)
 
         #Calculate term positions and vicinity matrix of each sentence by document
         for document in self.__documents:
-            for sentence in document.get_sentences():
-                sentence.calculate_term_positions_and_vicinity_matrix()
+            document.calculate_term_positions_and_vicinity_matrix()
         
+        #Generate nodes of all graphs
         self.__generate_nodes_of_all_graphs()
     
 
-    def __generate_nodes_of_all_graphs(self) -> None:
-        """
-        Generate all the nodes associated with the graphs from both the ranking and all the documents 
-        along with their sentences, based on the reference terms.
-        """
-        for document in self.__documents:
-            document.generate_graph_nodes_of_doc_and_sentences()
-    
-
-    def __initialize_sentence_graphs(self, 
+    def __initialize_graphs_for_all_trees(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
             include_refterms: bool = True
             ) -> None:
         """
-        Initialize graphs associated to each sentence of each document from the ranking. Sentences 
-        have no graph term limit.
+        Generate all the nodes associated with the graphs from both the ranking and all the documents 
+        along with their sentences, based on the query terms.
+        """
+        #Initialize the graphs of the query tree associated with the ranking
+        self.__query.initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_refterms)
 
-        Parameters
-        ----------
-        nr_of_graph_terms : int
-            Configured number of terms in the graph
-        limit_distance : int
-            Maximal distance of terms used to calculate the vicinity
-        include_reference_term : bool
-            If True, the reference term is included in the vicinity
+        #Initialize the graphs of the query trees associated with the documents of the ranking
+        for document in self.__documents:
+            document.get_query().initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_refterms)
+        
+        #Initialize the graphs of the query trees associated with the sentences from the documents of the ranking
+        for document in self.__documents:
+            for sentence in document.get_sentences():
+                sentence.get_query().initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_refterms)
+    
+
+    def __generate_nodes_of_all_graphs(self) -> None:
+        """
+        Generate all the nodes associated with the graphs from both the ranking and all the documents 
+        along with their sentences, based on the query terms.
         """
         for document in self.__documents:
-            document.initialize_sentence_graphs(nr_of_graph_terms, limit_distance, include_refterms)
+            document.generate_graph_nodes_of_doc_and_sentences()
 
 
     def __do_text_transformations_to_refterms(self) -> None:
         """
-        Apply text transformations to the reference terms of the ranking. Remove stopwords, punctuation, stemming, lematization.
+        Apply text transformations to the query terms of the ranking. Lower the text, tokenize, remove 
+        punctuation, stopwords, finally do stemming and lemmatization if specified.
         """
-        self.__reference_terms.do_text_transformations_to_operands(*self.__text_transformations_config.get_transformations_params())
+        self.__query.do_text_transformations_to_query_terms(*self.__text_transformations_config.get_transformations_params())
 
 
     def __get_ieee_explore_ranking(self) -> list[dict]:
@@ -1352,7 +1315,7 @@ class Ranking:
         query = XPLORE(xplore_id)
         query.outputDataFormat='object'
         query.maximumResults(self.__nr_search_results)
-        query.queryText(self.__query_text)
+        query.queryText(self.__query.get_raw_query())
         data = query.callAPI()
         results = data.get('articles', [{}])
         
@@ -1405,7 +1368,8 @@ class Ranking:
         _title = article.get('title', "")
         _doc_id = article.get('article_number', "1")
         _ranking_pos = article.get('rank', 1)
-        new_doc = Document(reference_terms=self.__reference_terms, abstract=_abstract, title=_title, doc_id=_doc_id, 
+        _query_copy = copy.deepcopy(self.__query)
+        new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         
         return new_doc
