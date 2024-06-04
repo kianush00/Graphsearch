@@ -1320,6 +1320,14 @@ class Ranking:
         return self.__query_tree.get_graph_by_subquery(query)
     
 
+    def get_list_of_query_trees_from_documents(self) -> list[BinaryExpressionTree]:
+        """
+        Returns a list of query trees from the documents of the current ranking.
+        """
+        list_of_query_trees = [document.get_query_tree() for document in self.__documents]
+        return list_of_query_trees
+    
+
     def generate_all_graphs(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
@@ -1377,8 +1385,28 @@ class Ranking:
         Generate all the nodes associated with the graphs from both the ranking and all the documents 
         along with their sentences, based on the query terms.
         """
+        #Generate graph nodes of documents and its sentences
         for document in self.__documents:
             document.generate_graph_nodes_of_doc_and_sentences()
+        
+        #Then, generate nodes of the ranking class query tree
+        self.__query_tree = self.__get_union_of_documents_trees()
+    
+
+    def __get_union_of_documents_trees(self) -> BinaryExpressionTree:
+        """
+        Get the union between the list of query trees associated with the documents of the ranking.
+
+        Returns
+        -------
+        union_of_trees : BinaryExpressionTree
+            The union between the document query trees.
+        """
+        query_trees_list = self.get_list_of_query_trees_from_documents()
+        # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
+        # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
+        union_of_trees = reduce((lambda tree1, tree2: tree1.get_union_to_tree(tree2)), query_trees_list)
+        return union_of_trees
 
 
     def __do_text_transformations_to_refterms(self) -> None:
