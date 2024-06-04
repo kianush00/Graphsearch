@@ -162,13 +162,9 @@ class VicinityGraph:
         
     def __init__(self, subquery: str, nr_of_graph_terms: int = 5, 
                  limit_distance: int = 4, include_query_terms: bool = True):
-        self.__subquery = subquery
+        self.subquery = subquery
         self.__config: VicinityGraphConfig = VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_query_terms)
         self.__nodes: list[VicinityNode] = []
-
-
-    def get_subquery_str(self) -> str:
-        return self.__subquery
 
 
     def get_config(self) -> VicinityGraphConfig:
@@ -326,7 +322,7 @@ class BinaryTreeNode:
 
     def get_graph_from_subtree_by_subquery(self, query: str) -> VicinityGraph | None:
         if self.is_leaf():
-            if self.graph.get_subquery_str() == query:
+            if self.graph.subquery == query:
                 return self.graph
             else:
                 return None
@@ -360,6 +356,23 @@ class BinaryTreeNode:
         return copy_subtree
     
 
+    def do_graph_operation_from_subtrees(self) -> None:
+        if not self.is_leaf():
+            #Validate if the tree has no empty vicinity graphs in leaves
+            try:
+                self.__set_and_get_graph_operated_from_subtrees()
+            except Exception as e:
+                print('Error at do_graph_operation_from_subtrees(): ' + repr(e))
+    
+
+    def __str__(self) -> str:
+        return ''.join(self.__inorder_traversal())
+    
+
+    def tree_str(self) -> str:
+        return self.__generate_tree_str()
+    
+
     def __do_union_between_copy_self_and_subtree(self, external_peer_node: 'BinaryTreeNode') -> None:
         """
         Unites an external subtree with the own copy subtree and modifies the own subtree graphs.
@@ -382,23 +395,6 @@ class BinaryTreeNode:
         #Checks if both nodes have a right node, to continue the recursion
         if self.right and external_peer_node.right:
             self.right.__do_union_between_copy_self_and_subtree(external_peer_node.right)
-    
-
-    def do_graph_operation_from_subtrees(self) -> None:
-        if not self.is_leaf():
-            #Validate if the tree has no empty vicinity graphs in leaves
-            try:
-                self.__set_and_get_graph_operated_from_subtrees()
-            except Exception as e:
-                print('Error at do_graph_operation_from_subtrees(): ' + repr(e))
-    
-
-    def __str__(self) -> str:
-        return ''.join(self.__inorder_traversal())
-    
-
-    def tree_str(self) -> str:
-        return self.__generate_tree_str()
     
 
     def __set_and_get_graph_operated_from_subtrees(self) -> VicinityGraph:
@@ -427,6 +423,11 @@ class BinaryTreeNode:
                 graph = left_graph.get_intersection_to_graph(right_graph)
             elif self.value == 'OR':
                 graph = left_graph.get_union_to_graph(right_graph)
+            
+            #The new graph inherits the same subquery from the selft graph
+            if self.graph:
+                graph.subquery = self.graph.subquery
+
             self.graph = graph
             return graph
     
