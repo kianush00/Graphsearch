@@ -338,6 +338,52 @@ class BinaryTreeNode:
         return left_candidate if left_candidate is not None else right_candidate
     
 
+    def get_union_to_subtree(self, external_subtree: 'BinaryTreeNode') -> 'BinaryTreeNode':
+        """
+        Gets the union between an external subtree and the own subtree, then obtains a new subtree.
+        The merging process involves iterating through the nodes of both subtrees, calculating 
+        the sum of weights and the average distances between each one, that is, the union
+        between each graph (tree node) of both subtrees.
+        
+        Parameters
+        ----------
+        external_subtree : BinaryTreeNode
+            The external subtree to be united
+
+        Returns
+        -------
+        copy_subtree : BinaryTreeNode
+            The union between copy of the subtree itself and an external subtree
+        """
+        copy_subtree = copy.deepcopy(self)
+        copy_subtree.__do_union_between_copy_self_and_subtree(external_subtree)
+        return copy_subtree
+    
+
+    def __do_union_between_copy_self_and_subtree(self, external_peer_node: 'BinaryTreeNode') -> None:
+        """
+        Unites an external subtree with the own copy subtree and modifies the own subtree graphs.
+        This method should only be used by the copy from the original BinaryTreeNode object.
+        
+        Parameters
+        ----------
+        external_peer_node : BinaryTreeNode
+            The external peer node to be united
+        """
+        #Checks if both nodes have a non-null graph attribute, to then join them and set them in the copy attribute
+        if self.graph and external_peer_node.graph:
+            current_node_united_graph = self.graph.get_union_to_graph(external_peer_node.graph)
+            self.graph = current_node_united_graph
+        
+        #Checks if both nodes have a left node, to continue the recursion
+        if self.left and external_peer_node.left:
+            self.left.__do_union_between_copy_self_and_subtree(external_peer_node.left)
+        
+        #Checks if both nodes have a right node, to continue the recursion
+        if self.right and external_peer_node.right:
+            self.right.__do_union_between_copy_self_and_subtree(external_peer_node.right)
+    
+
     def do_graph_operation_from_subtrees(self) -> None:
         if not self.is_leaf():
             #Validate if the tree has no empty vicinity graphs in leaves
@@ -364,7 +410,7 @@ class BinaryTreeNode:
             if self.left.graph:
                 left_graph = self.left.graph
             else:
-                raise Exception('Empty vicinity graphs in leaves')
+                raise Exception('Null vicinity graphs in leaves')
         else:
             left_graph = self.left.__set_and_get_graph_operated_from_subtrees()
         
@@ -372,7 +418,7 @@ class BinaryTreeNode:
             if self.right.graph:
                 right_graph = self.right.graph
             else:
-                raise Exception('Empty vicinity graphs in leaves')
+                raise Exception('Null vicinity graphs in leaves')
         else:
             right_graph = self.right.__set_and_get_graph_operated_from_subtrees()
 
@@ -454,6 +500,41 @@ class BinaryExpressionTree:
         if not self.root:
             return None
         return self.root.get_graph_from_subtree_by_subquery(query)
+    
+
+    def get_union_to_tree(self,
+            external_tree: 'BinaryExpressionTree'
+            ) -> 'BinaryExpressionTree':
+        """
+        Unites an external tree with the own tree and obtains a new tree.
+        The merging process involves iterating through the graphs of both tree, calculating 
+        the sum of weights and the average distances between each one, that is, the union
+        between each graph (tree node) of both trees.
+        
+        Parameters
+        ----------
+        external_tree : BinaryExpressionTree
+            The external tree to be united
+
+        Returns
+        -------
+        copy_tree : BinaryExpressionTree
+            The union between copy of the tree itself and an external tree
+        """
+        copy_tree = copy.deepcopy(self)
+        
+        #Union between self tree and None is self tree
+        if not external_tree.root:
+            return copy_tree
+        
+        #Union between external tree and None is external tree
+        if external_tree.root and not self.root:
+            return copy.deepcopy(external_tree)
+        
+        #Get the deep union between the copy root node and the external root node
+        copy_root = copy_tree.root.get_union_to_subtree(external_tree.root)
+        copy_tree.root = copy_root
+        return copy_tree
     
 
     def operate_graphs_from_leaves(self) -> None:
@@ -1069,6 +1150,14 @@ class Document:
         return self.__query_tree.get_graph_by_subquery(query)
     
 
+    def get_list_of_query_trees_from_sentences(self) -> list[BinaryExpressionTree]:
+        """
+        Returns a list of query trees from the sentences of the current document.
+        """
+        list_of_query_trees = [sentence.get_query_tree() for sentence in self.__sentences]
+        return list_of_query_trees
+    
+
     def do_text_transformations_by_sentence(self,
             stop_words_list: list[str], 
             lema: bool,
@@ -1093,17 +1182,14 @@ class Document:
     def generate_graph_nodes_of_doc_and_sentences(self) -> None:
         """
         Generate all the nodes associated with the document graphs, along with the graphs of their
-        sentences, based on their query trees
+        sentences, based on their query trees.
         """
         #Generate graph nodes of sentences
         for sentence in self.__sentences:
             sentence.generate_graph_nodes_of_sentence()
         
         #Generate graph nodes of the current document
-        #for ref_term in self.__query_tree.get_query_terms_str_with_underscores():
-        #    graphs_from_sentences_with_refterm = self.__get_graphs_from_sentences_with_reference_term(ref_term)
-        #    document_graph = self.__get_union_of_graphs(graphs_from_sentences_with_refterm)
-        #    self.add_graph(document_graph)
+        self.__query_tree = self.__get_union_of_sentences_trees()
     
 
     def calculate_term_positions_and_vicinity_matrix(self) -> None:
@@ -1170,50 +1256,20 @@ class Document:
         return list_of_sentence_str
     
 
-    # def __get_graphs_from_sentences_with_reference_term(self, 
-    #         reference_term: str
-    #         ) -> list[VicinityGraph]:
-    #     """
-    #     Get all the graphs from the sentences of the current document that have the indicated query term.
-
-    #     Parameters
-    #     ----------
-    #     reference_term : str
-    #         Query term to compare the graphs from the sentences
-
-    #     Returns
-    #     -------
-    #     graphs_from_sentences_with_refterm : list[VicinityGraph]
-    #         List of graphs from sentences with the indicated query term
-    #     """
-    #     graphs_from_sentences_with_refterm = []
-    #     for sentence in self.__sentences:
-    #         graph_by_refterm = sentence.get_graph_by_reference_term(reference_term)
-    #         graphs_from_sentences_with_refterm.append(graph_by_refterm)
-    #     return graphs_from_sentences_with_refterm
-    
-
-    def __get_union_of_graphs(
-            self, 
-            graphs: list[VicinityGraph]
-            ) -> VicinityGraph:
+    def __get_union_of_sentences_trees(self) -> BinaryExpressionTree:
         """
-        Get the union between the indicated graphs.
-
-        Parameters
-        ----------
-        graphs : list[VicinityGraph]
-            List of graphs to be united.
+        Get the union between the list of query trees associated with the sentences of the document.
 
         Returns
         -------
-        union_of_graphs : Graph
-            The union between the graphs.
+        union_of_trees : BinaryExpressionTree
+            The union between the sentence query trees.
         """
+        query_trees_list = self.get_list_of_query_trees_from_sentences()
         # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
         # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
-        union_of_graphs = reduce((lambda graph1, graph2: graph1.get_union_to_graph(graph2)), graphs)
-        return union_of_graphs
+        union_of_trees = reduce((lambda tree1, tree2: tree1.get_union_to_tree(tree2)), query_trees_list)
+        return union_of_trees
 
 
 
