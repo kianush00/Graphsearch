@@ -840,12 +840,13 @@ class Sentence:
         sentence_str_with_underscores_in_query_terms : str
             Transformed sentence string without spaces in query terms within the sentence
         """
-        sentence_str_with_underscores_in_query_terms = query_terms_with_underscores
+        # If the query terms do not have underscores, then the same transformed sentence is returned
+        sentence_str_with_underscores_in_query_terms = transformed_sentence_str
         
         for query_term_with_underscores in query_terms_with_underscores:
             query_term_with_spaces = query_term_with_underscores.replace('_', ' ')
             #If the query term is in the transformed sentence string and the query term contains more than a word
-            if (query_term_with_spaces in transformed_sentence_str) and (len(query_term_with_underscores.split('_')) > 1): 
+            if (query_term_with_spaces in transformed_sentence_str) and ("_" in query_term_with_underscores): 
                 sentence_str_with_underscores_in_query_terms = transformed_sentence_str.replace(query_term_with_spaces, query_term_with_underscores)
         return sentence_str_with_underscores_in_query_terms
     
@@ -957,7 +958,7 @@ class Sentence:
         # and return a list of these terms and their corresponding distances
         for term, term_positions in self.__term_positions_dict.items():
             #Avoid comparing the query term with itself (if bool false)
-            if((term not in self.__query_terms_positions_dict.keys()) or (self.__query_tree.root.graph.get_config().get_include_query_terms())): 
+            if((term not in self.__query_terms_positions_dict.keys()) or (self.get_graph().get_config().get_include_query_terms())): 
                 # Calculate the distance between the query term and the rest of terms
                 first_one = True
                 # Iterate query terms that do not contain spaces
@@ -995,7 +996,7 @@ class Sentence:
         ponderations_per_distance : list[float]
             List of ponderations per distance between query terms and vicinity terms
         """
-        limit_distance = self.__query_tree.root.graph.get_config().get_limit_distance()
+        limit_distance = self.get_graph().get_config().get_limit_distance()
         ponderations_per_distance = [0] * limit_distance
 
         for term1_pos in term1_positions:
