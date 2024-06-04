@@ -156,6 +156,11 @@ class VicinityNode:
     def set_distance(self, distance: float) -> None:
         self.__distance = distance
 
+    
+    def __str__(self) -> str:
+        string = f"TERM: {self.__term} ; PONDERATION: {self.__ponderation} ; DISTANCE: {self.__distance}"
+        return string
+
 
 
 class VicinityGraph:
@@ -228,6 +233,13 @@ class VicinityGraph:
             united_graph.add_node(node_from_ext_graph)
 
         return united_graph
+    
+
+    def __str__(self) -> str:
+        string = "SUBQUERY: " + self.subquery
+        for node in self.__nodes:
+            string += "\n" + str(node)
+        return string
     
 
     def get_intersection_to_graph(self,
