@@ -424,7 +424,7 @@ class BinaryTreeNode:
             elif self.value == 'OR':
                 graph = left_graph.get_union_to_graph(right_graph)
             
-            #The new graph inherits the same subquery from the selft graph
+            #The new graph inherits the same subquery from the self graph
             if self.graph:
                 graph.subquery = self.graph.subquery
 
