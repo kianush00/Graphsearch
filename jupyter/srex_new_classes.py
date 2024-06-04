@@ -161,9 +161,9 @@ class VicinityNode:
 class VicinityGraph:
         
     def __init__(self, subquery: str, nr_of_graph_terms: int = 5, 
-                 limit_distance: int = 4, include_refterms: bool = True):
+                 limit_distance: int = 4, include_query_terms: bool = True):
         self.__subquery = subquery
-        self.__config = VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_refterms)
+        self.__config: VicinityGraphConfig = VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_query_terms)
         self.__nodes: list[VicinityNode] = []
 
 
@@ -186,7 +186,7 @@ class VicinityGraph:
         return None
     
 
-    def get_node_terms(self) -> list[str]:
+    def get_terms_from_nodes(self) -> list[str]:
         node_terms = []
         for node in self.__nodes:
             node_terms.append(node.get_term())
@@ -224,8 +224,8 @@ class VicinityGraph:
         """
         united_graph = self.__get_calculation_of_intersected_terms(external_graph)
         
-        node_terms_from_copy_graph = united_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
+        node_terms_from_copy_graph = united_graph.get_terms_from_nodes()
+        node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
         #if the external graph has exclusive terms, then it needs to be added to the united graph
         for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
             node_from_ext_graph = external_graph.get_node_by_term(node_term)
@@ -255,8 +255,8 @@ class VicinityGraph:
         #if the graph copy term is already in the external graph
         intersected_graph = self.__get_calculation_of_intersected_terms(external_graph)
 
-        node_terms_from_copy_graph = intersected_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
+        node_terms_from_copy_graph = intersected_graph.get_terms_from_nodes()
+        node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
         #if the graph copy has exclusive terms, then it needs to be deleted
         for node_term in set(node_terms_from_copy_graph) - set(node_terms_from_ext_graph):
             intersected_graph.delete_node_by_term(node_term)
@@ -283,8 +283,8 @@ class VicinityGraph:
         """
         copy_graph = copy.deepcopy(self)
 
-        node_terms_from_copy_graph = copy_graph.get_node_terms()
-        node_terms_from_ext_graph = external_graph.get_node_terms()
+        node_terms_from_copy_graph = copy_graph.get_terms_from_nodes()
+        node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
 
         for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
             node_from_copy_graph = copy_graph.get_node_by_term(node_term)
@@ -331,7 +331,15 @@ class BinaryTreeNode:
                 self.__set_and_get_graph_operated_from_subtrees()
             except Exception as e:
                 print('Error at do_graph_operation_from_subtrees(): ' + repr(e))
+    
 
+    def __str__(self) -> str:
+        return ''.join(self.__inorder_traversal())
+    
+
+    def tree_str(self) -> str:
+        return self.__generate_tree_str()
+    
 
     def __set_and_get_graph_operated_from_subtrees(self) -> VicinityGraph:
         graph = None
@@ -361,16 +369,6 @@ class BinaryTreeNode:
                 graph = left_graph.get_union_to_graph(right_graph)
             self.graph = graph
             return graph
-
-        
-    
-
-    def __str__(self) -> str:
-        return ''.join(self.__inorder_traversal())
-    
-
-    def tree_str(self) -> str:
-        return self.__generate_tree_str()
     
 
     def __inorder_traversal(self, level: int = 0) -> list[str]:
@@ -422,7 +420,7 @@ class BinaryExpressionTree:
             print('Error initializing BinaryExpressionTree instance: ' + repr(e))
     
 
-    def get_raw_query(self):
+    def get_raw_query(self) -> str:
         return self.__raw_query
     
 
@@ -474,7 +472,7 @@ class BinaryExpressionTree:
     def initialize_graph_for_each_node(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_refterms: bool = True
+            include_query_terms: bool = True
             ) -> None:
         """
         Initialize graphs associated to each node in the tree.
@@ -485,11 +483,11 @@ class BinaryExpressionTree:
             Configured number of terms in the graph
         limit_distance : int
             Maximal distance of terms used to calculate the vicinity
-        include_reference_term : bool
+        include_query_terms : bool
             If True, the query term is included in the vicinity
         """
         def initialize_graph(node: BinaryTreeNode):
-            node.graph = VicinityGraph(str(node), nr_of_graph_terms, limit_distance, include_refterms)
+            node.graph = VicinityGraph(str(node), nr_of_graph_terms, limit_distance, include_query_terms)
             if not node.is_leaf():
                 initialize_graph(node.left)
                 initialize_graph(node.right)
@@ -707,7 +705,7 @@ class Sentence:
     
     def __init__(self, raw_text: str, query: BinaryExpressionTree, position_in_doc: int = 0, weight: float = 1.0):
         self.__raw_text = raw_text
-        self.__query = query
+        self.__query_tree = query
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__preprocessed_text: str = ""
@@ -720,8 +718,8 @@ class Sentence:
         return self.__raw_text
     
 
-    def get_query(self) -> BinaryExpressionTree:
-        return self.__query
+    def get_query_tree(self) -> BinaryExpressionTree:
+        return self.__query_tree
 
 
     def get_position_in_doc(self) -> int:
@@ -734,6 +732,10 @@ class Sentence:
 
     def get_preprocessed_text(self) -> str:
         return self.__preprocessed_text
+    
+
+    def get_graph(self) -> VicinityGraph | None:
+        return self.__query_tree.root.graph
     
 
     def set_preprocessed_text(self, value: str) -> None:
@@ -770,7 +772,7 @@ class Sentence:
             If True, stemming is applied
         """
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
-        query_terms_with_underscores = self.__query.get_query_terms_str_with_underscores()
+        query_terms_with_underscores = self.__query_tree.get_query_terms_str_with_underscores()
         query_terms_with_spaces = [term.replace('_', ' ') for term in query_terms_with_underscores]
         #If there is any query term in the transformed sentence string
         if any(query_term in transformed_sentence_str for query_term in query_terms_with_spaces):  
@@ -796,11 +798,11 @@ class Sentence:
         their isolated query terms as leaves from the query tree.
         """
         #First, generate nodes to the graphs associated with the leaves from the query tree
-        for leaf_node in self.__query.get_query_terms_as_leaves():
+        for leaf_node in self.__query_tree.get_query_terms_as_leaves():
             self.__generate_nodes_in_leaves_graphs(leaf_node)
         
         #Then, generate nodes to the graphs associated with the rest of the nodes in the tree
-        self.__query.operate_graphs_from_leaves()
+        self.__query_tree.operate_graphs_from_leaves()
     
 
     def __get_transformed_sentence_str_with_underscores_in_query_terms(self,
@@ -917,7 +919,7 @@ class Sentence:
         """
         query_term_positions_dict = {}
 
-        for query_term in self.__query.get_query_terms_str_with_underscores():
+        for query_term in self.__query_tree.get_query_terms_str_with_underscores():
             # If the query term is within the term position dictionary
             if query_term in self.__term_positions_dict.keys():
                 # Get the term positions of the query term
@@ -938,7 +940,7 @@ class Sentence:
         # and return a list of these terms and their corresponding distances
         for term, term_positions in self.__term_positions_dict.items():
             #Avoid comparing the query term with itself (if bool false)
-            if((term not in self.__query_terms_positions_dict.keys()) or (self.__query.root.graph.get_config().get_include_query_terms())): 
+            if((term not in self.__query_terms_positions_dict.keys()) or (self.__query_tree.root.graph.get_config().get_include_query_terms())): 
                 # Calculate the distance between the query term and the rest of terms
                 first_one = True
                 # Iterate query terms that do not contain spaces
@@ -976,7 +978,7 @@ class Sentence:
         ponderations_per_distance : list[float]
             List of ponderations per distance between query terms and vicinity terms
         """
-        limit_distance = self.__query.root.graph.get_config().get_limit_distance()
+        limit_distance = self.__query_tree.root.graph.get_config().get_limit_distance()
         ponderations_per_distance = [0] * limit_distance
 
         for term1_pos in term1_positions:
@@ -1002,7 +1004,7 @@ class Document:
     
     def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", doc_id: str = "1", 
                  weight: float = 1.0, ranking_position: int = 1):
-        self.__query = query
+        self.__query_tree = query
         self.__abstract = abstract
         self.__title = title
         self.__doc_id = doc_id
@@ -1025,8 +1027,8 @@ class Document:
         return self.__doc_id
     
 
-    def get_query(self) -> BinaryExpressionTree:
-        return self.__query
+    def get_query_tree(self) -> BinaryExpressionTree:
+        return self.__query_tree
     
 
     def get_sentences(self) -> list[Sentence]:
@@ -1039,6 +1041,10 @@ class Document:
 
     def get_ranking_position(self) -> int:
         return self.__ranking_position
+    
+
+    def get_graph(self) -> VicinityGraph | None:
+        return self.__query_tree.root.graph
     
 
     def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
@@ -1079,7 +1085,7 @@ class Document:
             sentence.generate_graph_nodes_of_sentence()
         
         #Generate graph nodes of the current document
-        #for ref_term in self.__query.get_query_terms_str_with_underscores():
+        #for ref_term in self.__query_tree.get_query_terms_str_with_underscores():
         #    graphs_from_sentences_with_refterm = self.__get_graphs_from_sentences_with_reference_term(ref_term)
         #    document_graph = self.__get_union_of_graphs(graphs_from_sentences_with_refterm)
         #    self.add_graph(document_graph)
@@ -1122,11 +1128,13 @@ class Document:
 
     def __calculate_sentences_list_from_documents(self) -> None:
         """
-        Transform the text of each document in the input list into a list of sentences. Split the text by dots.
+        Transform the text of each document in the input list into a list of sentences. Split 
+        the text by dots. It also generates a copy of the document tree and adds it as an 
+        attribute of the new sentence.
         """
         list_of_sentence_str = self.__get_list_of_sentence_strings()
-        query_copy = copy.deepcopy(self.__query)
         for index, sentence_str in enumerate(list_of_sentence_str):
+            query_copy = copy.deepcopy(self.__query_tree)
             sentence_obj = Sentence(raw_text=sentence_str, query=query_copy, position_in_doc=index, weight=self.__weight)
             self.__sentences.append(sentence_obj)
 
@@ -1147,27 +1155,27 @@ class Document:
         return list_of_sentence_str
     
 
-    def __get_graphs_from_sentences_with_reference_term(self, 
-            reference_term: str
-            ) -> list[VicinityGraph]:
-        """
-        Get all the graphs from the sentences of the current document that have the indicated query term.
+    # def __get_graphs_from_sentences_with_reference_term(self, 
+    #         reference_term: str
+    #         ) -> list[VicinityGraph]:
+    #     """
+    #     Get all the graphs from the sentences of the current document that have the indicated query term.
 
-        Parameters
-        ----------
-        reference_term : str
-            Query term to compare the graphs from the sentences
+    #     Parameters
+    #     ----------
+    #     reference_term : str
+    #         Query term to compare the graphs from the sentences
 
-        Returns
-        -------
-        graphs_from_sentences_with_refterm : list[VicinityGraph]
-            List of graphs from sentences with the indicated query term
-        """
-        graphs_from_sentences_with_refterm = []
-        for sentence in self.__sentences:
-            graph_by_refterm = sentence.get_graph_by_reference_term(reference_term)
-            graphs_from_sentences_with_refterm.append(graph_by_refterm)
-        return graphs_from_sentences_with_refterm
+    #     Returns
+    #     -------
+    #     graphs_from_sentences_with_refterm : list[VicinityGraph]
+    #         List of graphs from sentences with the indicated query term
+    #     """
+    #     graphs_from_sentences_with_refterm = []
+    #     for sentence in self.__sentences:
+    #         graph_by_refterm = sentence.get_graph_by_reference_term(reference_term)
+    #         graphs_from_sentences_with_refterm.append(graph_by_refterm)
+    #     return graphs_from_sentences_with_refterm
     
 
     def __get_union_of_graphs(
@@ -1195,13 +1203,13 @@ class Document:
 
 
 class TextTransformationsConfig:
-    def __init__(self, stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
+    def __init__(self, stop_words: list[str] = [], lemmatization: bool = True, stemming: bool = False):
         self.__stop_words = stop_words
         self.__lemmatization = lemmatization
         self.__stemming = stemming
     
 
-    def get_transformations_params(self) -> tuple[list[str], bool, str]:
+    def get_transformations_params(self) -> tuple[list[str], bool, bool]:
         return self.__stop_words, self.__lemmatization, self.__stemming
 
 
@@ -1210,10 +1218,10 @@ class Ranking:
     
     def __init__(self, query_text: str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
                  stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
-        self.__query = BinaryExpressionTree(query_text)
+        self.__query_tree: BinaryExpressionTree = BinaryExpressionTree(query_text)
         self.__nr_search_results = nr_search_results
         self.__ranking_weight_type = ranking_weight_type   #Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
-        self.__text_transformations_config = TextTransformationsConfig(stop_words, lemmatization, stemming)
+        self.__text_transformations_config: TextTransformationsConfig = TextTransformationsConfig(stop_words, lemmatization, stemming)
         self.__documents: list[Document] = []
 
         self.__do_text_transformations_to_refterms()
@@ -1225,18 +1233,22 @@ class Ranking:
         return self.__documents 
     
 
-    def get_query(self) -> BinaryExpressionTree:
-        return self.__query
+    def get_query_tree(self) -> BinaryExpressionTree:
+        return self.__query_tree
     
 
     def get_text_transformations_config(self) -> TextTransformationsConfig:
         return self.__text_transformations_config
     
 
+    def get_graph(self) -> VicinityGraph | None:
+        return self.__query_tree.root.graph
+    
+
     def generate_all_graphs(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_refterms: bool = True
+            include_query_terms: bool = True
             ) -> None:
         """
         Initialize graphs associated to all the sentences of each document from the ranking. Sentences 
@@ -1253,7 +1265,7 @@ class Ranking:
             If True, the query term is included in the vicinity
         """
         #Set graph attributes to the graphs of each document and the sentences' graphs of each document
-        self.__initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, include_refterms)
+        self.__initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, include_query_terms)
 
         #Calculate term positions and vicinity matrix of each sentence by document
         for document in self.__documents:
@@ -1266,23 +1278,23 @@ class Ranking:
     def __initialize_graphs_for_all_trees(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_refterms: bool = True
+            include_query_terms: bool = True
             ) -> None:
         """
         Generate all the nodes associated with the graphs from both the ranking and all the documents 
         along with their sentences, based on the query terms.
         """
         #Initialize the graphs of the query tree associated with the ranking
-        self.__query.initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_refterms)
+        self.__query_tree.initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_query_terms)
 
         #Initialize the graphs of the query trees associated with the documents of the ranking
         for document in self.__documents:
-            document.get_query().initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_refterms)
+            document.get_query_tree().initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_query_terms)
         
         #Initialize the graphs of the query trees associated with the sentences from the documents of the ranking
         for document in self.__documents:
             for sentence in document.get_sentences():
-                sentence.get_query().initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_refterms)
+                sentence.get_query_tree().initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_query_terms)
     
 
     def __generate_nodes_of_all_graphs(self) -> None:
@@ -1299,7 +1311,7 @@ class Ranking:
         Apply text transformations to the query terms of the ranking. Lower the text, tokenize, remove 
         punctuation, stopwords, finally do stemming and lemmatization if specified.
         """
-        self.__query.do_text_transformations_to_query_terms(*self.__text_transformations_config.get_transformations_params())
+        self.__query_tree.do_text_transformations_to_query_terms(*self.__text_transformations_config.get_transformations_params())
 
 
     def __get_ieee_explore_ranking(self) -> list[dict]:
@@ -1315,7 +1327,7 @@ class Ranking:
         query = XPLORE(xplore_id)
         query.outputDataFormat='object'
         query.maximumResults(self.__nr_search_results)
-        query.queryText(self.__query.get_raw_query())
+        query.queryText(self.__query_tree.get_raw_query())
         data = query.callAPI()
         results = data.get('articles', [{}])
         
@@ -1346,7 +1358,8 @@ class Ranking:
             results_size : int,
             ) -> Document:
         """
-        Create and get a new Document object from an article.
+        Create and get a new Document object from an article. It also generates a copy of the 
+        ranking query tree and adds it as an attribute of the new document.
 
         Parameters
         ----------
@@ -1368,7 +1381,7 @@ class Ranking:
         _title = article.get('title', "")
         _doc_id = article.get('article_number', "1")
         _ranking_pos = article.get('rank', 1)
-        _query_copy = copy.deepcopy(self.__query)
+        _query_copy = copy.deepcopy(self.__query_tree)
         new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         
