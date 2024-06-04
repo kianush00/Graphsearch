@@ -324,6 +324,20 @@ class BinaryTreeNode:
         return self.left.get_leaves() + self.right.get_leaves()
     
 
+    def get_graph_from_subtree_by_subquery(self, query: str) -> VicinityGraph | None:
+        if self.is_leaf():
+            if self.graph.get_subquery_str() == query:
+                return self.graph
+            else:
+                return None
+            
+        left_candidate = self.left.get_graph_from_subtree_by_subquery(query)
+        right_candidate = self.right.get_graph_from_subtree_by_subquery(query)
+
+        # Return left candidate if not None, otherwise return right candidate
+        return left_candidate if left_candidate is not None else right_candidate
+    
+
     def do_graph_operation_from_subtrees(self) -> None:
         if not self.is_leaf():
             #Validate if the tree has no empty vicinity graphs in leaves
@@ -434,6 +448,12 @@ class BinaryExpressionTree:
         if not self.root:
             return []
         return self.root.get_leaves()
+    
+
+    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
+        if not self.root:
+            return None
+        return self.root.get_graph_from_subtree_by_subquery(query)
     
 
     def operate_graphs_from_leaves(self) -> None:
@@ -742,11 +762,8 @@ class Sentence:
         self.__preprocessed_text = value
     
 
-    def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
-        for graph in self.__graphs:
-            if graph.get_subquery_str() == reference_term:
-                return graph
-        return None
+    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
+        return self.__query_tree.get_graph_by_subquery(query)
     
 
     def get_vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
@@ -1047,11 +1064,8 @@ class Document:
         return self.__query_tree.root.graph
     
 
-    def get_graph_by_reference_term(self, reference_term: str) -> VicinityGraph:
-        for graph in self.__graphs:
-            if graph.get_subquery_str() == reference_term:
-                return graph
-        return None
+    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
+        return self.__query_tree.get_graph_by_subquery(query)
     
 
     def do_text_transformations_by_sentence(self,
@@ -1243,6 +1257,10 @@ class Ranking:
 
     def get_graph(self) -> VicinityGraph | None:
         return self.__query_tree.root.graph
+    
+
+    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
+        return self.__query_tree.get_graph_by_subquery(query)
     
 
     def generate_all_graphs(self, 
