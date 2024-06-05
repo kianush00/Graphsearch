@@ -28,8 +28,9 @@ class TextUtils:
             stem: bool = True
             ) -> str:
         """
-        Apply some transformations to the text with underscores. First the underscores are replaced, then 
-        the text is transformed, and finally the underscores are reinserted into the text
+        Apply some transformations to the text with underscores. First the underscores 
+        are replaced, then the text is transformed, and finally the underscores are 
+        reinserted into the text
 
         Parameters
         ----------
@@ -48,7 +49,8 @@ class TextUtils:
             The transformed sentence
         """
         text_with_underscores = text_with_underscores.replace('_', ' ')
-        transformed_text = TextUtils.get_transformed_text(text_with_underscores, stop_words_list, lema, stem)
+        transformed_text = TextUtils.get_transformed_text(text_with_underscores, 
+                                                          stop_words_list, lema, stem)
         transformed_text = transformed_text.replace(' ', '_')
         
         return transformed_text
@@ -62,8 +64,8 @@ class TextUtils:
             stem: bool = True
             ) -> str:
         """
-        Apply some transformations to the text. Lower the text, tokenize, remove punctuation, stopwords, 
-        finally do stemming and lemmatization if specified.
+        Apply some transformations to the text. Lower the text, tokenize, remove punctuation, 
+        stopwords, finally do stemming and lemmatization if specified.
 
         Parameters
         ----------
@@ -163,7 +165,10 @@ class VicinityNode:
 
     
     def __str__(self) -> str:
-        string = f"TERM: {self.__term} ; PONDERATION: {round(self.__ponderation, 1)} ; DISTANCE: {round(self.__distance, 1)}"
+        term = self.__term
+        ponderation = round(self.__ponderation, 1)
+        distance = round(self.__distance, 1)
+        string = f"TERM: {term} ; PONDERATION: {ponderation} ; DISTANCE: {distance}"
         return string
 
 
@@ -185,6 +190,26 @@ class VicinityGraph:
     def get_sorted_nodes(self) -> list[VicinityNode]:
         """Return the list of nodes sorted by ponderation in descending order"""
         return sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
+    
+
+    def get_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
+        """
+        Return the list of nodes sorted by ponderation in descending order, and limit 
+        its lenght by the number of graph terms, from the current graph configuration.
+        It also ignores the vicinity nodes that include the query terms.
+        """
+        sorted_nodes_to_visualize = sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
+        subquery = self.subquery
+        # Removes characters '(', ')' and spaces in subquery variable
+        subquery = subquery.translate(str.maketrans("", "", "() "))
+        # Gets a list from subquery splitted by any 'AND' or 'OR' character
+        splitted_subquery = re.split(r'AND|OR', subquery)
+        # Ignores the nodes that contain a subquery in its term
+        sorted_nodes_to_visualize = [node for node in sorted_nodes_to_visualize if node.get_term() not in splitted_subquery]
+        # Limits the number of nodes to the number of graph terms
+        sorted_nodes_to_visualize = sorted_nodes_to_visualize[:self.__config.get_number_of_graph_terms()]
+
+        return sorted_nodes_to_visualize
     
 
     def get_node_by_term(self, term: str) -> VicinityNode:
@@ -217,6 +242,44 @@ class VicinityGraph:
         for node in self.get_sorted_nodes():
             string += "\n" + str(node)
         return string
+    
+
+    def get_graph_viz(self,
+            node_size: str = '2', 
+            node_color: str = 'green'
+            ) -> Graph:
+        """
+        Visualizes the graph, highlighting the vicinity terms with the highest ponderation.
+
+        Parameters
+        ----------
+        node_size : str
+            Node size to adjust the graph
+        node_color : str
+            Node color to adjust the graph
+
+        Returns
+        -------
+        visual_graph : Graph
+            The graph to visualize its nodes
+        
+        """
+        # The visual characteristics of the graph are configured
+        visual_graph = Graph('G', filename='graph_search.gv', engine='neato')
+        visual_graph.attr('node', shape='circle', fontsize='10')
+        visual_graph.node('0', label=self.subquery, root='true', fixedsize='true', width=node_size, 
+                          style='filled', fillcolor='azure3', fontcolor='black')
+        
+        counter = 0
+        for node in self.get_sorted_nodes_to_visualize():
+            counter += 1
+            node_distance = round(node.get_distance(), 1)
+            p_with = str(node.get_ponderation())
+            visual_graph.node("'" +str(counter)+"'", node.get_term(), fixedsize='true', width=node_size, 
+                              penwidth=p_with, color=node_color)
+            visual_graph.edge('0', "'" +str(counter)+"'", label=str(node_distance), len=str(node_distance))
+            
+        return visual_graph
     
 
     def get_union_to_graph(self,
@@ -307,16 +370,16 @@ class VicinityGraph:
 
             #then calculate the average distances between the two nodes and the sum of the ponderations
             copy_distance = node_from_copy_graph.get_distance()
-            copy_ponderation = node_from_copy_graph.get_ponderation()
+            copy_pond = node_from_copy_graph.get_ponderation()
             ext_distance = node_from_ext_graph.get_distance()
-            ext_ponderation = node_from_ext_graph.get_ponderation()
+            ext_pond = node_from_ext_graph.get_ponderation()
 
-            sum_of_ponderations = copy_ponderation + ext_ponderation
-            average_distance = ((copy_distance * copy_ponderation) + (ext_distance * ext_ponderation)) / sum_of_ponderations
+            sum_of_ponds = copy_pond + ext_pond
+            average_distance = ((copy_distance * copy_pond) + (ext_distance * ext_pond)) / sum_of_ponds
 
             #set new distance and ponderation to each intersected term
             node_from_copy_graph.set_distance(average_distance)
-            node_from_copy_graph.set_ponderation(sum_of_ponderations)
+            node_from_copy_graph.set_ponderation(sum_of_ponds)
         
         return copy_graph
 
@@ -363,10 +426,10 @@ class BinaryTreeNode:
 
     def get_union_to_subtree(self, external_subtree: 'BinaryTreeNode') -> 'BinaryTreeNode':
         """
-        Gets the union between an external subtree and the own subtree, then obtains a new subtree.
-        The merging process involves iterating through the nodes of both subtrees, calculating 
-        the sum of weights and the average distances between each one, that is, the union
-        between each graph (tree node) of both subtrees.
+        Gets the union between an external subtree and the own subtree, then obtains 
+        a new subtree. The merging process involves iterating through the nodes of both 
+        subtrees, calculating  the sum of weights and the average distances between 
+        each one, that is, the union between each graph (tree node) of both subtrees.
         
         Parameters
         ----------
@@ -400,17 +463,21 @@ class BinaryTreeNode:
         return self.__generate_tree_str()
     
 
-    def __do_union_between_copy_self_and_subtree(self, external_peer_node: 'BinaryTreeNode') -> None:
+    def __do_union_between_copy_self_and_subtree(self, 
+            external_peer_node: 'BinaryTreeNode'
+            ) -> None:
         """
-        Unites an external subtree with the own copy subtree and modifies the own subtree graphs.
-        This method should only be used by the copy from the original BinaryTreeNode object.
+        Unites an external subtree with the own copy subtree and modifies 
+        the own subtree graphs. This method should only be used by the 
+        copy from the original BinaryTreeNode object.
         
         Parameters
         ----------
         external_peer_node : BinaryTreeNode
             The external peer node to be united
         """
-        #Checks if both nodes have a non-null graph attribute, to then join them and set them in the copy attribute
+        #Checks if both nodes have a non-null graph attribute, to then join them and set 
+        #them in the copy attribute
         if self.graph and external_peer_node.graph:
             current_node_united_graph = self.graph.get_union_to_graph(external_peer_node.graph)
             self.graph = current_node_united_graph
@@ -589,7 +656,8 @@ class BinaryExpressionTree:
         """
         def transform_node_if_leaf(node: BinaryTreeNode) -> None:
             if node.is_leaf():
-                node.value = TextUtils.get_transformed_text_if_it_has_underscores(node.value, stop_words_list, lema, stem)
+                node.value = TextUtils.get_transformed_text_if_it_has_underscores(node.value, stop_words_list, 
+                                                                                  lema, stem)
             else:
                 transform_node_if_leaf(node.left)
                 transform_node_if_leaf(node.right)
@@ -620,7 +688,8 @@ class BinaryExpressionTree:
             sentence (it can be: mean or median)
         """
         def initialize_graph(node: BinaryTreeNode):
-            node.graph = VicinityGraph(str(node), nr_of_graph_terms, limit_distance, include_query_terms, summarize)
+            node.graph = VicinityGraph(str(node), nr_of_graph_terms, limit_distance, 
+                                       include_query_terms, summarize)
             if not node.is_leaf():
                 initialize_graph(node.left)
                 initialize_graph(node.right)
@@ -960,7 +1029,8 @@ class Sentence:
             query_term_with_spaces = query_term_with_underscores.replace('_', ' ')
             #If the query term is in the transformed sentence string and the query term contains more than a word
             if (query_term_with_spaces in transformed_sentence_str) and ("_" in query_term_with_underscores): 
-                sentence_str_with_underscores_in_query_terms = transformed_sentence_str.replace(query_term_with_spaces, query_term_with_underscores)
+                sentence_str_with_underscores_in_query_terms = transformed_sentence_str.replace(query_term_with_spaces, 
+                                                                                                query_term_with_underscores)
         return sentence_str_with_underscores_in_query_terms
     
 
@@ -1126,21 +1196,13 @@ class Sentence:
         
         ponderations_per_distance = [i * self.__weight for i in ponderations_per_distance]
         return ponderations_per_distance
-    
-
-    def __sort_terms_pond_dictionary(self,
-            dictionary: dict[str, float]
-            ) -> dict[str, float]:
-        """Function to sort the dictionary by values in descending order."""
-        sorted_terms_pond_dict = {k: v for k, v in sorted(dictionary.items(), key=lambda item: item[1], reverse=True)}
-        return sorted_terms_pond_dict
 
 
 
 class Document:
     
-    def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", doc_id: str = "1", 
-                 weight: float = 1.0, ranking_position: int = 1):
+    def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", 
+                 doc_id: str = "1", weight: float = 1.0, ranking_position: int = 1):
         self.__query_tree = query
         self.__abstract = abstract
         self.__title = title
@@ -1216,7 +1278,8 @@ class Document:
             stem: bool
             ) -> None:
         """
-        Apply some text transformations to each sentence of the document and calculate term positions to the sentence.
+        Apply some text transformations to each sentence of the document 
+        and calculate term positions to the sentence.
 
         Parameters
         ----------
@@ -1233,8 +1296,8 @@ class Document:
 
     def generate_graph_nodes_of_doc_and_sentences(self) -> None:
         """
-        Generate all the nodes associated with the document graphs, along with the graphs of their
-        sentences, based on their query trees.
+        Generate all the nodes associated with the document graphs, along with 
+        the graphs of their sentences, based on their query trees.
         """
         #Generate graph nodes of sentences
         for sentence in self.__sentences:
@@ -1288,7 +1351,8 @@ class Document:
         list_of_sentence_str = self.__get_list_of_sentence_strings()
         for index, sentence_str in enumerate(list_of_sentence_str):
             query_copy = copy.deepcopy(self.__query_tree)
-            sentence_obj = Sentence(raw_text=sentence_str, query=query_copy, position_in_doc=index, weight=self.__weight)
+            sentence_obj = Sentence(raw_text=sentence_str, query=query_copy, 
+                                    position_in_doc=index, weight=self.__weight)
             self.__sentences.append(sentence_obj)
 
     
@@ -1318,8 +1382,9 @@ class Document:
             The union between the sentence query trees.
         """
         query_trees_list = self.get_list_of_query_trees_from_sentences()
-        # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
-        # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
+        # reduce() applies a function of two arguments cumulatively to the items of a sequence or 
+        #iterable, from left to right, so as to reduce the iterable to a single value. 
+        #For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
         union_of_trees = reduce((lambda tree1, tree2: tree1.get_union_to_tree(tree2)), query_trees_list)
         return union_of_trees
 
@@ -1343,7 +1408,7 @@ class Ranking:
                  stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
         self.__query_tree: BinaryExpressionTree = BinaryExpressionTree(query_text)
         self.__nr_search_results = nr_search_results
-        self.__ranking_weight_type = ranking_weight_type   #Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
+        self.__ranking_weight_type = ranking_weight_type  #Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
         self.__text_transformations_config: TextTransformationsConfig = TextTransformationsConfig(stop_words, lemmatization, stemming)
         self.__documents: list[Document] = []
 
@@ -1408,9 +1473,9 @@ class Ranking:
             summarize: str = 'mean'
             ) -> None:
         """
-        Initialize graphs associated to all the sentences of each document from the ranking. Sentences 
-        have no graph term limit. Also calculates the vicinity matrix for each sentence. Finally,
-        generates nodes of all graphs.
+        Initialize graphs associated to all the sentences of each document from 
+        the ranking. Sentences have no graph term limit. Also calculates the 
+        vicinity matrix for each sentence. Finally, generates nodes of all graphs.
 
         Parameters
         ----------
@@ -1421,11 +1486,12 @@ class Ranking:
         include_ref_terms : bool
             If True, the query term is included in the vicinity
         summarize : str
-            Summarization type to operate distances in the vicinity matrix for each 
-            sentence (it can be: mean or median)
+            Summarization type to operate distances in the vicinity matrix for 
+            each sentence (it can be: mean or median)
         """
         #Set graph attributes to the graphs of each document and the sentences' graphs of each document
-        self.__initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
+        self.__initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, 
+                                               include_query_terms, summarize)
 
         #Calculate term positions and vicinity matrix of each sentence by document
         for document in self.__documents:
@@ -1442,8 +1508,8 @@ class Ranking:
             summarize: str = 'mean'
             ) -> None:
         """
-        Generate all the nodes associated with the graphs from both the ranking and all the documents 
-        along with their sentences, based on the query terms.
+        Generate all the nodes associated with the graphs from both the ranking and all 
+        the documents along with their sentences, based on the query terms.
         """
         parameters_tuple = (nr_of_graph_terms, limit_distance, include_query_terms, summarize)
 
@@ -1462,8 +1528,8 @@ class Ranking:
 
     def __generate_nodes_of_all_graphs(self) -> None:
         """
-        Generate all the nodes associated with the graphs from both the ranking and all the documents 
-        along with their sentences, based on the query terms.
+        Generate all the nodes associated with the graphs from both the ranking and all 
+        the documents along with their sentences, based on the query terms.
         """
         #Generate graph nodes of documents and its sentences
         for document in self.__documents:
@@ -1475,7 +1541,8 @@ class Ranking:
 
     def __get_union_of_documents_trees(self) -> BinaryExpressionTree:
         """
-        Get the union between the list of query trees associated with the documents of the ranking.
+        Get the union between the list of query trees associated with the 
+        documents of the ranking.
 
         Returns
         -------
@@ -1483,8 +1550,9 @@ class Ranking:
             The union between the document query trees.
         """
         query_trees_list = self.get_list_of_query_trees_from_documents()
-        # reduce() applies a function of two arguments cumulatively to the items of a sequence or iterable, from left to right, so 
-        # as to reduce the iterable to a single value. For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
+        # reduce() applies a function of two arguments cumulatively to the items of a sequence or 
+        #iterable, from left to right, so as to reduce the iterable to a single value. 
+        #For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
         union_of_trees = reduce((lambda tree1, tree2: tree1.get_union_to_tree(tree2)), query_trees_list)
         return union_of_trees
 
@@ -1541,8 +1609,8 @@ class Ranking:
             results_size : int,
             ) -> Document:
         """
-        Create and get a new Document object from an article. It also generates a copy of the 
-        ranking query tree and adds it as an attribute of the new document.
+        Create and get a new Document object from an article. It also generates a copy 
+        of the ranking query tree and adds it as an attribute of the new document.
 
         Parameters
         ----------
