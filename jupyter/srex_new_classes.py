@@ -163,7 +163,7 @@ class VicinityNode:
 
     
     def __str__(self) -> str:
-        string = f"TERM: {self.__term} ; PONDERATION: {self.__ponderation} ; DISTANCE: {self.__distance}"
+        string = f"TERM: {self.__term} ; PONDERATION: {round(self.__ponderation, 1)} ; DISTANCE: {round(self.__distance, 1)}"
         return string
 
 
@@ -182,8 +182,9 @@ class VicinityGraph:
         return self.__config
     
 
-    def get_nodes(self) -> list[VicinityNode]:
-        return self.__nodes
+    def get_sorted_nodes(self) -> list[VicinityNode]:
+        """Return the list of nodes sorted by ponderation in descending order"""
+        return sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
     
 
     def get_node_by_term(self, term: str) -> VicinityNode:
@@ -213,7 +214,7 @@ class VicinityGraph:
 
     def __str__(self) -> str:
         string = "SUBQUERY: " + self.subquery
-        for node in self.__nodes:
+        for node in self.get_sorted_nodes():
             string += "\n" + str(node)
         return string
     
