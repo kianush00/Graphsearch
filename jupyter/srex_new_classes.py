@@ -109,10 +109,12 @@ class TextUtils:
 
 
 class VicinityGraphConfig:
-    def __init__(self, nr_of_graph_terms: int = 5, limit_distance: int = 4, include_query_terms: bool = True):
+    def __init__(self, nr_of_graph_terms: int = 5, limit_distance: int = 4, 
+                 include_query_terms: bool = True, summarize: str = 'mean'):
         self.__number_of_graph_terms = nr_of_graph_terms
         self.__limit_distance = limit_distance
         self.__include_query_terms = include_query_terms
+        self.__summarize = summarize
     
 
     def get_number_of_graph_terms(self) -> int:
@@ -125,6 +127,10 @@ class VicinityGraphConfig:
 
     def get_include_query_terms(self) -> bool:
         return self.__include_query_terms
+    
+
+    def get_summarize(self) -> str:
+        return self.__summarize
 
 
 
@@ -164,10 +170,11 @@ class VicinityNode:
 
 class VicinityGraph:
         
-    def __init__(self, subquery: str, nr_of_graph_terms: int = 5, 
-                 limit_distance: int = 4, include_query_terms: bool = True):
+    def __init__(self, subquery: str, nr_of_graph_terms: int = 5, limit_distance: int = 4, 
+                 include_query_terms: bool = True, summarize: str = 'mean'):
         self.subquery = subquery
-        self.__config: VicinityGraphConfig = VicinityGraphConfig(nr_of_graph_terms, limit_distance, include_query_terms)
+        self.__config: VicinityGraphConfig = VicinityGraphConfig(nr_of_graph_terms, limit_distance, 
+                                                                 include_query_terms, summarize)
         self.__nodes: list[VicinityNode] = []
 
 
@@ -296,11 +303,19 @@ class VicinityGraph:
         for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
             node_from_copy_graph = copy_graph.get_node_by_term(node_term)
             node_from_ext_graph = external_graph.get_node_by_term(node_term)
+
             #then calculate the average distances between the two nodes and the sum of the ponderations
-            distance = np.mean([node_from_copy_graph.get_distance(), node_from_ext_graph.get_distance()])
-            ponderation = node_from_copy_graph.get_ponderation() + node_from_ext_graph.get_ponderation()
-            node_from_copy_graph.set_distance(distance)
-            node_from_copy_graph.set_ponderation(ponderation)
+            copy_distance = node_from_copy_graph.get_distance()
+            copy_ponderation = node_from_copy_graph.get_ponderation()
+            ext_distance = node_from_ext_graph.get_distance()
+            ext_ponderation = node_from_ext_graph.get_ponderation()
+
+            sum_of_ponderations = copy_ponderation + ext_ponderation
+            average_distance = ((copy_distance * copy_ponderation) + (ext_distance * ext_ponderation)) / sum_of_ponderations
+
+            #set new distance and ponderation to each intersected term
+            node_from_copy_graph.set_distance(average_distance)
+            node_from_copy_graph.set_ponderation(sum_of_ponderations)
         
         return copy_graph
 
@@ -585,7 +600,8 @@ class BinaryExpressionTree:
     def initialize_graph_for_each_node(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_query_terms: bool = True
+            include_query_terms: bool = True,
+            summarize: str = 'mean'
             ) -> None:
         """
         Initialize graphs associated to each node in the tree.
@@ -598,9 +614,12 @@ class BinaryExpressionTree:
             Maximal distance of terms used to calculate the vicinity
         include_query_terms : bool
             If True, the query term is included in the vicinity
+        summarize : str
+            Summarization type to operate distances in the vicinity matrix for each 
+            sentence (it can be: mean or median)
         """
         def initialize_graph(node: BinaryTreeNode):
-            node.graph = VicinityGraph(str(node), nr_of_graph_terms, limit_distance, include_query_terms)
+            node.graph = VicinityGraph(str(node), nr_of_graph_terms, limit_distance, include_query_terms, summarize)
             if not node.is_leaf():
                 initialize_graph(node.left)
                 initialize_graph(node.right)
@@ -969,9 +988,15 @@ class Sentence:
             for idx, freq_mult_by_weight in enumerate(list_of_pond_by_distance):
                 frequency = round(freq_mult_by_weight / self.__weight)
                 distance_calculation_list.extend([idx+1] * frequency)
+            
+            #Summarize the list of distances based on the graph settings (it can be: mean or median)
+            if self.get_graph().get_config().get_summarize() == 'median':
+                _distance = np.median(distance_calculation_list)
+            else:
+                _distance = np.mean(distance_calculation_list)
                 
             # Calculate the mean distance for the term
-            new_node = VicinityNode(term=neighbor_term, ponderation=terms_pond_dict.get(neighbor_term), distance=np.mean(distance_calculation_list))
+            new_node = VicinityNode(term=neighbor_term, ponderation=terms_pond_dict.get(neighbor_term), distance=_distance)
             leaf_node.graph.add_node(new_node)
 
     
@@ -1378,7 +1403,8 @@ class Ranking:
     def generate_all_graphs(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_query_terms: bool = True
+            include_query_terms: bool = True,
+            summarize: str = 'mean'
             ) -> None:
         """
         Initialize graphs associated to all the sentences of each document from the ranking. Sentences 
@@ -1393,9 +1419,12 @@ class Ranking:
             Maximal distance of terms used to calculate the vicinity
         include_ref_terms : bool
             If True, the query term is included in the vicinity
+        summarize : str
+            Summarization type to operate distances in the vicinity matrix for each 
+            sentence (it can be: mean or median)
         """
         #Set graph attributes to the graphs of each document and the sentences' graphs of each document
-        self.__initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, include_query_terms)
+        self.__initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
 
         #Calculate term positions and vicinity matrix of each sentence by document
         for document in self.__documents:
@@ -1408,23 +1437,26 @@ class Ranking:
     def __initialize_graphs_for_all_trees(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
-            include_query_terms: bool = True
+            include_query_terms: bool = True,
+            summarize: str = 'mean'
             ) -> None:
         """
         Generate all the nodes associated with the graphs from both the ranking and all the documents 
         along with their sentences, based on the query terms.
         """
+        parameters_tuple = (nr_of_graph_terms, limit_distance, include_query_terms, summarize)
+
         #Initialize the graphs of the query tree associated with the ranking
-        self.__query_tree.initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_query_terms)
+        self.__query_tree.initialize_graph_for_each_node(*parameters_tuple)
 
         #Initialize the graphs of the query trees associated with the documents of the ranking
         for document in self.__documents:
-            document.get_query_tree().initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_query_terms)
+            document.get_query_tree().initialize_graph_for_each_node(*parameters_tuple)
         
         #Initialize the graphs of the query trees associated with the sentences from the documents of the ranking
         for document in self.__documents:
             for sentence in document.get_sentences():
-                sentence.get_query_tree().initialize_graph_for_each_node(nr_of_graph_terms, limit_distance, include_query_terms)
+                sentence.get_query_tree().initialize_graph_for_each_node(*parameters_tuple)
     
 
     def __generate_nodes_of_all_graphs(self) -> None:
