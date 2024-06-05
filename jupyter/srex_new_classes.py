@@ -13,7 +13,6 @@ from xploreapi import XPLORE
 from sklearn.feature_extraction.text import CountVectorizer
 from numpy.linalg import norm
 from numpy import dot
-from enum import Enum
 import copy
 from collections import deque 
 import re
@@ -205,6 +204,13 @@ class VicinityGraph:
                 break
     
 
+    def __str__(self) -> str:
+        string = "SUBQUERY: " + self.subquery
+        for node in self.__nodes:
+            string += "\n" + str(node)
+        return string
+    
+
     def get_union_to_graph(self,
             external_graph: 'VicinityGraph'
             ) -> 'VicinityGraph':
@@ -233,13 +239,6 @@ class VicinityGraph:
             united_graph.add_node(node_from_ext_graph)
 
         return united_graph
-    
-
-    def __str__(self) -> str:
-        string = "SUBQUERY: " + self.subquery
-        for node in self.__nodes:
-            string += "\n" + str(node)
-        return string
     
 
     def get_intersection_to_graph(self,
@@ -1163,6 +1162,20 @@ class Document:
         return self.__query_tree.get_graph_by_subquery(query)
     
 
+    def get_sentence_by_raw_text(self, text: str) -> Sentence | None:
+        for sentence in self.__sentences:
+            if sentence.get_raw_text() == text:
+                return sentence
+        return None
+    
+
+    def get_sentence_by_position_in_doc(self, position: int) -> Sentence | None:
+        for sentence in self.__sentences:
+            if sentence.get_position_in_doc() == position:
+                return sentence
+        return None
+    
+
     def get_list_of_query_trees_from_sentences(self) -> list[BinaryExpressionTree]:
         """
         Returns a list of query trees from the sentences of the current document.
@@ -1331,6 +1344,27 @@ class Ranking:
 
     def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
         return self.__query_tree.get_graph_by_subquery(query)
+    
+
+    def get_document_by_title(self, title: str) -> Document | None:
+        for document in self.__documents:
+            if document.get_title() == title:
+                return document
+        return None
+    
+
+    def get_document_by_id(self, id: str) -> Document | None:
+        for document in self.__documents:
+            if document.get_doc_id() == id:
+                return document
+        return None
+    
+
+    def get_document_by_ranking_position(self, position: int) -> Document | None:
+        for document in self.__documents:
+            if document.get_ranking_position() == position:
+                return document
+        return None
     
 
     def get_list_of_query_trees_from_documents(self) -> list[BinaryExpressionTree]:
