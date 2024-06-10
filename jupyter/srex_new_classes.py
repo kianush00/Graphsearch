@@ -1,5 +1,5 @@
 #import srex_new
-import operator
+#import operator
 import numpy as np
 import math
 from collections import defaultdict
@@ -189,27 +189,8 @@ class VicinityGraph:
 
     def get_sorted_nodes(self) -> list[VicinityNode]:
         """Return the list of nodes sorted by ponderation in descending order"""
-        return sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
-    
-
-    def get_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
-        """
-        Return the list of nodes sorted by ponderation in descending order, and limit 
-        its lenght by the number of graph terms, from the current graph configuration.
-        It also ignores the vicinity nodes that include the query terms.
-        """
-        sorted_nodes_to_visualize = sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
-        subquery = self.subquery
-        # Removes characters '(', ')' and spaces in subquery variable
-        subquery = subquery.translate(str.maketrans("", "", "() "))
-        # Gets a list from subquery splitted by any 'AND' or 'OR' character
-        splitted_subquery = re.split(r'AND|OR', subquery)
-        # Ignores the nodes that contain a subquery in its term
-        sorted_nodes_to_visualize = [node for node in sorted_nodes_to_visualize if node.get_term() not in splitted_subquery]
-        # Limits the number of nodes to the number of graph terms
-        sorted_nodes_to_visualize = sorted_nodes_to_visualize[:self.__config.get_number_of_graph_terms()]
-
-        return sorted_nodes_to_visualize
+        sorted_nodes = sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
+        return sorted_nodes
     
 
     def get_node_by_term(self, term: str) -> VicinityNode:
@@ -271,7 +252,7 @@ class VicinityGraph:
                           style='filled', fillcolor='azure3', fontcolor='black')
         
         counter = 0
-        for node in self.get_sorted_nodes_to_visualize():
+        for node in self.__get_sorted_nodes_to_visualize():
             counter += 1
             node_distance = round(node.get_distance(), 1)
             p_with = str(node.get_ponderation())
@@ -382,6 +363,26 @@ class VicinityGraph:
             node_from_copy_graph.set_ponderation(sum_of_ponds)
         
         return copy_graph
+    
+
+    def __get_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
+        """
+        Return the list of nodes sorted by ponderation in descending order, and limit 
+        its lenght by the number of graph terms, from the current graph configuration.
+        It also ignores the vicinity nodes that include the query terms.
+        """
+        sorted_nodes_to_visualize = self.get_sorted_nodes()
+        subquery = self.subquery
+        # Removes characters '(', ')' and spaces in subquery variable
+        subquery = subquery.translate(str.maketrans("", "", "() "))
+        # Gets a list from subquery splitted by any 'AND' or 'OR' character
+        splitted_subquery = re.split(r'AND|OR', subquery)
+        # Ignores the nodes that contain a subquery in its term
+        sorted_nodes_to_visualize = [node for node in sorted_nodes_to_visualize if node.get_term() not in splitted_subquery]
+        # Limits the number of nodes to the number of graph terms
+        sorted_nodes_to_visualize = sorted_nodes_to_visualize[:self.__config.get_number_of_graph_terms()]
+
+        return sorted_nodes_to_visualize
 
 
 
