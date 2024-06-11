@@ -263,6 +263,53 @@ class VicinityGraph:
         return visual_graph
     
 
+    def get_cosine_similarity(self,
+            external_graph: 'VicinityGraph'
+            ) -> float:
+        """
+        Calculate the cosine similarity with other graph. To calculate it, it is proposed 
+        to compare the graph using a multidimensional vector space, where the each term 
+        properties define a dimension of the space.
+
+        Parameters
+        ----------
+        external_graph : VicinityGraph
+            The external graph to be compared
+
+        Returns
+        -------
+        cosine_of_angle : float
+            The cosine similarity between the current graph and the external graph
+        """
+        # initialize the vectors
+        self_vector = [] 
+        external_vector = []
+
+        # Calculate the base vector with terms from the union between both vectors
+        vector_base = self.__get_terms_from_union_between_graphs(external_graph)
+        
+        # Get the dictionaries of normalized distances from each graph 
+        normalized_self_distances = self.__get_normalized_distances_dictionary()
+        normalized_external_distances = external_graph.__get_normalized_distances_dictionary()
+        
+        # Calculate the two vectors in the multidimensional space
+        for term in vector_base:    # Generate the vector space for distances
+            if term in normalized_self_distances.keys():
+                self_vector.append(normalized_self_distances[term])
+            else:
+                self_vector.append(0) # distance value equal to cero
+
+            if term in normalized_external_distances.keys():
+                external_vector.append(normalized_external_distances[term])
+            else:
+                external_vector.append(0) # distance value equal to cero
+
+        # Calculate the cosine of the angle between the vectors
+        cosine_of_angle = dot(self_vector, external_vector)
+        
+        return cosine_of_angle
+    
+
     def get_union_to_graph(self,
             external_graph: 'VicinityGraph'
             ) -> 'VicinityGraph':
@@ -342,10 +389,7 @@ class VicinityGraph:
         """
         copy_graph = copy.deepcopy(self)
 
-        node_terms_from_copy_graph = copy_graph.get_terms_from_nodes()
-        node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
-
-        for node_term in set(node_terms_from_copy_graph) & set(node_terms_from_ext_graph):
+        for node_term in copy_graph.__get_terms_from_intersection_between_graphs(external_graph):
             node_from_copy_graph = copy_graph.get_node_by_term(node_term)
             node_from_ext_graph = external_graph.get_node_by_term(node_term)
 
@@ -363,6 +407,41 @@ class VicinityGraph:
             node_from_copy_graph.set_ponderation(sum_of_ponds)
         
         return copy_graph
+    
+
+    def __get_terms_from_intersection_between_graphs(self,
+            graph_b: 'VicinityGraph'
+            ) -> set[str]:
+        """
+        Return the set of terms from the intersection between the current graph and an external graph
+        """
+        base_terms = set(self.get_terms_from_nodes()) & set(graph_b.get_terms_from_nodes())
+        return base_terms
+    
+
+    def __get_terms_from_union_between_graphs(self,
+            graph_b: 'VicinityGraph'
+            ) -> set[str]:
+        """
+        Return the set of terms from the union between the current graph and an external graph
+        """
+        base_terms = set(self.get_terms_from_nodes()) | set(graph_b.get_terms_from_nodes())
+        return base_terms
+    
+
+    def __get_normalized_distances_dictionary(self) -> dict[str, float]:
+        """
+        Return a dictionary with the normalized distances of each node in the graph
+        """
+        # Get the distances from the graph 
+        normalized_self_distances = {n.get_term(): n.get_distance() for n in self.__nodes}
+        # Calculate the length of the distance vector
+        self_length = norm([value for value in normalized_self_distances.values()])
+        # Divide each distance from the dictionary by the length of the distance vector
+        normalized_self_distances = {k: v/self_length for k, v in normalized_self_distances.items()}
+
+        return normalized_self_distances
+
     
 
     def __get_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
