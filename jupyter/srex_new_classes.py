@@ -1016,11 +1016,40 @@ class BinaryExpressionTree:
 
 
 
-class Sentence:
+class QueryTreeHandler:
+    def __init__(self, query_tree):
+        self.__query_tree: BinaryExpressionTree = query_tree
+
+
+    def get_query_tree(self) -> BinaryExpressionTree:
+        return self.__query_tree
+    
+
+    def set_query_tree(self, query_tree) -> None:
+        self.__query_tree = query_tree
+
+
+    def get_graph(self) -> VicinityGraph | None:
+        return self._check_graph_initialized()
+
+
+    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
+        return self.__query_tree.get_graph_by_subquery(query)
+    
+
+    def _check_graph_initialized(self) -> VicinityGraph | None:
+        if not self.__query_tree.root or not self.__query_tree.root.graph:
+            print('Error initializing BinaryExpressionTree instance')
+            return None
+        return self.__query_tree.root.graph
+
+
+
+class Sentence(QueryTreeHandler):
     
     def __init__(self, raw_text: str, query: BinaryExpressionTree, position_in_doc: int = 0, weight: float = 1.0):
+        super().__init__(query_tree=query)
         self.__raw_text = raw_text
-        self.__query_tree = query
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__preprocessed_text: str = ""
@@ -1049,21 +1078,6 @@ class Sentence:
         self.__preprocessed_text = value
     
 
-    def get_query_tree(self) -> BinaryExpressionTree:
-        return self.__query_tree
-
-
-    def get_graph(self) -> VicinityGraph | None:
-        if not self.__query_tree.root or not self.__query_tree.root.graph:
-            print('Error initializing BinaryExpressionTree instance')
-            return None
-        return self.__query_tree.root.graph
-
-
-    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
-        return self.__query_tree.get_graph_by_subquery(query)
-    
-
     def get_vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
         return self.__vicinity_matrix
 
@@ -1087,7 +1101,7 @@ class Sentence:
             If True, stemming is applied
         """
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
-        query_terms_with_underscores = self.__query_tree.get_query_terms_str_with_underscores()
+        query_terms_with_underscores = self.get_query_tree().get_query_terms_str_with_underscores()
         query_terms_with_spaces = [term.replace('_', ' ') for term in query_terms_with_underscores]
         #If there is any query term in the transformed sentence string
         if any(query_term in transformed_sentence_str for query_term in query_terms_with_spaces):  
@@ -1113,11 +1127,11 @@ class Sentence:
         their isolated query terms as leaves from the query tree.
         """
         #First, generate nodes to the graphs associated with the leaves from the query tree
-        for leaf_node in self.__query_tree.get_query_terms_as_leaves():
+        for leaf_node in self.get_query_tree().get_query_terms_as_leaves():
             self.__generate_nodes_in_leaves_graphs(leaf_node)
         
         #Then, generate nodes to the graphs associated with the rest of the nodes in the tree
-        self.__query_tree.operate_graphs_from_leaves()
+        self.get_query_tree().operate_graphs_from_leaves()
     
 
     def __get_transformed_sentence_str_with_underscores_in_query_terms(self,
@@ -1242,7 +1256,7 @@ class Sentence:
         """
         query_term_positions_dict = {}
 
-        for query_term in self.__query_tree.get_query_terms_str_with_underscores():
+        for query_term in self.get_query_tree().get_query_terms_str_with_underscores():
             # If the query term is within the term position dictionary
             if query_term in self.__term_positions_dict.keys():
                 # Get the term positions of the query term
@@ -1315,11 +1329,11 @@ class Sentence:
 
 
 
-class Document:
+class Document(QueryTreeHandler):
     
     def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", 
                  doc_id: str = "1", weight: float = 1.0, ranking_position: int = 1):
-        self.__query_tree = query
+        super().__init__(query_tree=query)
         self.__abstract = abstract
         self.__title = title
         self.__doc_id = doc_id
@@ -1352,21 +1366,6 @@ class Document:
 
     def get_ranking_position(self) -> int:
         return self.__ranking_position
-    
-
-    def get_query_tree(self) -> BinaryExpressionTree:
-        return self.__query_tree
-    
-
-    def get_graph(self) -> VicinityGraph | None:
-        if not self.__query_tree.root or not self.__query_tree.root.graph:
-            print('Error initializing BinaryExpressionTree instance')
-            return None
-        return self.__query_tree.root.graph
-    
-
-    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
-        return self.__query_tree.get_graph_by_subquery(query)
     
 
     def get_sentence_by_raw_text(self, text: str) -> Sentence | None:
@@ -1425,7 +1424,7 @@ class Document:
             sentence.generate_graph_nodes_of_sentence()
         
         #Generate graph nodes of the current document
-        self.__query_tree = self.__get_union_of_sentences_trees()
+        self.set_query_tree(self.__get_union_of_sentences_trees())
     
 
     def calculate_term_positions_and_vicinity_matrix(self) -> None:
@@ -1471,7 +1470,7 @@ class Document:
         """
         list_of_sentence_str = self.__get_list_of_sentence_strings()
         for index, sentence_str in enumerate(list_of_sentence_str):
-            query_copy = copy.deepcopy(self.__query_tree)
+            query_copy = copy.deepcopy(self.get_query_tree())
             sentence_obj = Sentence(raw_text=sentence_str, query=query_copy, 
                                     position_in_doc=index, weight=self.__weight)
             self.__sentences.append(sentence_obj)
@@ -1523,14 +1522,14 @@ class TextTransformationsConfig:
 
 
 
-class Ranking:
+class Ranking(QueryTreeHandler):
     
     def __init__(self, query_text: str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
                  stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
-        self.__query_tree: BinaryExpressionTree = BinaryExpressionTree(query_text)
+        super().__init__(query_tree=BinaryExpressionTree(query_text))
         self.__nr_search_results = nr_search_results
         self.__ranking_weight_type = ranking_weight_type  #Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
-        self.__text_transformations_config: TextTransformationsConfig = TextTransformationsConfig(stop_words, lemmatization, stemming)
+        self.__text_transformations_config = TextTransformationsConfig(stop_words, lemmatization, stemming)
         self.__documents: list[Document] = []
 
         self.__do_text_transformations_to_refterms()
@@ -1544,21 +1543,6 @@ class Ranking:
 
     def get_text_transformations_config(self) -> TextTransformationsConfig:
         return self.__text_transformations_config
-    
-
-    def get_query_tree(self) -> BinaryExpressionTree:
-        return self.__query_tree
-    
-
-    def get_graph(self) -> VicinityGraph | None:
-        if not self.__query_tree.root or not self.__query_tree.root.graph:
-            print('Error initializing BinaryExpressionTree instance')
-            return None
-        return self.__query_tree.root.graph
-    
-
-    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
-        return self.__query_tree.get_graph_by_subquery(query)
     
 
     def get_document_by_title(self, title: str) -> Document | None:
@@ -1641,7 +1625,7 @@ class Ranking:
         parameters_tuple = (nr_of_graph_terms, limit_distance, include_query_terms, summarize)
 
         #Initialize the graphs of the query tree associated with the ranking
-        self.__query_tree.initialize_graph_for_each_node(*parameters_tuple)
+        self.get_query_tree().initialize_graph_for_each_node(*parameters_tuple)
 
         #Initialize the graphs of the query trees associated with the documents of the ranking
         for document in self.__documents:
@@ -1663,7 +1647,7 @@ class Ranking:
             document.generate_graph_nodes_of_doc_and_sentences()
         
         #Then, generate nodes of the ranking class query tree
-        self.__query_tree = self.__get_union_of_documents_trees()
+        self.set_query_tree(self.__get_union_of_documents_trees())
     
 
     def __get_union_of_documents_trees(self) -> BinaryExpressionTree:
@@ -1689,7 +1673,7 @@ class Ranking:
         Apply text transformations to the query terms of the ranking. Lower the text, tokenize, remove 
         punctuation, stopwords, finally do stemming and lemmatization if specified.
         """
-        self.__query_tree.do_text_transformations_to_query_terms(*self.__text_transformations_config.get_transformations_params())
+        self.get_query_tree().do_text_transformations_to_query_terms(*self.__text_transformations_config.get_transformations_params())
 
 
     def __get_ieee_explore_ranking(self) -> list[dict]:
@@ -1705,7 +1689,7 @@ class Ranking:
         query = XPLORE(xplore_id)
         query.outputDataFormat='object'
         query.maximumResults(self.__nr_search_results)
-        query.queryText(self.__query_tree.get_raw_query())
+        query.queryText(self.get_query_tree().get_raw_query())
         data = query.callAPI()
         results = data.get('articles', [{}])
         
@@ -1759,7 +1743,7 @@ class Ranking:
         _title = article.get('title', "")
         _doc_id = article.get('article_number', "1")
         _ranking_pos = article.get('rank', 1)
-        _query_copy = copy.deepcopy(self.__query_tree)
+        _query_copy = copy.deepcopy(self.get_query_tree())
         new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         
