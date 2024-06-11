@@ -133,6 +133,10 @@ class VicinityGraphConfig:
 
     def get_summarize(self) -> str:
         return self.__summarize
+    
+
+    def get_config_params(self) -> tuple[int, int, bool, str]:
+        return self.__number_of_graph_terms, self.__limit_distance, self.__include_query_terms, self.__summarize
 
 
 
@@ -187,9 +191,15 @@ class VicinityGraph:
         return self.__config
     
 
-    def get_sorted_nodes(self) -> list[VicinityNode]:
-        """Return the list of nodes sorted by ponderation in descending order"""
+    def get_sorted_nodes_optionally_limited(self, limit: int = -1) -> list[VicinityNode]:
+        """
+        Return the list of nodes sorted by ponderation in descending order, and limit 
+        the number of nodes in the list obtained.
+        """
+        # Sort the nodes in descending order
         sorted_nodes = sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
+        # Limit the number of nodes, if specified
+        if limit > 0: sorted_nodes = sorted_nodes[:limit]
         return sorted_nodes
     
 
@@ -222,11 +232,23 @@ class VicinityGraph:
 
     def __str__(self) -> str:
         string = "SUBQUERY: " + self.subquery
-        for node in self.get_sorted_nodes():
+        for node in self.get_sorted_nodes_optionally_limited():
             string += "\n" + str(node)
         return string
     
 
+    def get_viewable_graph_copy(self) -> 'VicinityGraph':
+        """
+        Returns a copy of the graph, with the vicinity terms with the highest ponderation 
+        limited by the number of graph terms configured in the current graph, and 
+        ignores the vicinity nodes that include the query terms.
+        """
+        graph_copy = VicinityGraph(self.subquery, *self.__config.get_config_params())
+        for node in self.__get_sorted_nodes_to_visualize():
+            graph_copy.add_node(node)
+        return graph_copy
+    
+    
     def get_graph_viz(self,
             node_size: str = '2', 
             node_color: str = 'green'
@@ -253,14 +275,13 @@ class VicinityGraph:
         visual_graph.node('0', label=self.subquery, root='true', fixedsize='true', width=node_size, 
                           style='filled', fillcolor='azure3', fontcolor='black')
         
-        counter = 0
-        for node in self.__get_sorted_nodes_to_visualize():
-            counter += 1
+        viewable_graph = self.get_viewable_graph_copy()
+        for index, node in enumerate(viewable_graph.get_sorted_nodes_optionally_limited()):
             node_distance = round(node.get_distance(), 1)
             p_with = str(node.get_ponderation())
-            visual_graph.node("'" +str(counter)+"'", node.get_term(), fixedsize='true', width=node_size, 
+            visual_graph.node("'" +str(index+1)+"'", node.get_term(), fixedsize='true', width=node_size, 
                               penwidth=p_with, color=node_color)
-            visual_graph.edge('0', "'" +str(counter)+"'", label=str(node_distance), len=str(node_distance))
+            visual_graph.edge('0', "'" +str(index+1)+"'", label=str(node_distance), len=str(node_distance))
             
         return visual_graph
     
@@ -293,9 +314,16 @@ class VicinityGraph:
         # initialize the vectors
         self_vector = [] 
         external_vector = []
-        
+
         # Calculate the two vectors in the multidimensional space
+
+        #print(f'ext nodes length: {len(external_graph.__nodes)}')
         for term in vector_base:    # Generate the vector space for nodes
+        #    if self.get_node_by_term(term) and external_graph.get_node_by_term(term) and (
+        #        (self.get_node_by_term(term).get_distance() != external_graph.get_node_by_term(term).get_distance()) or (
+        #            self.get_node_by_term(term).get_ponderation() != external_graph.get_node_by_term(term).get_ponderation())):
+        #        print(f'self node: {self.get_node_by_term(term)}')
+        #        print(f'exte node: {external_graph.get_node_by_term(term)}\n')
             if term in normalized_self_nodes.keys():
                 self_vector.append(normalized_self_nodes[term]['ponderation'])
                 self_vector.append(normalized_self_nodes[term]['distance'])
@@ -461,7 +489,7 @@ class VicinityGraph:
         its lenght by the number of graph terms, from the current graph configuration.
         It also ignores the vicinity nodes that include the query terms.
         """
-        sorted_nodes_to_visualize = self.get_sorted_nodes()
+        sorted_nodes_to_visualize = self.get_sorted_nodes_optionally_limited()
         subquery = self.subquery
         # Removes characters '(', ')' and spaces in subquery variable
         subquery = subquery.translate(str.maketrans("", "", "() "))
