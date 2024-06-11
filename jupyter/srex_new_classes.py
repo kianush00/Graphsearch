@@ -193,10 +193,11 @@ class VicinityGraph:
         return sorted_nodes
     
 
-    def get_node_by_term(self, term: str) -> VicinityNode:
+    def get_node_by_term(self, term: str) -> VicinityNode | None:
         for node in self.__nodes:
             if node.get_term() == term:
                 return node
+        print("No node with term")
         return None
     
 
@@ -215,7 +216,8 @@ class VicinityGraph:
         for node in self.__nodes:
             if node.get_term() == term:
                 self.__nodes.remove(node)
-                break
+                return
+        print("No node with term")
     
 
     def __str__(self) -> str:
@@ -281,31 +283,33 @@ class VicinityGraph:
         cosine_of_angle : float
             The cosine similarity between the current graph and the external graph
         """
-        # initialize the vectors
-        self_vector = [] 
-        external_vector = []
-
         # Calculate the base vector with terms from the union between both vectors
         vector_base = self.__get_terms_from_union_between_graphs(external_graph)
         
-        # Get the dictionaries of normalized distances from each graph 
-        normalized_self_distances = self.__get_normalized_distances_dictionary()
-        normalized_external_distances = external_graph.__get_normalized_distances_dictionary()
+        # Get the dictionaries of normalized nodes from each graph 
+        normalized_self_nodes = self.__get_normalized_nodes_dictionary()
+        normalized_external_nodes = external_graph.__get_normalized_nodes_dictionary()
+
+        # initialize the vectors
+        self_vector = [] 
+        external_vector = []
         
         # Calculate the two vectors in the multidimensional space
-        for term in vector_base:    # Generate the vector space for distances
-            if term in normalized_self_distances.keys():
-                self_vector.append(normalized_self_distances[term])
+        for term in vector_base:    # Generate the vector space for nodes
+            if term in normalized_self_nodes.keys():
+                self_vector.append(normalized_self_nodes[term]['ponderation'])
+                self_vector.append(normalized_self_nodes[term]['distance'])
             else:
-                self_vector.append(0) # distance value equal to cero
+                self_vector.extend([0, 0])  # Ponderation and distance values equal to cero
 
-            if term in normalized_external_distances.keys():
-                external_vector.append(normalized_external_distances[term])
+            if term in normalized_external_nodes.keys():
+                external_vector.append(normalized_external_nodes[term]['ponderation'])
+                external_vector.append(normalized_external_nodes[term]['distance'])
             else:
-                external_vector.append(0) # distance value equal to cero
+                external_vector.extend([0, 0])  # Ponderation and distance values equal to cero
 
         # Calculate the cosine of the angle between the vectors
-        cosine_of_angle = dot(self_vector, external_vector)
+        cosine_of_angle = dot(self_vector, external_vector) / norm(self_vector) / norm(external_vector)
         
         return cosine_of_angle
     
@@ -429,18 +433,25 @@ class VicinityGraph:
         return base_terms
     
 
-    def __get_normalized_distances_dictionary(self) -> dict[str, float]:
+    def __get_normalized_nodes_dictionary(self) -> dict[str, dict[str, float]]:
         """
-        Return a dictionary with the normalized distances of each node in the graph
+        Return a dictionary with the normalized ponderations and distances of each node in the graph.
+        e.g.   {'v_term1': {'ponderation': 0.75, 'distance': 0.57}, 
+                'v_term2': {'ponderation': 0.63, 'distance': 0.82}, ...}
         """
-        # Get the distances from the graph 
-        normalized_self_distances = {n.get_term(): n.get_distance() for n in self.__nodes}
+        # Get the ponderations and distances from the graph 
+        normalized_self_nodes = {n.get_term(): {'ponderation': n.get_ponderation(), 
+                                                'distance': n.get_distance()} for n in self.__nodes}
+        # Calculate the length of the ponderation vector
+        self_ponderations_length = norm([value['ponderation'] for value in normalized_self_nodes.values()])
         # Calculate the length of the distance vector
-        self_length = norm([value for value in normalized_self_distances.values()])
-        # Divide each distance from the dictionary by the length of the distance vector
-        normalized_self_distances = {k: v/self_length for k, v in normalized_self_distances.items()}
+        self_distances_length = norm([value['distance'] for value in normalized_self_nodes.values()])
+        # Divide each subvalue from the dictionary by the length of its corresponding vector
+        for subdict in normalized_self_nodes.values():
+            subdict['ponderation'] /= self_ponderations_length
+            subdict['distance'] /= self_distances_length
 
-        return normalized_self_distances
+        return normalized_self_nodes
 
     
 
@@ -491,20 +502,27 @@ class BinaryTreeNode:
     
 
     def get_graph_from_subtree_by_subquery(self, query: str) -> VicinityGraph | None:
-        if self.is_leaf():
-            if self.graph.subquery == query:
-                return self.graph
-            else:
-                return None
+        if self.is_leaf() and self.graph.subquery == query:
+            return self.graph
             
-        left_candidate = self.left.get_graph_from_subtree_by_subquery(query)
-        right_candidate = self.right.get_graph_from_subtree_by_subquery(query)
+        # Check left subtree
+        if self.left:
+            left_candidate = self.left.get_graph_from_subtree_by_subquery(query)
+            if left_candidate:
+                return left_candidate
 
-        # Return left candidate if not None, otherwise return right candidate
-        return left_candidate if left_candidate is not None else right_candidate
+        # Check right subtree
+        if self.right:
+            right_candidate = self.right.get_graph_from_subtree_by_subquery(query)
+            if right_candidate:
+                return right_candidate
+
+        return None
     
 
-    def get_union_to_subtree(self, external_subtree: 'BinaryTreeNode') -> 'BinaryTreeNode':
+    def get_union_to_subtree(self, 
+            external_subtree: 'BinaryTreeNode'
+            ) -> 'BinaryTreeNode':
         """
         Gets the union between an external subtree and the own subtree, then obtains 
         a new subtree. The merging process involves iterating through the nodes of both 
@@ -660,21 +678,26 @@ class BinaryExpressionTree:
     
 
     def get_query_terms_str_with_underscores(self) -> list[str]:
-        if not self.root:
+        if not self.__check_root_initialized():
             return []
         return self.root.get_values_from_leaves()
     
 
     def get_query_terms_as_leaves(self) -> list[BinaryTreeNode]:
-        if not self.root:
+        if not self.__check_root_initialized():
             return []
         return self.root.get_leaves()
     
 
     def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
-        if not self.root:
+        if not self.__check_root_initialized():
+            return
+        
+        graph = self.root.get_graph_from_subtree_by_subquery(query)
+        if not graph:
+            print('Could not find graph for subquery')
             return None
-        return self.root.get_graph_from_subtree_by_subquery(query)
+        return graph
     
 
     def get_union_to_tree(self,
@@ -713,8 +736,9 @@ class BinaryExpressionTree:
     
 
     def operate_graphs_from_leaves(self) -> None:
-        if self.root:
-            self.root.do_graph_operation_from_subtrees()
+        if not self.__check_root_initialized():
+            return
+        self.root.do_graph_operation_from_subtrees()
     
 
     def do_text_transformations_to_query_terms(self, 
@@ -742,8 +766,9 @@ class BinaryExpressionTree:
                 transform_node_if_leaf(node.left)
                 transform_node_if_leaf(node.right)
 
-        if self.root:
-            transform_node_if_leaf(self.root)
+        if not self.__check_root_initialized():
+            return
+        transform_node_if_leaf(self.root)
     
 
     def initialize_graph_for_each_node(self, 
@@ -774,18 +799,19 @@ class BinaryExpressionTree:
                 initialize_graph(node.left)
                 initialize_graph(node.right)
         
-        if self.root:
-            initialize_graph(self.root)
+        if not self.__check_root_initialized():
+            return
+        initialize_graph(self.root)
 
 
     def __str__(self) -> str:
-        if not self.root:
+        if not self.__check_root_initialized():
             return ''
         return str(self.root)
     
 
     def tree_str(self) -> str:
-        if not self.root:
+        if not self.__check_root_initialized():
             return ''
         return self.root.tree_str()
     
@@ -980,6 +1006,13 @@ class BinaryExpressionTree:
                 current_index += 1       
 
         return processed_tokens
+    
+
+    def __check_root_initialized(self) -> bool:
+        if not self.root:
+            print('Error initializing BinaryExpressionTree instance')
+            return False
+        return True
 
 
 
@@ -998,10 +1031,6 @@ class Sentence:
 
     def get_raw_text(self) -> str:
         return self.__raw_text
-    
-
-    def get_query_tree(self) -> BinaryExpressionTree:
-        return self.__query_tree
 
 
     def get_position_in_doc(self) -> int:
@@ -1016,13 +1045,20 @@ class Sentence:
         return self.__preprocessed_text
     
 
-    def get_graph(self) -> VicinityGraph | None:
-        return self.__query_tree.root.graph
-    
-
     def set_preprocessed_text(self, value: str) -> None:
         self.__preprocessed_text = value
     
+
+    def get_query_tree(self) -> BinaryExpressionTree:
+        return self.__query_tree
+
+
+    def get_graph(self) -> VicinityGraph | None:
+        if not self.__query_tree.root or not self.__query_tree.root.graph:
+            print('Error initializing BinaryExpressionTree instance')
+            return None
+        return self.__query_tree.root.graph
+
 
     def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
         return self.__query_tree.get_graph_by_subquery(query)
@@ -1306,10 +1342,6 @@ class Document:
         return self.__doc_id
     
 
-    def get_query_tree(self) -> BinaryExpressionTree:
-        return self.__query_tree
-    
-
     def get_sentences(self) -> list[Sentence]:
         return self.__sentences
     
@@ -1322,7 +1354,14 @@ class Document:
         return self.__ranking_position
     
 
+    def get_query_tree(self) -> BinaryExpressionTree:
+        return self.__query_tree
+    
+
     def get_graph(self) -> VicinityGraph | None:
+        if not self.__query_tree.root or not self.__query_tree.root.graph:
+            print('Error initializing BinaryExpressionTree instance')
+            return None
         return self.__query_tree.root.graph
     
 
@@ -1334,6 +1373,7 @@ class Document:
         for sentence in self.__sentences:
             if sentence.get_raw_text() == text:
                 return sentence
+        print(f'No sentence with raw text: {text}')
         return None
     
 
@@ -1341,6 +1381,7 @@ class Document:
         for sentence in self.__sentences:
             if sentence.get_position_in_doc() == position:
                 return sentence
+        print(f'No sentence with position: {position}')
         return None
     
 
@@ -1501,15 +1542,18 @@ class Ranking:
         return self.__documents 
     
 
-    def get_query_tree(self) -> BinaryExpressionTree:
-        return self.__query_tree
-    
-
     def get_text_transformations_config(self) -> TextTransformationsConfig:
         return self.__text_transformations_config
     
 
+    def get_query_tree(self) -> BinaryExpressionTree:
+        return self.__query_tree
+    
+
     def get_graph(self) -> VicinityGraph | None:
+        if not self.__query_tree.root or not self.__query_tree.root.graph:
+            print('Error initializing BinaryExpressionTree instance')
+            return None
         return self.__query_tree.root.graph
     
 
@@ -1521,6 +1565,7 @@ class Ranking:
         for document in self.__documents:
             if document.get_title() == title:
                 return document
+        print(f'No document with title: {title}')
         return None
     
 
@@ -1528,6 +1573,7 @@ class Ranking:
         for document in self.__documents:
             if document.get_doc_id() == id:
                 return document
+        print(f'No document with id: {id}')
         return None
     
 
@@ -1535,6 +1581,7 @@ class Ranking:
         for document in self.__documents:
             if document.get_ranking_position() == position:
                 return document
+        print(f'No document with ranking position: {position}')
         return None
     
 
