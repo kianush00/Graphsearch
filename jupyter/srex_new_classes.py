@@ -325,19 +325,26 @@ class VicinityGraph:
         #        print(f'self node: {self.get_node_by_term(term)}')
         #        print(f'exte node: {external_graph.get_node_by_term(term)}\n')
             if term in normalized_self_nodes.keys():
-                self_vector.append(normalized_self_nodes[term]['ponderation'])
+                #self_vector.append(normalized_self_nodes[term]['ponderation'])
                 self_vector.append(normalized_self_nodes[term]['distance'])
             else:
-                self_vector.extend([0, 0])  # Ponderation and distance values equal to cero
+                #external_vector.extend([0, 0])  # Ponderation and distance values equal to cero
+                self_vector.extend([0])  # Distance values equal to cero
 
             if term in normalized_external_nodes.keys():
-                external_vector.append(normalized_external_nodes[term]['ponderation'])
+                #external_vector.append(normalized_external_nodes[term]['ponderation'])
                 external_vector.append(normalized_external_nodes[term]['distance'])
             else:
-                external_vector.extend([0, 0])  # Ponderation and distance values equal to cero
+                #external_vector.extend([0, 0])  # Ponderation and distance values equal to cero
+                external_vector.extend([0])  # Distance values equal to cero
 
         # Calculate the cosine of the angle between the vectors
-        cosine_of_angle = dot(self_vector, external_vector) / norm(self_vector) / norm(external_vector)
+        print(self_vector)
+        print(external_vector)
+        if norm(self_vector) > 0 and norm(external_vector) > 0:
+            cosine_of_angle = dot(self_vector, external_vector) / norm(self_vector) / norm(external_vector)
+        else:
+            cosine_of_angle = 0
         
         return cosine_of_angle
     
@@ -1802,9 +1809,9 @@ class Ranking(QueryTreeHandler):
             The calculated weight factor.
         """
         if (weighted=='linear'):
-            factor = float((results_size - (index * 0.5)) / results_size)
+            factor = float((results_size - (index * 0.25)) / results_size)
         elif (weighted=='inverse'):
-            factor = float(math.ceil(results_size / ((index * 0.5) + 1)) / results_size)
+            factor = float(1 / ((index * 0.03) + 1))
         else:
             factor = 1.0
 
