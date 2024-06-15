@@ -3,11 +3,10 @@
 import numpy as np
 import math
 from collections import defaultdict
-#import pandas as pd
-from nltk.stem import PorterStemmer   #Stemmer
-from textblob import Word #Lemmatize
-from graphviz import Graph
 import nltk
+from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer  
+from graphviz import Graph
 from functools import reduce
 from xploreapi import XPLORE
 from sklearn.feature_extraction.text import CountVectorizer
@@ -37,7 +36,7 @@ class TextUtils:
         text_with_underscores : str
             Text with underscores to be transformed
         stop_words_list : list[str]
-            List of stop words to be removed from the sentence
+            List of stop words to be removed from the text provided
         lema : bool
             If True, lemmatization is applied
         stem : bool
@@ -46,7 +45,7 @@ class TextUtils:
         Returns
         -------
         transformed_text : str
-            The transformed sentence
+            The transformed text
         """
         text_with_underscores = text_with_underscores.replace('_', ' ')
         transformed_text = TextUtils.get_transformed_text(text_with_underscores, 
@@ -59,7 +58,7 @@ class TextUtils:
     @staticmethod
     def get_transformed_text(
             text: str,
-            stop_words_list: list[str], 
+            stop_words: list[str], 
             lema: bool = True, 
             stem: bool = True
             ) -> str:
@@ -71,8 +70,8 @@ class TextUtils:
         ----------
         text : str
             Text to be transformed
-        stop_words_list : list[str]
-            List of stop words to be removed from the sentence
+        stop_words : list[str]
+            List of stop words to be removed from the text provided
         lema : bool
             If True, lemmatization is applied
         stem : bool
@@ -81,30 +80,33 @@ class TextUtils:
         Returns
         -------
         transformed_text : str
-            The transformed sentence
+            The transformed text
         """
         # Convert the string to lowercase
-        sentence = text.lower()
+        lower_text = text.lower()
         
-        # Tokenize and remove punctuation
-        tokens = nltk.word_tokenize(sentence)
-        filtered_sentence = [token for token in tokens if token.isalnum()]
+        # Tokenize
+        tokens = nltk.word_tokenize(lower_text)
+
+        # Remove punctuation
+        filtered_words = [token for token in tokens if token.isalnum()]
         
         # Remove stopwords
-        if len(stop_words_list) > 0:
-            filtered_sentence = [word for word in filtered_sentence if word not in stop_words_list]
+        if len(stop_words) > 0:
+            filtered_words = [word for word in filtered_words if word not in stop_words]
         
         # Apply lemmatization
         if lema:
-            filtered_sentence = [Word(word).lemmatize() for word in filtered_sentence]
+            lemmatizer = WordNetLemmatizer()
+            filtered_words = [lemmatizer.lemmatize(word) for word in filtered_words]
         
         # Apply stemming
         if stem:
-            st = PorterStemmer()
-            filtered_sentence = [st.stem(word) for word in filtered_sentence]
+            stemmer = PorterStemmer()
+            filtered_words = [stemmer.stem(word) for word in filtered_words]
         
         # Join the tokens back into a single string
-        transformed_text = ' '.join(filtered_sentence)
+        transformed_text = ' '.join(filtered_words)
         
         return transformed_text
 
@@ -287,7 +289,8 @@ class VicinityGraph:
     
 
     def get_cosine_similarity(self,
-            external_graph: 'VicinityGraph'
+            external_graph: 'VicinityGraph',
+            include_ponderation: bool = False
             ) -> float:
         """
         Calculate the cosine similarity with other graph. To calculate it, it is proposed 
@@ -298,6 +301,8 @@ class VicinityGraph:
         ----------
         external_graph : VicinityGraph
             The external graph to be compared
+        include_ponderation : bool
+            Select whether to include ponderation of the nodes as a parameter to the comparison function
 
         Returns
         -------
@@ -316,31 +321,22 @@ class VicinityGraph:
         external_vector = []
 
         # Calculate the two vectors in the multidimensional space
-
-        #print(f'ext nodes length: {len(external_graph.__nodes)}')
         for term in vector_base:    # Generate the vector space for nodes
-        #    if self.get_node_by_term(term) and external_graph.get_node_by_term(term) and (
-        #        (self.get_node_by_term(term).get_distance() != external_graph.get_node_by_term(term).get_distance()) or (
-        #            self.get_node_by_term(term).get_ponderation() != external_graph.get_node_by_term(term).get_ponderation())):
-        #        print(f'self node: {self.get_node_by_term(term)}')
-        #        print(f'exte node: {external_graph.get_node_by_term(term)}\n')
             if term in normalized_self_nodes.keys():
-                #self_vector.append(normalized_self_nodes[term]['ponderation'])
+                if include_ponderation: self_vector.append(normalized_self_nodes[term]['ponderation']) 
                 self_vector.append(normalized_self_nodes[term]['distance'])
             else:
-                #external_vector.extend([0, 0])  # Ponderation and distance values equal to cero
-                self_vector.extend([0])  # Distance values equal to cero
+                if include_ponderation: self_vector.append(0)  # Ponderation and distance values equal to cero
+                self_vector.append(0)  # Distance values equal to cero
 
             if term in normalized_external_nodes.keys():
-                #external_vector.append(normalized_external_nodes[term]['ponderation'])
+                if include_ponderation: external_vector.append(normalized_external_nodes[term]['ponderation'])
                 external_vector.append(normalized_external_nodes[term]['distance'])
             else:
-                #external_vector.extend([0, 0])  # Ponderation and distance values equal to cero
-                external_vector.extend([0])  # Distance values equal to cero
+                if include_ponderation: external_vector.append(0)  # Ponderation and distance values equal to cero
+                external_vector.append(0)  # Distance values equal to cero
 
         # Calculate the cosine of the angle between the vectors
-        print(self_vector)
-        print(external_vector)
         if norm(self_vector) > 0 and norm(external_vector) > 0:
             cosine_of_angle = dot(self_vector, external_vector) / norm(self_vector) / norm(external_vector)
         else:
