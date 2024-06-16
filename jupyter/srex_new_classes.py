@@ -9,6 +9,8 @@ from nltk.stem import WordNetLemmatizer
 from graphviz import Graph
 from functools import reduce
 from xploreapi import XPLORE
+import pybliometrics
+from pybliometrics.scopus import ScopusSearch
 from sklearn.feature_extraction.text import CountVectorizer
 from numpy.linalg import norm
 from numpy import dot
@@ -533,7 +535,7 @@ class BinaryTreeNode:
     
 
     def get_graph_from_subtree_by_subquery(self, query: str) -> VicinityGraph | None:
-        if self.is_leaf() and self.graph.subquery == query:
+        if self.graph and self.graph.subquery == query:
             return self.graph
             
         # Check left subtree
@@ -1468,7 +1470,7 @@ class Document(QueryTreeHandler):
             sentence.calculate_term_positions_and_vicinity_matrix()
     
 
-    def get_ieee_explore_article(self,
+    def get_ieee_xplore_article(self,
             parameter: str, 
             value: str
             ) -> None:
@@ -1499,6 +1501,7 @@ class Document(QueryTreeHandler):
         the text by dots. It also generates a copy of the document tree and adds it as an 
         attribute of the new sentence.
         """
+        self.__sentences = []
         list_of_sentence_str = self.__get_list_of_sentence_strings()
         for index, sentence_str in enumerate(list_of_sentence_str):
             query_copy = copy.deepcopy(self.get_query_tree())
@@ -1564,7 +1567,7 @@ class Ranking(QueryTreeHandler):
         self.__documents: list[Document] = []
 
         self.__do_text_transformations_to_refterms()
-        results = self.__get_ieee_explore_ranking()
+        results = self.__get_ieee_xplore_ranking()
         self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(results)
 
 
@@ -1707,7 +1710,7 @@ class Ranking(QueryTreeHandler):
         self.get_query_tree().do_text_transformations_to_query_terms(*self.__text_transformations_config.get_transformations_params())
 
 
-    def __get_ieee_explore_ranking(self) -> list[dict]:
+    def __get_ieee_xplore_ranking(self) -> list[dict]:
         """
         Get a ranking of articles from IEEE-Xplore.
 
