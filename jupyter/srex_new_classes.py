@@ -120,7 +120,7 @@ class VicinityGraphConfig:
         self.__number_of_graph_terms = nr_of_graph_terms
         self.__limit_distance = limit_distance
         self.__include_query_terms = include_query_terms
-        self.__summarize = summarize
+        self.__summarize = summarize    # it can be: 'mean' or 'median'
     
 
     def get_number_of_graph_terms(self) -> int:
@@ -644,7 +644,9 @@ class BinaryTreeNode:
             right_graph = self.right.__set_and_get_graph_operated_from_subtrees()
 
         if left_graph and right_graph:
-            if self.value == 'AND':
+            if left_graph.subquery == right_graph.subquery:
+                graph = left_graph
+            elif self.value == 'AND':
                 graph = left_graph.get_intersection_to_graph(right_graph)
             elif self.value == 'OR':
                 graph = left_graph.get_union_to_graph(right_graph)
@@ -710,7 +712,7 @@ class BinaryExpressionTree:
         return self.__raw_query
     
 
-    def get_query_terms_str_with_underscores(self) -> list[str]:
+    def get_query_terms_str_list_with_underscores(self) -> list[str]:
         if not self.__check_root_initialized():
             return []
         return self.root.get_values_from_leaves()
@@ -1134,7 +1136,7 @@ class Sentence(QueryTreeHandler):
             If True, stemming is applied
         """
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
-        query_terms_with_underscores = self.get_query_tree().get_query_terms_str_with_underscores()
+        query_terms_with_underscores = self.get_query_tree().get_query_terms_str_list_with_underscores()
         query_terms_with_spaces = [term.replace('_', ' ') for term in query_terms_with_underscores]
         #If there is any query term in the transformed sentence string
         if any(query_term in transformed_sentence_str for query_term in query_terms_with_spaces):  
@@ -1154,14 +1156,14 @@ class Sentence(QueryTreeHandler):
         self.__do_vicinity_matrix()
     
 
-    def generate_graph_nodes_of_sentence(self) -> None:
+    def generate_nodes_in_sentence_graphs(self) -> None:
         """
         Generate nodes to all the graphs associated with the sentence, based on 
         their isolated query terms as leaves from the query tree.
         """
         #First, generate nodes to the graphs associated with the leaves from the query tree
         for leaf_node in self.get_query_tree().get_query_terms_as_leaves():
-            self.__generate_nodes_in_leaves_graphs(leaf_node)
+            self.__generate_nodes_in_leaf_graph(leaf_node)
         
         #Then, generate nodes to the graphs associated with the rest of the nodes in the tree
         self.get_query_tree().operate_graphs_from_leaves()
@@ -1197,7 +1199,7 @@ class Sentence(QueryTreeHandler):
         return sentence_str_with_underscores_in_query_terms
     
 
-    def __generate_nodes_in_leaves_graphs(self, 
+    def __generate_nodes_in_leaf_graph(self, 
             leaf_node: BinaryTreeNode,
             ) -> None:
         """
@@ -1289,7 +1291,7 @@ class Sentence(QueryTreeHandler):
         """
         query_term_positions_dict = {}
 
-        for query_term in self.get_query_tree().get_query_terms_str_with_underscores():
+        for query_term in self.get_query_tree().get_query_terms_str_list_with_underscores():
             # If the query term is within the term position dictionary
             if query_term in self.__term_positions_dict.keys():
                 # Get the term positions of the query term
@@ -1452,11 +1454,11 @@ class Document(QueryTreeHandler):
         Generate all the nodes associated with the document graphs, along with 
         the graphs of their sentences, based on their query trees.
         """
-        #Generate graph nodes of sentences
+        #Generate graph nodes in sentences
         for sentence in self.__sentences:
-            sentence.generate_graph_nodes_of_sentence()
+            sentence.generate_nodes_in_sentence_graphs()
         
-        #Generate graph nodes of the current document
+        #Generate graph nodes in the current document
         self.set_query_tree(self.__get_union_of_sentences_trees())
     
 
