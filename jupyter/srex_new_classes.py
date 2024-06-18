@@ -1468,31 +1468,6 @@ class Document(QueryTreeHandler):
         """
         for sentence in self.__sentences:
             sentence.calculate_term_positions_and_vicinity_matrix()
-    
-
-    def get_ieee_xplore_article(self,
-            parameter: str, 
-            value: str
-            ) -> None:
-        """
-        Get an article from IEEE-Xplore.
-        
-        Parameters
-        ----------
-        parameter
-            Parameter used to search the article (e.g. 'article_number')
-        value
-            Value of the parameter used to search the article (e.g. '8600704')
-
-        """
-        xplore_id = '6g7w4kfgteeqvy2jur3ak9mn'
-        query = XPLORE(xplore_id)
-        query.outputDataFormat='object'
-        query.addParameter(parameter, value)
-        data = query.callAPI()
-        self.__abstract = data.get('articles', [{}])[0].get('abstract', "")
-        self.__title = data.get('articles', [{}])[0].get('title', "")
-        self.__doc_id = data.get('articles', [{}])[0].get('article_number', "1")
 
 
     def __calculate_sentences_list_from_documents(self) -> None:
@@ -1567,8 +1542,6 @@ class Ranking(QueryTreeHandler):
         self.__documents: list[Document] = []
 
         self.__do_text_transformations_to_refterms()
-        results = self.__get_ieee_xplore_ranking()
-        self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(results)
 
 
     def get_documents(self) -> list[Document]:
@@ -1611,6 +1584,40 @@ class Ranking(QueryTreeHandler):
         return list_of_query_trees
     
 
+    def calculate_article_dictionaries_list(self, 
+            articles_dicts: list[dict]
+            ) -> None:
+        """
+        Calculate the current ranking from a list of article dictionaries ordered by their 
+        ranking position. Each dictionary must contain the attributes 'title', 'abstract'
+        and 'article_number'.
+
+        Transforms the list of article dictionaries into a list of Document type objects, 
+        which have a weight associated with their position in the received list. 
+        Objects will be appended to the ranking. In addition, pre-processing of the text 
+        of the documents is carried out.
+
+        Parameters
+        ----------
+        nr_of_graph_terms : int
+            Configured number of terms in the graph
+        """
+        self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(articles_dicts)
+    
+    
+    def calculate_ieee_xplore_ranking(self) -> None:
+        """
+        Calculate the IEEE-Xplore ranking for the current ranking. 
+
+        Transforms the list of article dictionaries into a list of Document type objects, 
+        which have a weight associated with their position in the received list. 
+        Objects will be appended to the ranking. In addition, pre-processing of the text 
+        of the documents is carried out.
+        """
+        articles_dicts = self.__get_ieee_xplore_ranking()
+        self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(articles_dicts)
+    
+
     def generate_all_graphs(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
@@ -1644,6 +1651,38 @@ class Ranking(QueryTreeHandler):
         
         #Generate nodes of all graphs
         self.__generate_nodes_of_all_graphs()
+    
+
+    def get_ieee_xplore_article(self,
+            parameter: str, 
+            value: str
+            ) -> dict:
+        """
+        Get an article from IEEE-Xplore.
+        
+        Parameters
+        ----------
+        parameter: str
+            Parameter used to search the article (e.g. 'article_number')
+        value: str
+            Value of the parameter used to search the article (e.g. '8600704')
+        
+        Returns
+        -------
+        article : dict
+            The IEEE Xplore article
+        """
+        xplore_id = '6g7w4kfgteeqvy2jur3ak9mn'
+        query = XPLORE(xplore_id)
+        query.outputDataFormat='object'
+        query.addParameter(parameter, value)
+        data = query.callAPI()
+        article = {}
+        article["abstract"] = data.get('articles', [{}])[0].get('abstract', "")
+        article["title"] = data.get('articles', [{}])[0].get('title', "")
+        article["article_number"] = data.get('articles', [{}])[0].get('article_number', "1")
+
+        return article
     
 
     def __initialize_graphs_for_all_trees(self, 
@@ -1731,19 +1770,24 @@ class Ranking(QueryTreeHandler):
 
 
     def __calculate_ranking_as_weighted_documents_and_do_text_transformations(self,
-            results: list[dict],
+            articles_dicts: list[dict],
             ) -> None:
         """
-        Transform the ranking array in a list of strings associated with their weights.
-        if weighted <> none : the document will be weighted depending on its position in the ranking
+        Transforms the list of article dictionaries into a list of Document type objects, which have a weight
+        associated with their position in the received list. Objects will be appended to the ranking.
+        In addition, pre-processing of the text of the documents is carried out.
+        If weighted <> none : the document will be weighted depending on its position in the ranking.  
 
         Parameters
         ----------
-        results : list[dict]
-            Array of documents (articles)
+        articles_dicts : list[dict]
+            List of article dictionaries to be processed as Document type objects and to be part of the ranking
         """
-        for index, article in enumerate(results):
-            new_doc = self.__get_new_document_by_article(article, index, results_size=len(results))
+        # Ranking documents are re-initialized
+        self.__documents = []
+
+        for index, article in enumerate(articles_dicts):
+            new_doc = self.__get_new_document_by_article(article, index, results_size=len(articles_dicts))
             new_doc.do_text_transformations_by_sentence(*self.__text_transformations_config.get_transformations_params())
             self.__documents.append(new_doc)
     
