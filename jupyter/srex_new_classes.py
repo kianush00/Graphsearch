@@ -722,6 +722,12 @@ class BinaryExpressionTree:
         return self.root.get_leaves()
     
 
+    def get_graph(self) -> VicinityGraph | None:
+        if not self.__check_root_initialized():
+            return
+        return self.root.graph
+    
+
     def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
         if not self.__check_root_initialized():
             return
@@ -1079,18 +1085,11 @@ class QueryTreeHandler:
 
 
     def get_graph(self) -> VicinityGraph | None:
-        return self._check_graph_initialized()
+        return self.__query_tree.get_graph()
 
 
     def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
         return self.__query_tree.get_graph_by_subquery(query)
-    
-
-    def _check_graph_initialized(self) -> VicinityGraph | None:
-        if not self.__query_tree.root:
-            print('Error initializing BinaryExpressionTree instance')
-            return None
-        return self.__query_tree.root.graph
 
 
 
