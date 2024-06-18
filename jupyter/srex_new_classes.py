@@ -9,8 +9,6 @@ from nltk.stem import WordNetLemmatizer
 from graphviz import Graph
 from functools import reduce
 from xploreapi import XPLORE
-import pybliometrics
-from pybliometrics.scopus import ScopusSearch
 from sklearn.feature_extraction.text import CountVectorizer
 from numpy.linalg import norm
 from numpy import dot
@@ -1774,11 +1772,11 @@ class Ranking(QueryTreeHandler):
             A new document obtained from the attributes of the article
         """
         # Calculate the weight depending on the argument value and the position of the document in the ranking
-        _weight = self.__calculate_weight(self.__ranking_weight_type, results_size, index)
         _abstract = article.get('abstract', "")
         _title = article.get('title', "")
         _doc_id = article.get('article_number', "1")
-        _ranking_pos = article.get('rank', 1)
+        _ranking_pos = index + 1
+        _weight = self.__calculate_weight(self.__ranking_weight_type, results_size, _ranking_pos)
         _query_copy = copy.deepcopy(self.get_query_tree())
         new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
@@ -1789,7 +1787,7 @@ class Ranking(QueryTreeHandler):
     def __calculate_weight(self,
             weighted: str, 
             results_size: int, 
-            index: int
+            ranking_position: int
             ) -> float:
         """
         Calculate a weight factor depending on the argument value ('linear' or 'inverse'), and 
@@ -1801,7 +1799,7 @@ class Ranking(QueryTreeHandler):
             The type of weighting to be applied. Can be 'linear', 'inverse', or any other value.
         results_size : int
             The total number of results/documents.
-        index : int
+        ranking_position : int
             The position of the document in the ranking.
 
         Returns
@@ -1810,9 +1808,9 @@ class Ranking(QueryTreeHandler):
             The calculated weight factor.
         """
         if (weighted=='linear'):
-            factor = float((results_size - (index * 0.25)) / results_size)
+            factor = float((results_size - ((ranking_position - 1) * 0.25)) / results_size)
         elif (weighted=='inverse'):
-            factor = float(1 / ((index * 0.03) + 1))
+            factor = float(1 / (((ranking_position - 1) * 0.03) + 1))
         else:
             factor = 1.0
 
