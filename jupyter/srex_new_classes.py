@@ -37,9 +37,9 @@ class TextUtils:
             Text with underscores to be transformed
         stop_words_list : list[str]
             List of stop words to be removed from the text provided
-        lema : bool
+        lema : bool, optional
             If True, lemmatization is applied
-        stem : bool
+        stem : bool, optional
             If True, stemming is applied
         
         Returns
@@ -72,9 +72,9 @@ class TextUtils:
             Text to be transformed
         stop_words : list[str]
             List of stop words to be removed from the text provided
-        lema : bool
+        lema : bool, optional
             If True, lemmatization is applied
-        stem : bool
+        stem : bool, optional
             If True, stemming is applied
         
         Returns
@@ -272,9 +272,9 @@ class VicinityGraph:
 
         Parameters
         ----------
-        node_size : str
+        node_size : str, optional
             Node size to adjust the graph
-        node_color : str
+        node_color : str, optional
             Node color to adjust the graph
 
         Returns
@@ -313,7 +313,7 @@ class VicinityGraph:
         ----------
         external_graph : VicinityGraph
             The external graph to be compared
-        include_ponderation : bool
+        include_ponderation : bool, optional
             Select whether to include ponderation of the nodes as a parameter to the comparison function
 
         Returns
@@ -801,11 +801,11 @@ class BinaryExpressionTree:
 
         Parameters
         ----------
-        stop_words_list : list[str]
+        stop_words_list : list[str], optional
             List of stop words to be removed from the terms
-        lema : bool
+        lema : bool, optional
             If True, lemmatization is applied
-        stem : bool
+        stem : bool, optional
             If True, stemming is applied
         """
         def transform_node_if_leaf(node: BinaryTreeNode) -> None:
@@ -832,13 +832,13 @@ class BinaryExpressionTree:
 
         Parameters
         ----------
-        nr_of_graph_terms : int
+        nr_of_graph_terms : int, optional
             Configured number of terms in the graph
-        limit_distance : int
+        limit_distance : int, optional
             Maximal distance of terms used to calculate the vicinity
-        include_query_terms : bool
+        include_query_terms : bool, optional
             If True, the query term is included in the vicinity
-        summarize : str
+        summarize : str, optional
             Summarization type to operate distances in the vicinity matrix for each 
             sentence (it can be: mean or median)
         """
@@ -1112,8 +1112,6 @@ class Sentence(QueryTreeHandler):
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__preprocessed_text: str = ""
-        self.__term_positions_dict: defaultdict[str, list[int]] = defaultdict(list)
-        self.__query_terms_positions_dict: dict[str, list[int]] = {}
         self.__vicinity_matrix: dict[str, dict[str, list[float]]] = []
 
 
@@ -1154,9 +1152,9 @@ class Sentence(QueryTreeHandler):
         ----------
         stop_words_list : list[str]
             List of stop words to be removed from the sentence
-        lema : bool
+        lema : bool, optional
             If True, lematization is applied
-        stem : bool
+        stem : bool, optional
             If True, stemming is applied
         """
         # Sentence query graphs is re-initialized
@@ -1172,15 +1170,42 @@ class Sentence(QueryTreeHandler):
             self.__preprocessed_text = transformed_sentence_str
     
 
-    def calculate_term_positions_and_vicinity_matrix(self) -> None:
+    def calculate_vicinity_matrix(self) -> None:
         """
-        Calculate term positions dictionary for terms of the sentence and terms from
-        the query terms, also calculates the vicinity of a list of query 
-        terms in the current sentence, limited by a specified distance.
+        Calculate term positions dictionary for terms of the sentence and terms from the query terms, 
+        then it calculates the vicinity of a list of query terms in the current sentence, limited by 
+        a specified distance.
+
+        E.g. {'v_term_1': {'query_term_1': [0.0, 1.8, 0.0, 0.9]}, 
+        'v_term_2': {'query_term_1': [0.0, 0.0, 0.9, 0.0], 'query_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
         """
-        self.__do_term_positions_dict()
-        self.__do_query_term_positions_dict()
-        self.__do_vicinity_matrix()
+        term_positions_dict = self.get_term_positions_dict(self.__preprocessed_text)
+        query_term_positions_dict = self.get_query_term_positions_dict(term_positions_dict, 
+                                                            self.get_query_tree().get_query_terms_str_list_with_underscores())
+        vicinity_matrix = {}  # Create the empty dictionary
+
+        # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the query_terms
+        # and return a list of these terms and their corresponding distances
+        for term, term_positions in term_positions_dict.items():
+            #Avoid comparing the query term with itself (if bool false)
+            if((term not in query_term_positions_dict.keys()) or (self.get_graph().get_config().get_include_query_terms())): 
+                # Calculate the distance between the query term and the rest of terms
+                first_one = True
+                # Iterate query terms that do not contain spaces
+                for query_term, query_positions in query_term_positions_dict.items():
+                    if query_term != term:
+                        freq_neighborhood_positions = self.calculate_ponderation_of_distances_between_term_positions(query_positions, 
+                                                                                                                       term_positions,
+                                                                                    self.get_graph().get_config().get_limit_distance(),
+                                                                                                                        self.__weight)
+
+                        if (any(frq > 0 for frq in freq_neighborhood_positions)):
+                            if (first_one):
+                                vicinity_matrix[term] = {}
+                                first_one = False
+                            vicinity_matrix[term][query_term] = freq_neighborhood_positions
+
+        self.__vicinity_matrix = vicinity_matrix
     
 
     def generate_nodes_in_sentence_graphs(self) -> None:
@@ -1194,6 +1219,107 @@ class Sentence(QueryTreeHandler):
         
         #Then, generate nodes to the graphs associated with the rest of the nodes in the tree
         self.get_query_tree().operate_graphs_from_leaves()
+    
+
+    def get_term_positions_dict(self, 
+            text: str
+            ) -> defaultdict[str, list[int]]:
+        """
+        Calculate a dictionary to store the list of positions for each text term.
+
+        Parameters
+        ----------
+        text : str
+            The text to calculate its positions by term
+
+        Returns
+        -------
+        term_positions_dict : defaultdict[str, list[int]]
+            A dictionary with a list of positions for each term of the text
+        """
+        vectorizer = CountVectorizer()
+        vector = vectorizer.build_tokenizer()(text)
+        term_positions_dict = defaultdict(list)
+        for i in range(len(vector)):
+            term_positions_dict[vector[i]].append(i)
+        return term_positions_dict
+    
+
+    def get_query_term_positions_dict(self, 
+            term_positions_dict: defaultdict[str, list[int]],
+            query_terms: list[str]
+            ) -> dict[str, list[int]]:
+        """
+        Calculate a dictionary to store the list of positions for each query term, based on 
+        the positions of each term from the parameter.
+
+        Parameters
+        ----------
+        term_positions_dict : defaultdict[str, list[int]]
+            A dictionary with a list of positions from a text
+        query_terms : list[str]
+            List of query terms to get their positions
+
+        Returns
+        -------
+        query_term_positions_dict : dict[str, list[int]]
+            A dictionary with a list of positions for each term of the query inside the 
+            term positions dict
+        """
+        query_term_positions_dict = {}
+
+        for query_term in query_terms:
+            # If the query term is within the term position dictionary
+            if query_term in term_positions_dict.keys():
+                # Get the term positions of the query term
+                query_term_positions_dict[query_term] = term_positions_dict[query_term]
+        
+        return query_term_positions_dict
+
+
+    def calculate_ponderation_of_distances_between_term_positions(self,
+            term1_positions: list[int], 
+            term2_positions: list[int],
+            limit_distance: int,
+            weight: float = 1.0
+            ) -> list[float]:
+        """
+        Compare the positions vectors of two terms, and return the ponderation 
+        (frequency * weight) list per distance between query terms and vicinity terms
+        
+        E.g.
+        term1_positions = [0, 2, 4, 6]
+        term2_positions = [1, 3, 5, 7]
+        limit_distance = 7
+        weight = 1.0
+        result = [7.0, 0.0, 5.0, 0.0, 3.0, 0.0, 1.0]
+
+        Parameters
+        ----------
+        term1_positions : list[int]
+            List of positions of the first term
+        term2_positions : list[int]
+            List of positions of the second term
+        limit_distance : int
+            Limit distance to calculate between the two term positions lists
+        weight : float, optional
+            Weight to multiply with each frequency, to get its ponderation
+
+        Returns
+        -------
+        ponderations_per_distance : list[float]
+            List of ponderations per distance between query terms and vicinity terms
+        """
+        ponderations_per_distance = [0] * limit_distance
+
+        for term1_pos in term1_positions:
+            for term2_pos in term2_positions:
+                absolute_distance = abs(term1_pos-term2_pos)
+                if (absolute_distance <= limit_distance):
+                    ponderations_per_distance[absolute_distance-1] += 1
+        
+        ponderations_per_distance = [i * weight for i in ponderations_per_distance]
+        return ponderations_per_distance
     
 
     def __get_transformed_sentence_str_with_underscores_in_query_terms(self,
@@ -1295,99 +1421,6 @@ class Sentence(QueryTreeHandler):
                     terms_pond_dict[neighbor_term] = sum_of_ponds_in_query_term
             
         return terms_pond_dict
-
-
-    def __do_term_positions_dict(self) -> None:
-        """
-        Calculate a dictionary with the sentence's term positions.
-        """
-        vectorizer = CountVectorizer()
-        vector = vectorizer.build_tokenizer()(self.__preprocessed_text)
-        sentence_positions_dict = defaultdict(list)
-        for i in range(len(vector)):
-            sentence_positions_dict[vector[i]].append(i)
-        self.__term_positions_dict = sentence_positions_dict
-
-    
-    def __do_query_term_positions_dict(self) -> None:
-        """
-        Returns a dictionary to store the list of positions for each query term, along with its splitted terms.
-        This function takes a defaultdict containing term positions and a list of query terms as input.
-        It splits each query term into individual words and retrieves the positions of each term from the defaultdict.
-        The resulting dictionary stores each query term along with its list of positions.
-        """
-        query_term_positions_dict = {}
-
-        for query_term in self.get_query_tree().get_query_terms_str_list_with_underscores():
-            # If the query term is within the term position dictionary
-            if query_term in self.__term_positions_dict.keys():
-                # Get the term positions of the query term
-                query_term_positions_dict[query_term] = self.__term_positions_dict[query_term]
-        
-        self.__query_terms_positions_dict = query_term_positions_dict
-    
-
-    def __do_vicinity_matrix(self) -> None:
-        """
-        Calculate the vicinity of a list of query terms in the current sentence, limited by a specified distance.
-
-        E.g. {'v_term_1': {'query_term_1': [0.0, 1.8, 0.0, 0.9]}, 
-        'v_term_2': {'query_term_1': [0.0, 0.0, 0.9, 0.0], 'query_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
-        """
-        vicinity_matrix = {}  # Create the empty dictionary
-        # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the query_terms
-        # and return a list of these terms and their corresponding distances
-        for term, term_positions in self.__term_positions_dict.items():
-            #Avoid comparing the query term with itself (if bool false)
-            if((term not in self.__query_terms_positions_dict.keys()) or (self.get_graph().get_config().get_include_query_terms())): 
-                # Calculate the distance between the query term and the rest of terms
-                first_one = True
-                # Iterate query terms that do not contain spaces
-                for query_term, query_positions in self.__query_terms_positions_dict.items():
-                    if query_term != term:
-                        freq_neighborhood_positions = self.calculate_ponderation_of_distances_between_term_positions(query_positions, 
-                                                                                                                       term_positions)
-
-                        if (any(frq > 0 for frq in freq_neighborhood_positions)):
-                            if (first_one):
-                                vicinity_matrix[term] = {}
-                                first_one = False
-                            vicinity_matrix[term][query_term] = freq_neighborhood_positions
-
-        self.__vicinity_matrix = vicinity_matrix
-
-
-    def calculate_ponderation_of_distances_between_term_positions(self,
-            term1_positions: list[int], 
-            term2_positions: list[int]
-            ) -> list[float]:
-        """
-        Compare the positions vectors of two terms, and return the ponderation 
-        (frequency * weight) list per distance between query terms and vicinity terms
-
-        Parameters
-        ----------
-        term1_positions : list[int]
-            List of positions of the first term
-        term2_positions : list[int]
-            List of positions of the second term
-
-        Returns
-        -------
-        ponderations_per_distance : list[float]
-            List of ponderations per distance between query terms and vicinity terms
-        """
-        limit_distance = self.get_graph().get_config().get_limit_distance()
-        ponderations_per_distance = [0] * limit_distance
-
-        for term1_pos in term1_positions:
-            for term2_pos in term2_positions:
-                absolute_distance = abs(term1_pos-term2_pos)
-                if (absolute_distance <= limit_distance):
-                    ponderations_per_distance[absolute_distance-1] += 1
-        
-        ponderations_per_distance = [i * self.__weight for i in ponderations_per_distance]
-        return ponderations_per_distance
 
 
 
@@ -1492,14 +1525,14 @@ class Document(QueryTreeHandler):
         self.set_query_tree(self.__get_union_of_sentences_trees())
     
 
-    def calculate_term_positions_and_vicinity_matrix(self) -> None:
+    def calculate_vicinity_matrix(self) -> None:
         """
         Calculate term positions dictionary for terms of the sentence and terms from
-        the query terms, also calculates the vicinity of a list of query 
+        the query terms, then it calculates the vicinity of a list of query 
         terms in the current document, limited by a specified distance.
         """
         for sentence in self.__sentences:
-            sentence.calculate_term_positions_and_vicinity_matrix()
+            sentence.calculate_vicinity_matrix()
 
 
     def __calculate_sentences_list_from_documents(self) -> None:
@@ -1663,13 +1696,13 @@ class Ranking(QueryTreeHandler):
 
         Parameters
         ----------
-        nr_of_graph_terms : int
+        nr_of_graph_terms : int, optional
             Configured number of terms in the graph
-        limit_distance : int
+        limit_distance : int, optional
             Maximal distance of terms used to calculate the vicinity
-        include_query_terms : bool
+        include_query_terms : bool, optional
             If True, the query term is included in the vicinity
-        summarize : str
+        summarize : str, optional
             Summarization type to operate distances in the vicinity matrix for 
             each sentence (it can be: mean or median)
         """
@@ -1679,7 +1712,7 @@ class Ranking(QueryTreeHandler):
 
         #Calculate term positions and vicinity matrix of each sentence by document
         for document in self.__documents:
-            document.calculate_term_positions_and_vicinity_matrix()
+            document.calculate_vicinity_matrix()
         
         #Generate nodes of all graphs
         self.__generate_nodes_of_all_graphs()
