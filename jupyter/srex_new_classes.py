@@ -811,7 +811,7 @@ class BinaryExpressionTree:
             summarize: str = 'mean'
             ) -> None:
         """
-        Initialize graphs associated to each node in the tree.
+        Initialize the graph associated to each node in the tree.
 
         Parameters
         ----------
@@ -835,6 +835,22 @@ class BinaryExpressionTree:
         if not self.__check_root_initialized():
             return
         initialize_graph(self.root)
+    
+
+    def remove_graphs_for_each_node(self) -> None:
+        """
+        Remove the graph associated to each node in the tree.
+        """
+        def remove_graph(node: BinaryTreeNode):
+            node.graph = None
+            if node.left:
+                remove_graph(node.left)
+            if node.right:
+                remove_graph(node.right)
+        
+        if not self.__check_root_initialized():
+            return
+        remove_graph(self.root)
 
 
     def __str__(self) -> str:
@@ -1071,7 +1087,7 @@ class QueryTreeHandler:
     
 
     def _check_graph_initialized(self) -> VicinityGraph | None:
-        if not self.__query_tree.root or not self.__query_tree.root.graph:
+        if not self.__query_tree.root:
             print('Error initializing BinaryExpressionTree instance')
             return None
         return self.__query_tree.root.graph
@@ -1133,6 +1149,9 @@ class Sentence(QueryTreeHandler):
         stem : bool
             If True, stemming is applied
         """
+        # Sentence query graphs is re-initialized
+        self.get_query_tree().remove_graphs_for_each_node()
+        
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
         query_terms_with_underscores = self.get_query_tree().get_query_terms_str_list_with_underscores()
         query_terms_with_spaces = [term.replace('_', ' ') for term in query_terms_with_underscores]
@@ -1257,13 +1276,13 @@ class Sentence(QueryTreeHandler):
         terms_pond_dict = {}
 
         # Iterate over each term and its ponderations in the document
-        for neighbor_term, distance_pond_by_ref_term in self.__vicinity_matrix.items():
+        for neighbor_term, distance_pond_by_query_term in self.__vicinity_matrix.items():
             # Checks if the query word is in the distance-ponderation 
-            # dictionary keys and if the neighbor term isn't a ref term
-            if (query_term in distance_pond_by_ref_term):
-                sum_of_ponds_in_ref_term = sum(distance_pond_by_ref_term[query_term])
-                if sum_of_ponds_in_ref_term > 0:
-                    terms_pond_dict[neighbor_term] = sum_of_ponds_in_ref_term
+            # dictionary keys and if the neighbor term isn't a query term
+            if (query_term in distance_pond_by_query_term):
+                sum_of_ponds_in_query_term = sum(distance_pond_by_query_term[query_term])
+                if sum_of_ponds_in_query_term > 0:
+                    terms_pond_dict[neighbor_term] = sum_of_ponds_in_query_term
             
         return terms_pond_dict
 
@@ -1443,6 +1462,9 @@ class Document(QueryTreeHandler):
         stem : bool
             If True, stemming is applied
         """
+        # Document query graphs is re-initialized
+        self.get_query_tree().remove_graphs_for_each_node()
+        
         for sentence in self.__sentences:
             sentence.do_text_transformations_if_any_query_term(stop_words_list, lema, stem)
 
@@ -1541,7 +1563,7 @@ class Ranking(QueryTreeHandler):
         self.__text_transformations_config = TextTransformationsConfig(stop_words, lemmatization, stemming)
         self.__documents: list[Document] = []
 
-        self.__do_text_transformations_to_refterms()
+        self.__do_text_transformations_to_query_terms()
 
 
     def get_documents(self) -> list[Document]:
@@ -1635,7 +1657,7 @@ class Ranking(QueryTreeHandler):
             Configured number of terms in the graph
         limit_distance : int
             Maximal distance of terms used to calculate the vicinity
-        include_ref_terms : bool
+        include_query_terms : bool
             If True, the query term is included in the vicinity
         summarize : str
             Summarization type to operate distances in the vicinity matrix for 
@@ -1741,7 +1763,7 @@ class Ranking(QueryTreeHandler):
         return union_of_trees
 
 
-    def __do_text_transformations_to_refterms(self) -> None:
+    def __do_text_transformations_to_query_terms(self) -> None:
         """
         Apply text transformations to the query terms of the ranking. Lower the text, tokenize, remove 
         punctuation, stopwords, finally do stemming and lemmatization if specified.
@@ -1783,8 +1805,9 @@ class Ranking(QueryTreeHandler):
         articles_dicts : list[dict]
             List of article dictionaries to be processed as Document type objects and to be part of the ranking
         """
-        # Ranking documents are re-initialized
+        # Ranking documents and ranking query graphs are re-initialized
         self.__documents = []
+        self.get_query_tree().remove_graphs_for_each_node()
 
         for index, article in enumerate(articles_dicts):
             new_doc = self.__get_new_document_by_article(article, index, results_size=len(articles_dicts))
