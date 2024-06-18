@@ -239,6 +239,18 @@ class VicinityGraph:
         return string
     
 
+    def get_graph_as_dict(self) -> dict[str, dict[str, float]]:
+        """
+        Returns the graph as a dictionary.
+
+        e.g.   {'v_term1': {'ponderation': 3.0, 'distance': 3.4}, 
+                'v_term2': {'ponderation': 2.0, 'distance': 1.6}, ...}
+        """
+        graph_dict = {n.get_term(): {'ponderation': n.get_ponderation(), 
+                                     'distance': n.get_distance()} for n in self.__nodes}
+        return graph_dict
+
+    
     def get_viewable_graph_copy(self) -> 'VicinityGraph':
         """
         Returns a copy of the graph, with the vicinity terms with the highest ponderation 
@@ -471,8 +483,7 @@ class VicinityGraph:
                 'v_term2': {'ponderation': 0.63, 'distance': 0.82}, ...}
         """
         # Get the ponderations and distances from the graph 
-        normalized_self_nodes = {n.get_term(): {'ponderation': n.get_ponderation(), 
-                                                'distance': n.get_distance()} for n in self.__nodes}
+        normalized_self_nodes = self.get_graph_as_dict()
         # Calculate the length of the ponderation vector
         self_ponderations_length = norm([value['ponderation'] for value in normalized_self_nodes.values()])
         # Calculate the length of the distance vector
@@ -1334,7 +1345,7 @@ class Sentence(QueryTreeHandler):
                 # Iterate query terms that do not contain spaces
                 for query_term, query_positions in self.__query_terms_positions_dict.items():
                     if query_term != term:
-                        freq_neighborhood_positions = self.__calculate_ponderation_of_distances_between_term_positions(query_positions, 
+                        freq_neighborhood_positions = self.calculate_ponderation_of_distances_between_term_positions(query_positions, 
                                                                                                                        term_positions)
 
                         if (any(frq > 0 for frq in freq_neighborhood_positions)):
@@ -1346,7 +1357,7 @@ class Sentence(QueryTreeHandler):
         self.__vicinity_matrix = vicinity_matrix
 
 
-    def __calculate_ponderation_of_distances_between_term_positions(self,
+    def calculate_ponderation_of_distances_between_term_positions(self,
             term1_positions: list[int], 
             term2_positions: list[int]
             ) -> list[float]:
