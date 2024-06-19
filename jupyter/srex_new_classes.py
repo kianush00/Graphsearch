@@ -24,7 +24,7 @@ class TextUtils:
             text_with_underscores: str,
             stop_words_list: list[str], 
             lema: bool = True, 
-            stem: bool = True
+            stem: bool = False
             ) -> str:
         """
         Apply some transformations to the text with underscores. First the underscores 
@@ -60,7 +60,7 @@ class TextUtils:
             text: str,
             stop_words: list[str], 
             lema: bool = True, 
-            stem: bool = True
+            stem: bool = False
             ) -> str:
         """
         Apply some transformations to the text. Lower the text, tokenize, remove punctuation, 

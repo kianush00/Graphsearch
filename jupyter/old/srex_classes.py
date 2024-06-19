@@ -1,4 +1,4 @@
-import srex
+import jupyter.old.srex as srex
 import operator
 from numpy import (array, dot, arccos, clip)
 from numpy.linalg import norm
