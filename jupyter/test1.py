@@ -30,7 +30,10 @@ class TestSREX(unittest.TestCase):
         r.add_node(r_node2)
         r.add_node(r_node3)
 
-        self.assertDictEqual(g1.get_union_to_graph(g2).get_graph_as_dict(), r.get_graph_as_dict())
+        result = g1.get_union_to_graph(g2).get_graph_as_dict()
+        expected_result = r.get_graph_as_dict()
+
+        self.assertDictEqual(result, expected_result)
     
 
     def test_intersection_between_graphs(self):
@@ -55,98 +58,184 @@ class TestSREX(unittest.TestCase):
         r.add_node(r_node1)
         r.add_node(r_node2)
 
-        self.assertDictEqual(g1.get_intersection_to_graph(g2).get_graph_as_dict(), r.get_graph_as_dict())
+        result = g1.get_intersection_to_graph(g2).get_graph_as_dict()
+        expected_result = r.get_graph_as_dict()
+
+        self.assertDictEqual(result, expected_result)
         
 
     def test_calculate_ponderation_of_distances_between_term_positions(self):
+        # Create a Sentence object with an empty raw_text and a dummy query
         s = srex.Sentence(raw_text="", query=srex.BinaryExpressionTree(raw_query="test"))
         
-        tp1 = [0,2,4,6]
-        tp2 = [1,3,5,7]
+        # Define term positions
+        tp1 = [0, 2, 4, 6]
+        tp2 = [1, 3, 5, 7]
+        
+        # Define limit distance
         limit_distance = 7
-        result = [7.0, 0.0, 5.0, 0.0, 3.0, 0.0, 1.0]
-
-        self.assertCountEqual(s.calculate_ponderation_of_distances_between_term_positions(tp1, tp2, limit_distance), result)
+        
+        # Calculate ponderation of distances between term positions
+        result = s.calculate_ponderation_of_distances_between_term_positions(tp1, tp2, limit_distance)
+        
+        # Define expected result
+        expected_result = [7.0, 0.0, 5.0, 0.0, 3.0, 0.0, 1.0]
+        
+        # Assert that the result matches the expected output
+        self.assertCountEqual(result, expected_result)
     
 
     def test_remove_special_characters(self):
+        # Load test text data
         with open('jupyter/json_data/test_data.json') as f:
-            text = json.load(f).get('text5', "")
+            test_data = json.load(f)
+        
+        text = test_data.get('text5')
+        expected_result = test_data.get('text5_remove_special_characters')
+        
+        # Tokenize the text
         tokens = srex.nltk.word_tokenize(text.lower())
-        with open('jupyter/json_data/test_data.json') as f:
-            result = json.load(f).get('text5_remove_special_characters', "")
-        self.assertEqual(srex.TextUtils.remove_special_characters(tokens), result)
+        
+        # Remove special characters
+        result = srex.TextUtils.remove_special_characters(tokens)
+        
+        # Assert the result matches the expected output
+        self.assertEqual(result, expected_result)
     
 
     def test_remove_stopwords(self):
+        # Load test text data
         with open('jupyter/json_data/test_data.json') as f:
-            text = json.load(f).get('text5', "")
+            test_data = json.load(f)
+        
+        text = test_data.get('text5')
+        expected_result = test_data.get('text5_remove_stopwords')
+        
+        # Load stopwords
         with open('jupyter/json_data/stopwords_data.json') as f:
-            stop_words = json.load(f).get('words', [])
+            stopwords_data = json.load(f)
+        
+        stop_words = stopwords_data.get('words')
+        
+        # Tokenize the text
         tokens = srex.nltk.word_tokenize(text.lower())
-        with open('jupyter/json_data/test_data.json') as f:
-            result = json.load(f).get('text5_remove_stopwords', "")
-        self.assertEqual(srex.TextUtils.remove_stopwords(tokens, stop_words), result)
+        
+        # Remove stopwords
+        result = srex.TextUtils.remove_stopwords(tokens, stop_words)
+        
+        # Assert the result matches the expected output
+        self.assertEqual(result, expected_result)
 
     
     def test_do_lemmatization(self):
+        # Load test text data
         with open('jupyter/json_data/test_data.json') as f:
-            text = json.load(f).get('text5', "")
+            test_data = json.load(f)
+        
+        text = test_data.get('text5')
+        expected_result = test_data.get('text5_do_lemmatization')
+        
+        # Tokenize the text
         tokens = srex.nltk.word_tokenize(text.lower())
-        with open('jupyter/json_data/test_data.json') as f:
-            result = json.load(f).get('text5_do_lemmatization', "")
-        self.assertEqual(srex.TextUtils.do_lemmatization(tokens), result)
+        
+        # Perform lemmatization
+        result = srex.TextUtils.do_lemmatization(tokens)
+        
+        # Assert the result matches the expected output
+        self.assertEqual(result, expected_result)
     
 
     def test_do_stemming(self):
+        # Load test data and expected result from JSON file
         with open('jupyter/json_data/test_data.json') as f:
-            text = json.load(f).get('text5', "")
+            test_data = json.load(f)
+        
+        text = test_data.get('text5')
+        expected_result = test_data.get('text5_do_stemming')
+        
+        # Tokenize the text
         tokens = srex.nltk.word_tokenize(text.lower())
-        with open('jupyter/json_data/test_data.json') as f:
-            result = json.load(f).get('text5_do_stemming', "")
-        self.assertEqual(srex.TextUtils.do_stemming(tokens), result)
+        
+        # Perform stemming
+        result = srex.TextUtils.do_stemming(tokens)
+        
+        # Assert the result matches the expected output
+        self.assertEqual(result, expected_result)
 
 
     def test_get_transformed_text_with_lema(self):
+        # Load test data and expected result from JSON file
         with open('jupyter/json_data/test_data.json') as f:
-            text = json.load(f).get('text5', "")
+            test_data = json.load(f)
+        
+        text = test_data.get('text5')
+        expected_result = test_data.get('text5_transformed_text_with_lema')
+        
+        # Load stopwords from JSON file
         with open('jupyter/json_data/stopwords_data.json') as f:
-            stop_words = json.load(f).get('words', [])
+            stopwords_data = json.load(f)
+        
+        stop_words = stopwords_data.get('words')
+        
+        # Set lema and stem flags
         lema = True
         stem = False
-        with open('jupyter/json_data/test_data.json') as f:
-            result = json.load(f).get('text5_transformed_text_with_lema', "")
         
-        self.assertEqual(srex.TextUtils.get_transformed_text(text, stop_words, lema, stem), result)
+        # Get transformed text
+        result = srex.TextUtils.get_transformed_text(text, stop_words, lema, stem)
+        
+        # Assert the result matches the expected output
+        self.assertEqual(result, expected_result)
     
 
     def test_get_transformed_text_if_it_has_underscores(self):
         text_with_underscores = "internet_of_things"
+        expected_result = "internet_thing"
+        
+        # Load stopwords from JSON file
         with open('jupyter/json_data/stopwords_data.json') as f:
-            stop_words = json.load(f).get('words', [])
+            stop_words = json.load(f).get('words')
+        
+        # Set lema and stem flags
         lema = True
         stem = False
-        result = "internet_thing"
-
-        self.assertEqual(srex.TextUtils.get_transformed_text_if_it_has_underscores(text_with_underscores, stop_words, lema, stem), result)
+        
+        # Get transformed text
+        result = srex.TextUtils.get_transformed_text_if_it_has_underscores(text_with_underscores, stop_words, lema, stem)
+        
+        # Assert the result matches the expected output
+        self.assertEqual(result, expected_result)
         
 
     def test_term_positions_dict(self):
+        # Initialize Ranking object
         ranking = srex.Ranking(query_text="test")
         ranking.calculate_article_dictionaries_list([{}])
 
+        # Load test data from JSON file
         with open('jupyter/json_data/test_data.json') as f:
-            text = json.load(f).get('text6', "")
-        dict_result = {'hierarchical': [0, 6, 9, 16, 21], 'simknn': [1], 'driven': [2, 5, 11, 15], 'dual': [3], 'index': [4], 
-                       'network': [7, 18, 20], 'adopt': [8, 13, 19], 'rtree': [10], 'store': [12], 'topology': [14, 22], 'road': [17]}
-        result = defaultdict(list, dict_result)
+            test_data = json.load(f)
+        text = test_data.get('text6')
+
+        # Expected term positions dictionary
+        dict_result = {
+            'hierarchical': [0, 6, 9, 16, 21], 'simknn': [1], 'driven': [2, 5, 11, 15], 'dual': [3], 'index': [4], 
+            'network': [7, 18, 20], 'adopt': [8, 13, 19], 'rtree': [10], 'store': [12], 'topology': [14, 22], 'road': [17]
+        }
+
+        # Get term positions dictionary from ranking object
+        result = ranking.get_documents()[0].get_sentences()[0].get_term_positions_dict(text)
         
-        self.assertEqual(ranking.get_documents()[0].get_sentences()[0].get_term_positions_dict(text), result)
+        # Create expected result as defaultdict
+        expected_result = defaultdict(list, dict_result)
+        
+        # Assert the result matches the expected output
+        self.assertEqual(result, expected_result)
     
 
     def test_cosine_similarity(self):
         with open('jupyter/json_data/stopwords_data.json') as f:
-            stop_words = json.load(f).get('words', [])
+            stop_words = json.load(f).get('words')
         
         query                    = 'network'
         ranking_weight_type      = 'linear' # it can be: 'none', 'linear' or 'inverse'
@@ -158,10 +247,10 @@ class TestSREX(unittest.TestCase):
 
         with open('jupyter/json_data/test_data.json') as f:
             text_json = json.load(f)
-        text1 = text_json.get('text1', "")
-        text2 = text_json.get('text2', "")
-        text3 = text_json.get('text3', "")
-        text4 = text_json.get('text4', "")
+        text1 = text_json.get('text1')
+        text2 = text_json.get('text2')
+        text3 = text_json.get('text3')
+        text4 = text_json.get('text4')
 
         list_of_articles_dicts = [{'abstract': text1}, 
                                 {'abstract': text2}, 
@@ -197,10 +286,10 @@ class TestSREX(unittest.TestCase):
 
         with open('jupyter/json_data/test_data.json') as f:
             text_json = json.load(f)
-        text1 = text_json.get('text1', "")
-        text2 = text_json.get('text2', "")
-        text3 = text_json.get('text3', "")
-        text4 = text_json.get('text4', "")
+        text1 = text_json.get('text1')
+        text2 = text_json.get('text2')
+        text3 = text_json.get('text3')
+        text4 = text_json.get('text4')
 
         list_of_articles_dicts = [{'abstract': text1}, 
                                 {'abstract': text2}, 
@@ -216,15 +305,15 @@ class TestSREX(unittest.TestCase):
         g3 = ranking.get_document_by_ranking_position(3).get_graph()
         g4 = ranking.get_document_by_ranking_position(4).get_graph()
 
-        result1 = ['hierarchical', 'adopt', 'grid', 'driven', 'gato', 'road', 'topology', 'store', 'simknn', 'child']
-        result2 = ['hierarchical', 'car', 'adopt', 'grid', 'driven', 'gato', 'road', 'topology', 'house', 'store', 'simknn']
-        result3 = ['hierarchical', 'adopt', 'driven', 'gato', 'road', 'galea', 'topology', 'echeverria', 'patricio', 'abel', 'simknn']
-        result4 = ['hierarchical', 'adopt', 'driven', 'road', 'gato', 'galea', 'topology', 'echeverria', 'abel', 'simknn', 'rain']
+        expected_result1 = ['hierarchical', 'adopt', 'grid', 'driven', 'gato', 'road', 'topology', 'store', 'simknn', 'child']
+        expected_result2 = ['hierarchical', 'car', 'adopt', 'grid', 'driven', 'gato', 'road', 'topology', 'house', 'store', 'simknn']
+        expected_result3 = ['hierarchical', 'adopt', 'driven', 'gato', 'road', 'galea', 'topology', 'echeverria', 'patricio', 'abel', 'simknn']
+        expected_result4 = ['hierarchical', 'adopt', 'driven', 'road', 'gato', 'galea', 'topology', 'echeverria', 'abel', 'simknn', 'rain']
 
-        self.assertCountEqual(g1.get_terms_from_nodes(), result1)
-        self.assertCountEqual(g2.get_terms_from_nodes(), result2)
-        self.assertCountEqual(g3.get_terms_from_nodes(), result3)
-        self.assertCountEqual(g4.get_terms_from_nodes(), result4)
+        self.assertCountEqual(g1.get_terms_from_nodes(), expected_result1)
+        self.assertCountEqual(g2.get_terms_from_nodes(), expected_result2)
+        self.assertCountEqual(g3.get_terms_from_nodes(), expected_result3)
+        self.assertCountEqual(g4.get_terms_from_nodes(), expected_result4)
 
 
 if __name__ == '__main__':
