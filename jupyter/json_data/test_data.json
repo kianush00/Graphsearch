@@ -95,7 +95,84 @@
             "driven": [0.0, 1.0, 0.0, 0.0],
             "adopt": [0.0, 1.0, 0.0, 1.0]
         }
+    },
+    "text6_term_positions_dict": {
+        "hierarchical": [0, 6, 9, 16, 21], 
+        "simknn": [1], 
+        "driven": [2, 5, 11, 15], 
+        "dual": [3], 
+        "index": [4], 
+        "network": [7, 18, 20], 
+        "adopt": [8, 13, 19], 
+        "rtree": [10], 
+        "store": [12], 
+        "topology": [14, 22], 
+        "road": [17]
+    },
+    "text6_query_term_positions_dict": {
+        "driven": [2, 5, 11, 15], 
+        "adopt": [8, 13, 19], 
+        "store": [12]
+    },
+    "text6_leaf_graph_mean_1": {
+        "hierarchical": {"ponderation": 6.0, "distance": 2.3333333333333335}, 
+        "simknn": {"ponderation": 2.0, "distance": 2.5}, 
+        "dual": {"ponderation": 2.0, "distance": 1.5}, 
+        "index": {"ponderation": 2.0, "distance": 1.5}, 
+        "network": {"ponderation": 3.0, "distance": 3.0}, 
+        "adopt": {"ponderation": 5.0, "distance": 2.8}, 
+        "rtree": {"ponderation": 1.0, "distance": 1.0}, 
+        "store": {"ponderation": 2.0, "distance": 2.0}, 
+        "topology": {"ponderation": 2.0, "distance": 2.0}, 
+        "road": {"ponderation": 1.0, "distance": 2.0}
+    },
+    "text6_leaf_graph_mean_2": {
+        "hierarchical": {"ponderation": 6.0, "distance": 2.5}, 
+        "driven": {"ponderation": 5.0, "distance": 2.8}, 
+        "index": {"ponderation": 1.0, "distance": 4.0}, 
+        "network": {"ponderation": 3.0, "distance": 1.0}, 
+        "rtree": {"ponderation": 2.0, "distance": 2.5}, 
+        "store": {"ponderation": 2.0, "distance": 2.5}, 
+        "topology": {"ponderation": 2.0, "distance": 2.0}, 
+        "road": {"ponderation": 2.0, "distance": 3.0}
+    },
+    "text6_leaf_graph_mean_3": {
+        "hierarchical": {"ponderation": 2.0, "distance": 3.5}, 
+        "driven": {"ponderation": 2.0, "distance": 2.0}, 
+        "adopt": {"ponderation": 2.0, "distance": 2.5}, 
+        "rtree": {"ponderation": 1.0, "distance": 2.0}, 
+        "topology": {"ponderation": 1.0, "distance": 2.0}
+    },
+    "text6_leaf_graph_median_1": {
+        "hierarchical": {"ponderation": 6.0, "distance": 2.0}, 
+        "simknn": {"ponderation": 2.0, "distance": 2.5}, 
+        "dual": {"ponderation": 2.0, "distance": 1.5}, 
+        "index": {"ponderation": 2.0, "distance": 1.5}, 
+        "network": {"ponderation": 3.0, "distance": 3.0}, 
+        "adopt": {"ponderation": 5.0, "distance": 3.0}, 
+        "rtree": {"ponderation": 1.0, "distance": 1.0}, 
+        "store": {"ponderation": 2.0, "distance": 2.0}, 
+        "topology": {"ponderation": 2.0, "distance": 2.0}, 
+        "road": {"ponderation": 1.0, "distance": 2.0}
+    },
+    "text6_leaf_graph_median_2": {
+        "hierarchical": {"ponderation": 6.0, "distance": 2.5}, 
+        "driven": {"ponderation": 5.0, "distance": 3.0}, 
+        "index": {"ponderation": 1.0, "distance": 4.0}, 
+        "network": {"ponderation": 3.0, "distance": 1.0}, 
+        "rtree": {"ponderation": 2.0, "distance": 2.5}, 
+        "store": {"ponderation": 2.0, "distance": 2.5}, 
+        "topology": {"ponderation": 2.0, "distance": 2.0}, 
+        "road": {"ponderation": 2.0, "distance": 3.0}
+    },
+    "text6_leaf_graph_median_3": {
+        "hierarchical": {"ponderation": 2.0, "distance": 3.5}, 
+        "driven": {"ponderation": 2.0, "distance": 2.0}, 
+        "adopt": {"ponderation": 2.0, "distance": 2.5}, 
+        "rtree": {"ponderation": 1.0, "distance": 2.0}, 
+        "topology": {"ponderation": 1.0, "distance": 2.0}
     }
+    
     
     
 }

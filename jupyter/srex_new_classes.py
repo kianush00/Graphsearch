@@ -1257,11 +1257,18 @@ class Sentence(QueryTreeHandler):
         their isolated query terms as leaves from the query tree.
         """
         #First, generate nodes to the graphs associated with the leaves from the query tree
-        for leaf_node in self.get_query_tree().get_query_terms_as_leaves():
-            self.__generate_nodes_in_leaf_graph(leaf_node)
+        self.generate_nodes_in_all_leaf_graphs()
         
         #Then, generate nodes to the graphs associated with the rest of the nodes in the tree
         self.get_query_tree().operate_graphs_from_leaves()
+    
+
+    def generate_nodes_in_all_leaf_graphs(self):
+        """
+        Generate nodes to the graphs associated with the leaves from the query tree
+        """
+        for leaf_node in self.get_query_tree().get_query_terms_as_leaves():
+            self.generate_nodes_in_leaf_graph(leaf_node)
     
 
     def get_term_positions_dict(self, 
@@ -1395,7 +1402,7 @@ class Sentence(QueryTreeHandler):
         return sentence_str_with_underscores_in_query_terms
     
 
-    def __generate_nodes_in_leaf_graph(self, 
+    def generate_nodes_in_leaf_graph(self, 
             leaf_node: BinaryTreeNode,
             ) -> None:
         """
@@ -1409,7 +1416,7 @@ class Sentence(QueryTreeHandler):
             A leaf node associated with the sentence tree
         """
         query_term = leaf_node.value  
-        terms_pond_dict = self.__get_terms_ponderation_dict(query_term)
+        terms_pond_dict = self.get_terms_ponderation_dict(query_term)
 
         # Iterate over each term in the ponderation dictionary
         for neighbor_term in terms_pond_dict.keys():
@@ -1433,7 +1440,7 @@ class Sentence(QueryTreeHandler):
 
     
 
-    def __get_terms_ponderation_dict(self, 
+    def get_terms_ponderation_dict(self, 
             query_term: str
             ) -> dict[str, float]:
         """
@@ -1568,7 +1575,7 @@ class Document(QueryTreeHandler):
         self.set_query_tree(self.__get_union_of_sentences_trees())
     
 
-    def calculate_vicinity_matrix(self) -> None:
+    def calculate_vicinity_matrix_of_sentences(self) -> None:
         """
         Calculate term positions dictionary for terms of the sentence and terms from
         the query terms, then it calculates the vicinity of a list of query 
@@ -1757,11 +1764,10 @@ class Ranking(QueryTreeHandler):
                                                include_query_terms, summarize)
 
         #Calculate term positions and vicinity matrix of each sentence by document
-        for document in self.__documents:
-            document.calculate_vicinity_matrix()
+        self.calculate_vicinity_matrix_of_sentences_by_doc()
         
         #Generate nodes of all graphs
-        self.__generate_nodes_of_all_graphs()
+        self.generate_nodes_of_all_graphs()
     
 
     def get_ieee_xplore_article(self,
@@ -1821,7 +1827,17 @@ class Ranking(QueryTreeHandler):
                 sentence.get_query_tree().initialize_graph_for_each_node(*parameters_tuple)
     
 
-    def __generate_nodes_of_all_graphs(self) -> None:
+    def calculate_vicinity_matrix_of_sentences_by_doc(self) -> None:
+        """
+        Calculate term positions dictionary for terms of each sentence and terms from
+        the query terms, then it calculates the vicinity of a list of query 
+        terms in all documents, limited by a specified distance.
+        """
+        for document in self.__documents:
+            document.calculate_vicinity_matrix_of_sentences()
+    
+
+    def generate_nodes_of_all_graphs(self) -> None:
         """
         Generate all the nodes associated with the graphs from both the ranking and all 
         the documents along with their sentences, based on the query terms.
