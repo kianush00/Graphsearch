@@ -67,28 +67,56 @@ class TestSREX(unittest.TestCase):
         result = [7.0, 0.0, 5.0, 0.0, 3.0, 0.0, 1.0]
 
         self.assertCountEqual(s.calculate_ponderation_of_distances_between_term_positions(tp1, tp2, limit_distance), result)
-        
-
-    def test_term_positions_dict(self):
-        ranking = srex.Ranking(query_text="test")
-        ranking.calculate_article_dictionaries_list([{}])
-
-        with open('jupyter/json_data/test_data.json') as f:
-            text = json.load(f).get('text6', "")
-        dict_result = {'hierarchical': [0, 6, 9, 16, 21], 'simknn': [1], 'driven': [2, 5, 11, 15], 'dual': [3], 'index': [4], 'network': [7, 18, 20], 'adopt': [8, 13, 19], 'rtree': [10], 'store': [12], 'topology': [14, 22], 'road': [17]}
-        result = defaultdict(list, dict_result)
-        
-        self.assertEqual(ranking.get_documents()[0].get_sentences()[0].get_term_positions_dict(text), result)
     
 
-    def test_get_transformed_text(self):
+    def test_remove_special_characters(self):
+        with open('jupyter/json_data/test_data.json') as f:
+            text = json.load(f).get('text5', "")
+        tokens = srex.nltk.word_tokenize(text.lower())
+        with open('jupyter/json_data/test_data.json') as f:
+            result = json.load(f).get('text5_remove_special_characters', "")
+        self.assertEqual(srex.TextUtils.remove_special_characters(tokens), result)
+    
+
+    def test_remove_stopwords(self):
+        with open('jupyter/json_data/test_data.json') as f:
+            text = json.load(f).get('text5', "")
+        with open('jupyter/json_data/stopwords_data.json') as f:
+            stop_words = json.load(f).get('words', [])
+        tokens = srex.nltk.word_tokenize(text.lower())
+        with open('jupyter/json_data/test_data.json') as f:
+            result = json.load(f).get('text5_remove_stopwords', "")
+        self.assertEqual(srex.TextUtils.remove_stopwords(tokens, stop_words), result)
+
+    
+    def test_do_lemmatization(self):
+        with open('jupyter/json_data/test_data.json') as f:
+            text = json.load(f).get('text5', "")
+        tokens = srex.nltk.word_tokenize(text.lower())
+        with open('jupyter/json_data/test_data.json') as f:
+            result = json.load(f).get('text5_do_lemmatization', "")
+        self.assertEqual(srex.TextUtils.do_lemmatization(tokens), result)
+    
+
+    def test_do_stemming(self):
+        with open('jupyter/json_data/test_data.json') as f:
+            text = json.load(f).get('text5', "")
+        tokens = srex.nltk.word_tokenize(text.lower())
+        with open('jupyter/json_data/test_data.json') as f:
+            result = json.load(f).get('text5_do_stemming', "")
+        self.assertEqual(srex.TextUtils.do_stemming(tokens), result)
+
+
+    def test_get_transformed_text_with_lema(self):
         with open('jupyter/json_data/test_data.json') as f:
             text = json.load(f).get('text5', "")
         with open('jupyter/json_data/stopwords_data.json') as f:
             stop_words = json.load(f).get('words', [])
         lema = True
         stem = False
-        result = "european language member separate existence myth science music sport etc europe us vocabulary language differ grammar pronunciation common realizes new common language desirable one refuse pay expensive achieve necessary uniform grammar pronunciation common several language coalesce grammar resulting language simple regular individual new common language simple regular existing european simple occidental fact english person seem like simplified english skeptical cambridge friend mine told occidental european language member family separate existence myth science music sport etc europe us vocabulary language differ grammar pronunciation common word everyone realizes new common language desirable one refuse pay expensive translator"
+        with open('jupyter/json_data/test_data.json') as f:
+            result = json.load(f).get('text5_transformed_text_with_lema', "")
+        
         self.assertEqual(srex.TextUtils.get_transformed_text(text, stop_words, lema, stem), result)
     
 
@@ -101,6 +129,19 @@ class TestSREX(unittest.TestCase):
         result = "internet_thing"
 
         self.assertEqual(srex.TextUtils.get_transformed_text_if_it_has_underscores(text_with_underscores, stop_words, lema, stem), result)
+        
+
+    def test_term_positions_dict(self):
+        ranking = srex.Ranking(query_text="test")
+        ranking.calculate_article_dictionaries_list([{}])
+
+        with open('jupyter/json_data/test_data.json') as f:
+            text = json.load(f).get('text6', "")
+        dict_result = {'hierarchical': [0, 6, 9, 16, 21], 'simknn': [1], 'driven': [2, 5, 11, 15], 'dual': [3], 'index': [4], 
+                       'network': [7, 18, 20], 'adopt': [8, 13, 19], 'rtree': [10], 'store': [12], 'topology': [14, 22], 'road': [17]}
+        result = defaultdict(list, dict_result)
+        
+        self.assertEqual(ranking.get_documents()[0].get_sentences()[0].get_term_positions_dict(text), result)
     
 
     def test_cosine_similarity(self):
