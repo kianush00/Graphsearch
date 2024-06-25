@@ -3,12 +3,100 @@
     "text2": "perro hierarchical SIMkNN dual-index driven, house network car adopt hierarchical gato R-tree to store the topology of the road network and gato hierarchical topology grid model to manage the moving objects in non-uniform distribution perro",
     "text3": "perro hierarchical SIMkNN dual-index driven, echeverria network patricio adopt hierarchical gato R-tree to galeas the topology of the road network abel gato hierarchical topology grid model temuco manage galeas moving objects abel non-uniform patricio perro",
     "text4": "ant hierarchical SIMkNN dual-index driven, echeverria network rain adopt hierarchical rain R-tree to galeas the topology of the road network abel gato hierarchical topology grid model rain manage galeas moving objects abel non-uniform patricio ant",
+    "text1_terms_from_nodes": ["hierarchical", "adopt", "grid", "driven", "gato", "road", "topology", "store", "simknn", "child"],
+    "text2_terms_from_nodes": ["hierarchical", "car", "adopt", "grid", "driven", "gato", "road", "topology", "house", "store", "simknn"],
+    "text3_terms_from_nodes": ["hierarchical", "adopt", "driven", "gato", "road", "galea", "topology", "echeverria", "patricio", "abel", "simknn"],
+    "text4_terms_from_nodes": ["hierarchical", "adopt", "driven", "road", "gato", "galea", "topology", "echeverria", "abel", "simknn", "rain"],
     "text5": "The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most common words.Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators. To achieve this, it would be necessary to have uniform grammar, pronunciation and more common words. If several languages coalesce, the grammar of the resulting language is more simple and regular than that of the individual languages. The new common language will be more simple and regular than the existing European languages. It will be as simple as Occidental; in fact, it will be Occidental. To an English person, it will seem like simplified English, as a skeptical Cambridge friend of mine told me what Occidental is. The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most common words. Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators.",
     "text5_transformed_text_with_lema": "european language member family separate existence myth science music sport etc europe us vocabulary language differ grammar pronunciation common realizes new common language desirable one refuse pay expensive translator achieve necessary uniform grammar pronunciation common word several language coalesce grammar resulting language simple regular individual language new common language simple regular existing european language simple occidental fact occidental english person seem like simplified english skeptical cambridge friend mine told occidental european language member family separate existence myth science music sport etc europe us vocabulary language differ grammar pronunciation common word everyone realizes new common language desirable one refuse pay expensive translator",
     "text5_remove_special_characters": ["the", "european", "languages", "are", "members", "of", "the", "same", "family", "their", "separate", "existence", "is", "a", "myth", "for", "science", "music", "sport", "etc", "europe", "uses", "the", "same", "vocabulary", "the", "languages", "only", "differ", "in", "their", "grammar", "their", "pronunciation", "and", "their", "most", "common", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "one", "could", "refuse", "to", "pay", "expensive", "translators", "to", "achieve", "this", "it", "would", "be", "necessary", "to", "have", "uniform", "grammar", "pronunciation", "and", "more", "common", "words", "if", "several", "languages", "coalesce", "the", "grammar", "of", "the", "resulting", "language", "is", "more", "simple", "and", "regular", "than", "that", "of", "the", "individual", "languages", "the", "new", "common", "language", "will", "be", "more", "simple", "and", "regular", "than", "the", "existing", "european", "languages", "it", "will", "be", "as", "simple", "as", "occidental", "in", "fact", "it", "will", "be", "occidental", "to", "an", "english", "person", "it", "will", "seem", "like", "simplified", "english", "as", "a", "skeptical", "cambridge", "friend", "of", "mine", "told", "me", "what", "occidental", "is", "the", "european", "languages", "are", "members", "of", "the", "same", "family", "their", "separate", "existence", "is", "a", "myth", "for", "science", "music", "sport", "etc", "europe", "uses", "the", "same", "vocabulary", "the", "languages", "only", "differ", "in", "their", "grammar", "their", "pronunciation", "and", "their", "most", "common", "words", "everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "one", "could", "refuse", "to", "pay", "expensive", "translators"],
     "text5_remove_stopwords": ["european", "languages", "members", "family", ".", "separate", "existence", "myth", ".", "science", ",", "music", ",", "sport", ",", "etc", ",", "europe", "uses", "vocabulary", ".", "languages", "differ", "grammar", ",", "pronunciation", "common", "words.everyone", "realizes", "new", "common", "language", "desirable", ":", "one", "refuse", "pay", "expensive", "translators", ".", "achieve", ",", "necessary", "uniform", "grammar", ",", "pronunciation", "common", "words", ".", "several", "languages", "coalesce", ",", "grammar", "resulting", "language", "simple", "regular", "individual", "languages", ".", "new", "common", "language", "simple", "regular", "existing", "european", "languages", ".", "simple", "occidental", ";", "fact", ",", "occidental", ".", "english", "person", ",", "seem", "like", "simplified", "english", ",", "skeptical", "cambridge", "friend", "mine", "told", "occidental", ".", "european", "languages", "members", "family", ".", "separate", "existence", "myth", ".", "science", ",", "music", ",", "sport", ",", "etc", ",", "europe", "uses", "vocabulary", ".", "languages", "differ", "grammar", ",", "pronunciation", "common", "words", ".", "everyone", "realizes", "new", "common", "language", "desirable", ":", "one", "refuse", "pay", "expensive", "translators", "."],
     "text5_do_lemmatization": ["the", "european", "language", "are", "member", "of", "the", "same", "family", ".", "their", "separate", "existence", "is", "a", "myth", ".", "for", "science", ",", "music", ",", "sport", ",", "etc", ",", "europe", "us", "the", "same", "vocabulary", ".", "the", "language", "only", "differ", "in", "their", "grammar", ",", "their", "pronunciation", "and", "their", "most", "common", "words.everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", ":", "one", "could", "refuse", "to", "pay", "expensive", "translator", ".", "to", "achieve", "this", ",", "it", "would", "be", "necessary", "to", "have", "uniform", "grammar", ",", "pronunciation", "and", "more", "common", "word", ".", "if", "several", "language", "coalesce", ",", "the", "grammar", "of", "the", "resulting", "language", "is", "more", "simple", "and", "regular", "than", "that", "of", "the", "individual", "language", ".", "the", "new", "common", "language", "will", "be", "more", "simple", "and", "regular", "than", "the", "existing", "european", "language", ".", "it", "will", "be", "a", "simple", "a", "occidental", ";", "in", "fact", ",", "it", "will", "be", "occidental", ".", "to", "an", "english", "person", ",", "it", "will", "seem", "like", "simplified", "english", ",", "a", "a", "skeptical", "cambridge", "friend", "of", "mine", "told", "me", "what", "occidental", "is", ".", "the", "european", "language", "are", "member", "of", "the", "same", "family", ".", "their", "separate", "existence", "is", "a", "myth", ".", "for", "science", ",", "music", ",", "sport", ",", "etc", ",", "europe", "us", "the", "same", "vocabulary", ".", "the", "language", "only", "differ", "in", "their", "grammar", ",", "their", "pronunciation", "and", "their", "most", "common", "word", ".", "everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", ":", "one", "could", "refuse", "to", "pay", "expensive", "translator", "."],
     "text5_do_stemming": ["the", "european", "languag", "are", "member", "of", "the", "same", "famili", ".", "their", "separ", "exist", "is", "a", "myth", ".", "for", "scienc", ",", "music", ",", "sport", ",", "etc", ",", "europ", "use", "the", "same", "vocabulari", ".", "the", "languag", "onli", "differ", "in", "their", "grammar", ",", "their", "pronunci", "and", "their", "most", "common", "words.everyon", "realiz", "whi", "a", "new", "common", "languag", "would", "be", "desir", ":", "one", "could", "refus", "to", "pay", "expens", "translat", ".", "to", "achiev", "thi", ",", "it", "would", "be", "necessari", "to", "have", "uniform", "grammar", ",", "pronunci", "and", "more", "common", "word", ".", "if", "sever", "languag", "coalesc", ",", "the", "grammar", "of", "the", "result", "languag", "is", "more", "simpl", "and", "regular", "than", "that", "of", "the", "individu", "languag", ".", "the", "new", "common", "languag", "will", "be", "more", "simpl", "and", "regular", "than", "the", "exist", "european", "languag", ".", "it", "will", "be", "as", "simpl", "as", "occident", ";", "in", "fact", ",", "it", "will", "be", "occident", ".", "to", "an", "english", "person", ",", "it", "will", "seem", "like", "simplifi", "english", ",", "as", "a", "skeptic", "cambridg", "friend", "of", "mine", "told", "me", "what", "occident", "is", ".", "the", "european", "languag", "are", "member", "of", "the", "same", "famili", ".", "their", "separ", "exist", "is", "a", "myth", ".", "for", "scienc", ",", "music", ",", "sport", ",", "etc", ",", "europ", "use", "the", "same", "vocabulari", ".", "the", "languag", "onli", "differ", "in", "their", "grammar", ",", "their", "pronunci", "and", "their", "most", "common", "word", ".", "everyon", "realiz", "whi", "a", "new", "common", "languag", "would", "be", "desir", ":", "one", "could", "refus", "to", "pay", "expens", "translat", "."],
-    "text6": "hierarchical simknn driven dual index driven hierarchical network adopt hierarchical rtree driven store adopt topology driven hierarchical road network adopt network hierarchical topology"
+    "text6": "hierarchical simknn driven dual index driven hierarchical network adopt hierarchical rtree driven store adopt topology driven hierarchical road network adopt network hierarchical topology",
+    "text6_calculate_vicinity_matrix_with_include_query_terms": {
+        "hierarchical": {
+            "driven": [2.0, 2.0, 0.0, 2.0],
+            "adopt": [1.0, 2.0, 2.0, 1.0],
+            "store": [0.0, 0.0, 1.0, 1.0]
+        },
+        "simknn": {
+            "driven": [1.0, 0.0, 0.0, 1.0]
+        },
+        "driven": {
+            "adopt": [0.0, 2.0, 2.0, 1.0],
+            "store": [1.0, 0.0, 1.0, 0.0]
+        },
+        "dual": {
+            "driven": [1.0, 1.0, 0.0, 0.0]
+        },
+        "index": {
+            "driven": [1.0, 1.0, 0.0, 0.0],
+            "adopt": [0.0, 0.0, 0.0, 1.0]
+        },
+        "network": {
+            "driven": [0.0, 1.0, 1.0, 1.0],
+            "adopt": [3.0, 0.0, 0.0, 0.0]
+        },
+        "adopt": {
+            "driven": [0.0, 2.0, 2.0, 1.0],
+            "store": [1.0, 0.0, 0.0, 1.0]
+        },
+        "rtree": {
+            "driven": [1.0, 0.0, 0.0, 0.0],
+            "adopt": [0.0, 1.0, 1.0, 0.0],
+            "store": [0.0, 1.0, 0.0, 0.0]
+        },
+        "store": {
+            "driven": [1.0, 0.0, 1.0, 0.0],
+            "adopt": [1.0, 0.0, 0.0, 1.0]
+        },
+        "topology": {
+            "driven": [1.0, 0.0, 1.0, 0.0],
+            "adopt": [1.0, 0.0, 1.0, 0.0],
+            "store": [0.0, 1.0, 0.0, 0.0]
+        },
+        "road": {
+            "driven": [0.0, 1.0, 0.0, 0.0],
+            "adopt": [0.0, 1.0, 0.0, 1.0]
+        }
+    },
+    "text6_calculate_vicinity_matrix_without_include_query_terms": {
+        "hierarchical": {
+            "driven": [2.0, 2.0, 0.0, 2.0],
+            "adopt": [1.0, 2.0, 2.0, 1.0],
+            "store": [0.0, 0.0, 1.0, 1.0]
+        },
+        "simknn": {
+            "driven": [1.0, 0.0, 0.0, 1.0]
+        },
+        "dual": {
+            "driven": [1.0, 1.0, 0.0, 0.0]
+        },
+        "index": {
+            "driven": [1.0, 1.0, 0.0, 0.0],
+            "adopt": [0.0, 0.0, 0.0, 1.0]
+        },
+        "network": {
+            "driven": [0.0, 1.0, 1.0, 1.0],
+            "adopt": [3.0, 0.0, 0.0, 0.0]
+        },
+        "rtree": {
+            "driven": [1.0, 0.0, 0.0, 0.0],
+            "adopt": [0.0, 1.0, 1.0, 0.0],
+            "store": [0.0, 1.0, 0.0, 0.0]
+        },
+        "topology": {
+            "driven": [1.0, 0.0, 1.0, 0.0],
+            "adopt": [1.0, 0.0, 1.0, 0.0],
+            "store": [0.0, 1.0, 0.0, 0.0]
+        },
+        "road": {
+            "driven": [0.0, 1.0, 0.0, 0.0],
+            "adopt": [0.0, 1.0, 0.0, 1.0]
+        }
+    }
+    
+    
 }
 

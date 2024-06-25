@@ -1294,7 +1294,7 @@ class Sentence(QueryTreeHandler):
             ) -> dict[str, list[int]]:
         """
         Calculate a dictionary to store the list of positions for each query term, based on 
-        the positions of each term from the parameter.
+        the positions of each term given the term positions dict.
 
         Parameters
         ----------
@@ -1603,9 +1603,12 @@ class Document(QueryTreeHandler):
         list_of_sentence_str : list[str]
             List of sentence strings
         """
-        list_of_sentence_str = [self.__title]
-        abstract_list_of_sentence_str = self.__abstract.split('. ')
-        list_of_sentence_str.extend(abstract_list_of_sentence_str)
+        list_of_sentence_str = []
+        if self.__title:
+            list_of_sentence_str.append(self.__title)
+        if self.__abstract:
+            abstract_list_of_sentence_str = self.__abstract.split('. ')
+            list_of_sentence_str.extend(abstract_list_of_sentence_str)
         return list_of_sentence_str
     
 
@@ -1750,7 +1753,7 @@ class Ranking(QueryTreeHandler):
             each sentence (it can be: mean or median)
         """
         #Set graph attributes to the graphs of each document and the sentences' graphs of each document
-        self.__initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, 
+        self.initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, 
                                                include_query_terms, summarize)
 
         #Calculate term positions and vicinity matrix of each sentence by document
@@ -1793,7 +1796,7 @@ class Ranking(QueryTreeHandler):
         return article
     
 
-    def __initialize_graphs_for_all_trees(self, 
+    def initialize_graphs_for_all_trees(self, 
             nr_of_graph_terms: int = 5, 
             limit_distance: int = 4, 
             include_query_terms: bool = True,
