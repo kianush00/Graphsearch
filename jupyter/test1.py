@@ -317,6 +317,9 @@ class TestSREX(unittest.TestCase):
         with open('jupyter/json_data/test_data.json') as f:
             test_data = json.load(f)
         text = test_data.get('text6')
+        expected_result1 = test_data.get('text6_terms_ponderation_dict1')
+        expected_result2 = test_data.get('text6_terms_ponderation_dict2')
+        expected_result3 = test_data.get('text6_terms_ponderation_dict3')
         article_dict = {'abstract': text}
 
         # Initialize Ranking object
@@ -336,13 +339,6 @@ class TestSREX(unittest.TestCase):
         result1 = sentence.get_terms_ponderation_dict(query_terms[0])
         result2 = sentence.get_terms_ponderation_dict(query_terms[1])
         result3 = sentence.get_terms_ponderation_dict(query_terms[2])
-        
-        # Create expected results
-        expected_result1 = {'hierarchical': 6.0, 'simknn': 2.0, 'dual': 2.0, 'index': 2.0, 'network': 3.0, 'adopt': 5.0, 
-                            'rtree': 1.0, 'store': 2.0, 'topology': 2.0, 'road': 1.0}
-        expected_result2 = {'hierarchical': 6.0, 'driven': 5.0, 'index': 1.0, 'network': 3.0, 'rtree': 2.0, 
-                            'store': 2.0, 'topology': 2.0, 'road': 2.0}
-        expected_result3 = {'hierarchical': 2.0, 'driven': 2.0, 'adopt': 2.0, 'rtree': 1.0, 'topology': 1.0}
 
         # Assert the result matches the expected output
         self.assertEqual(result1, expected_result1)
@@ -429,6 +425,129 @@ class TestSREX(unittest.TestCase):
         self.assertEqual(result3, expected_result3)
     
 
+    def test_generate_nodes_in_sentence_graphs(self):
+        # Load stopwords
+        stop_words = self.load_stopwords()
+
+        # Load test data from JSON file
+        with open('jupyter/json_data/test_data.json') as f:
+            test_data = json.load(f)
+        text = test_data.get('text6')
+        expected_result1 = test_data.get('text6_subgraph1')
+        expected_result2 = test_data.get('text6_subgraph2')
+        article_dict = {'abstract': text}
+
+        # Initialize Ranking object with summarize as 'mean'
+        query = 'driven OR adopt AND store'
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+
+        # Initialize Ranking object
+        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
+        ranking.calculate_article_dictionaries_list([article_dict])
+        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking.calculate_vicinity_matrix_of_sentences_by_doc()
+        
+        # Generate nodes in all graphs of the query expression tree
+        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
+        sentence.generate_nodes_in_all_leaf_graphs()
+        sentence.get_query_tree().operate_graphs_from_leaves()
+
+        # Get vicinity graphs from the subqueries, as dicts
+        subquery_list = [
+            'adopt AND store', 
+            'driven OR (adopt AND store)'
+        ]
+        result1 = sentence.get_graph_by_subquery(subquery_list[0]).get_graph_as_dict()
+        result2 = sentence.get_graph_by_subquery(subquery_list[1]).get_graph_as_dict()
+
+        # Assert the result matches the expected output
+        self.assertEqual(result1, expected_result1)
+        self.assertEqual(result2, expected_result2)
+    
+
+    def test_get_union_to_tree(self):
+        # Load stopwords
+        stop_words = self.load_stopwords()
+
+        # Load test data from JSON file
+        with open('jupyter/json_data/test_data.json') as f:
+            test_data = json.load(f)
+        text6 = test_data.get('text6')
+        text2 = test_data.get('text2')
+        expected_result1 = test_data.get('text6_text2_united_graph_1')
+        expected_result2 = test_data.get('text6_text2_united_graph_2')
+        expected_result3 = test_data.get('text6_text2_united_graph_3')
+        article_dict = {'title': text6, 'abstract': text2}
+
+        # Initialize Ranking object with summarize as 'mean'
+        query = 'driven OR adopt AND store'
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+
+        # Initialize Ranking object
+        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
+        ranking.calculate_article_dictionaries_list([article_dict])
+        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking.calculate_vicinity_matrix_of_sentences_by_doc()
+        
+        # Generate nodes in all graphs of the query expression tree, in the sentences
+        document = ranking.get_document_by_ranking_position(1)
+        for sentence in document.get_sentences():
+            sentence.generate_nodes_in_sentence_graphs()
+
+        # Get union between two trees
+        query_trees_list = document.get_list_of_query_trees_from_sentences()
+        united_tree = query_trees_list[0].get_union_to_tree(query_trees_list[1])
+
+        # Get united vicinity graphs from the subqueries, as dicts
+        subquery_list = [
+            'driven',
+            'adopt AND store', 
+            'driven OR (adopt AND store)'
+        ]
+        result1 = united_tree.get_graph_by_subquery(subquery_list[0]).get_graph_as_dict()
+        result2 = united_tree.get_graph_by_subquery(subquery_list[1]).get_graph_as_dict()
+        result3 = united_tree.get_graph_by_subquery(subquery_list[2]).get_graph_as_dict()
+
+        # Assert the result matches the expected output
+        self.assertEqual(result1, expected_result1)
+        self.assertEqual(result2, expected_result2)
+        self.assertEqual(result3, expected_result3)
+    
+
+    def test_generate_all_graphs(self):
+        # Load stopwords
+        stop_words = self.load_stopwords()
+
+        # Load test data from JSON file
+        with open('jupyter/json_data/test_data.json') as f:
+            text_json = json.load(f)
+        text1 = text_json.get('text1')
+        text2 = text_json.get('text2')
+        text3 = text_json.get('text3')
+        text4 = text_json.get('text4')
+        expected_result = text_json.get('text_1_2_3_4_united_root_graph')
+
+        list_of_articles_dicts = [{'abstract': text1}, 
+                                {'abstract': text2}, 
+                                {'abstract': text3}, 
+                                {'abstract': text4}]
+        
+        # Initialize Ranking object and generate all graphs
+        query = 'network'
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        
+        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
+                               lemmatization=lema, stemming=stem)
+        ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
+        ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+
+        # Get the ranking root graph
+        result = ranking.get_graph().get_graph_as_dict()
+
+        # Assert the result matches the expected output
+        self.assertEqual(result, expected_result)
+
+
     def test_cosine_similarity(self):
         # Load stopwords
         stop_words = self.load_stopwords()
@@ -473,10 +592,10 @@ class TestSREX(unittest.TestCase):
         expected_result4 = 0.5949574537482146
 
         # Assert the result matches the expected output
-        self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
-        self.assertAlmostEqual(result2, expected_result2, delta=1e-13)
-        self.assertAlmostEqual(result3, expected_result3, delta=1e-13)
-        self.assertAlmostEqual(result4, expected_result4, delta=1e-13)
+        self.assertAlmostEqual(result1, expected_result1, delta=1e-14)
+        self.assertAlmostEqual(result2, expected_result2, delta=1e-14)
+        self.assertAlmostEqual(result3, expected_result3, delta=1e-14)
+        self.assertAlmostEqual(result4, expected_result4, delta=1e-14)
     
 
     def test_get_terms_from_nodes(self):

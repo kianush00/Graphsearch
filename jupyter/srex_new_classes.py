@@ -793,6 +793,29 @@ class BinaryExpressionTree:
         return graph
     
 
+    def get_union_of_trees(self, 
+            query_trees_list: list['BinaryExpressionTree']
+            ) -> 'BinaryExpressionTree':
+        """
+        Get the union between the given list of query trees.
+
+        Parameters
+        ----------
+        query_trees_list : list[BinaryExpressionTree]
+            The list of query trees to be united between
+
+        Returns
+        -------
+        union_of_trees : BinaryExpressionTree
+            The union between the query trees
+        """
+        # reduce() applies a function of two arguments cumulatively to the items of a sequence or 
+        #iterable, from left to right, so as to reduce the iterable to a single value. 
+        #For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
+        union_of_trees = reduce((lambda tree1, tree2: tree1.get_union_to_tree(tree2)), query_trees_list)
+        return union_of_trees
+    
+
     def get_union_to_tree(self,
             external_tree: 'BinaryExpressionTree'
             ) -> 'BinaryExpressionTree':
@@ -1629,10 +1652,7 @@ class Document(QueryTreeHandler):
             The union between the sentence query trees.
         """
         query_trees_list = self.get_list_of_query_trees_from_sentences()
-        # reduce() applies a function of two arguments cumulatively to the items of a sequence or 
-        #iterable, from left to right, so as to reduce the iterable to a single value. 
-        #For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
-        union_of_trees = reduce((lambda tree1, tree2: tree1.get_union_to_tree(tree2)), query_trees_list)
+        union_of_trees = self.get_query_tree().get_union_of_trees(query_trees_list)
         return union_of_trees
 
 
@@ -1861,10 +1881,7 @@ class Ranking(QueryTreeHandler):
             The union between the document query trees.
         """
         query_trees_list = self.get_list_of_query_trees_from_documents()
-        # reduce() applies a function of two arguments cumulatively to the items of a sequence or 
-        #iterable, from left to right, so as to reduce the iterable to a single value. 
-        #For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
-        union_of_trees = reduce((lambda tree1, tree2: tree1.get_union_to_tree(tree2)), query_trees_list)
+        union_of_trees = self.get_query_tree().get_union_of_trees(query_trees_list)
         return union_of_trees
 
 
