@@ -258,7 +258,7 @@ class VicinityGraph:
 
     def get_terms_from_nodes(self) -> list[str]:
         node_terms = []
-        for node in self.__nodes:
+        for node in self.get_sorted_nodes_optionally_limited():
             node_terms.append(node.get_term())
         return node_terms
 
@@ -371,25 +371,34 @@ class VicinityGraph:
         normalized_self_nodes = self.__get_normalized_nodes_dictionary()
         normalized_external_nodes = external_graph.__get_normalized_nodes_dictionary()
 
-        # initialize the vectors
+        # Initialize the vectors
         self_vector = [] 
         external_vector = []
 
         # Calculate the two vectors in the multidimensional space
         for term in vector_base:    # Generate the vector space for nodes
             if term in normalized_self_nodes.keys():
-                if include_ponderation: self_vector.append(normalized_self_nodes[term]['ponderation']) 
                 self_vector.append(normalized_self_nodes[term]['distance'])
             else:
-                if include_ponderation: self_vector.append(0)  # Ponderation and distance values equal to cero
                 self_vector.append(0)  # Distance values equal to cero
 
             if term in normalized_external_nodes.keys():
-                if include_ponderation: external_vector.append(normalized_external_nodes[term]['ponderation'])
                 external_vector.append(normalized_external_nodes[term]['distance'])
             else:
-                if include_ponderation: external_vector.append(0)  # Ponderation and distance values equal to cero
                 external_vector.append(0)  # Distance values equal to cero
+        
+        # Add ponderation values to the two vectors if include ponderation is True
+        if include_ponderation:
+            for term in vector_base: 
+                if term in normalized_self_nodes.keys():
+                    self_vector.append(normalized_self_nodes[term]['ponderation'])
+                else:
+                    self_vector.append(0)  # Ponderation and distance values equal to cero
+
+                if term in normalized_external_nodes.keys():
+                    external_vector.append(normalized_external_nodes[term]['ponderation'])
+                else:
+                    external_vector.append(0)  # Ponderation and distance values equal to cero
 
         # Calculate the cosine of the angle between the vectors
         if norm(self_vector) > 0 and norm(external_vector) > 0:
@@ -422,6 +431,7 @@ class VicinityGraph:
         
         node_terms_from_copy_graph = united_graph.get_terms_from_nodes()
         node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
+
         #if the external graph has exclusive terms, then it needs to be added to the united graph
         for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
             node_from_ext_graph = external_graph.get_node_by_term(node_term)
@@ -522,19 +532,25 @@ class VicinityGraph:
     def __get_normalized_nodes_dictionary(self) -> dict[str, dict[str, float]]:
         """
         Return a dictionary with the normalized ponderations and distances of each node in the graph.
+        Ponderation values are between 0 and 1, while distance values are between 0.5 and 1.
         e.g.   {'v_term1': {'ponderation': 0.75, 'distance': 0.57}, 
                 'v_term2': {'ponderation': 0.63, 'distance': 0.82}, ...}
         """
         # Get the ponderations and distances from the graph 
         normalized_self_nodes = self.get_graph_as_dict()
-        # Calculate the length of the ponderation vector
-        self_ponderations_length = norm([value['ponderation'] for value in normalized_self_nodes.values()])
-        # Calculate the length of the distance vector
-        self_distances_length = norm([value['distance'] for value in normalized_self_nodes.values()])
-        # Divide each subvalue from the dictionary by the length of its corresponding vector
+
+        # Calculate the maximum and minimum value from the ponderation vector
+        ponderations_min_value = min([value['ponderation'] for value in normalized_self_nodes.values()])
+        ponderations_max_value = max([value['ponderation'] for value in normalized_self_nodes.values()])
+
+        # Calculate the maximum and minimum value from the distance vector
+        distances_min_value = min([value['distance'] for value in normalized_self_nodes.values()])
+        distances_max_value = max([value['distance'] for value in normalized_self_nodes.values()])
+
+        # Normalize each ponderation and distance  ->  x' = (x - xmin) / (xmax - xmin)
         for subdict in normalized_self_nodes.values():
-            subdict['ponderation'] /= self_ponderations_length
-            subdict['distance'] /= self_distances_length
+            subdict['ponderation'] = (subdict['ponderation'] - ponderations_min_value) / (ponderations_max_value - ponderations_min_value)
+            subdict['distance'] = 0.5 + 0.5 * ((subdict['distance'] - distances_min_value) / (distances_max_value - distances_min_value))
 
         return normalized_self_nodes
 
@@ -548,12 +564,16 @@ class VicinityGraph:
         """
         sorted_nodes_to_visualize = self.get_sorted_nodes_optionally_limited()
         subquery = self.subquery
+
         # Removes characters '(', ')' and spaces in subquery variable
         subquery = subquery.translate(str.maketrans("", "", "() "))
+
         # Gets a list from subquery splitted by any 'AND' or 'OR' character
         splitted_subquery = re.split(r'AND|OR', subquery)
+
         # Ignores the nodes that contain a subquery in its term
         sorted_nodes_to_visualize = [node for node in sorted_nodes_to_visualize if node.get_term() not in splitted_subquery]
+
         # Limits the number of nodes to the number of graph terms
         sorted_nodes_to_visualize = sorted_nodes_to_visualize[:self.__config.get_number_of_graph_terms()]
 
@@ -1060,7 +1080,7 @@ class BinaryExpressionTree:
                     if tokens[next_index] == '(':
                         stack += 1
                     elif tokens[next_index] == ')':
-                        if stack < 2:   # if it is the last closing parenthesis, or there is no opening parenthesis between the two indices
+                        if stack < 2: # if it is the last closing parenthesis, or there's no opening parenthesis between the 2 indices
                             if stack == 1:
                                 next_index += 1     # removes the closing parenthesis if there was an opening parenthesis before
                             break
@@ -1099,7 +1119,7 @@ class BinaryExpressionTree:
         else:
             _2d_matrix_to_join_by_underscore = []
             for index, token in enumerate(tokens):
-                if (token in ['AND', 'OR', ')']) or (index == (len(tokens)-1)):  #if token is operator or its the last element
+                if (token in ['AND', 'OR', ')']) or (index == (len(tokens)-1)): #if token is operator or its the last element
                     prev_index = index - 1
                     while prev_index >= 0:
                         if tokens[prev_index] in ['AND', 'OR', '(', ')']:
@@ -1229,6 +1249,7 @@ class Sentence(QueryTreeHandler):
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
         query_terms_with_underscores = self.get_query_tree().get_query_terms_str_list_with_underscores()
         query_terms_with_spaces = [term.replace('_', ' ') for term in query_terms_with_underscores]
+
         #If there is any query term in the transformed sentence string
         if any(query_term in transformed_sentence_str for query_term in query_terms_with_spaces):  
             transformed_sentence_str = self.__get_transformed_sentence_str_with_underscores_in_query_terms(query_terms_with_underscores, 
@@ -1446,6 +1467,7 @@ class Sentence(QueryTreeHandler):
             # Retrieve the list of ponderations by distance for the term
             list_of_pond_by_distance = self.__vicinity_matrix.get(neighbor_term).get(query_term)
             distance_calculation_list = []
+
             # Construct a list of distances multiplied by its frequencies
             for idx, freq_mult_by_weight in enumerate(list_of_pond_by_distance):
                 frequency = round(freq_mult_by_weight / self.__weight)

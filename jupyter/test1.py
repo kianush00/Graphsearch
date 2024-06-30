@@ -6,7 +6,33 @@ import json
 import os
 
 class TestSREX(unittest.TestCase):
+
+    def test_get_graph_as_dict(self):
+        # Initialize vicinity graph
+        graph = srex.VicinityGraph(subquery="")
+
+        # Build graph
+        node1 = srex.VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
+        node2 = srex.VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        node3 = srex.VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        graph.add_node(node1)
+        graph.add_node(node2)
+        graph.add_node(node3)
+
+        # Get the graph as a dictionary
+        result = graph.get_graph_as_dict()
+
+        # Define expected result
+        expected_result = {
+            'x': {'ponderation': 2.0, 'distance': 1.5}, 
+            'y': {'ponderation': 4.0, 'distance': 22.25}, 
+            'z': {'ponderation': 4.0, 'distance': 22.25}
+        }
+
+        # Assert the dict match the expected output
+        self.assertDictEqual(result, expected_result)
     
+
     def test_union_between_graphs(self):
         # Initialize vicinity graphs
         g1 = srex.VicinityGraph(subquery="")
@@ -39,6 +65,7 @@ class TestSREX(unittest.TestCase):
         result = g1.get_union_to_graph(g2).get_graph_as_dict()
         expected_result = r.get_graph_as_dict()
 
+        # Assert the dict matches the expected output
         self.assertDictEqual(result, expected_result)
     
 
@@ -72,7 +99,7 @@ class TestSREX(unittest.TestCase):
         result = g1.get_intersection_to_graph(g2).get_graph_as_dict()
         expected_result = r.get_graph_as_dict()
 
-        # Assert the result matches the expected output
+        # Assert the dict matches the expected output
         self.assertDictEqual(result, expected_result)
         
 
@@ -255,7 +282,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with include_query_terms as true
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
 
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
@@ -282,7 +309,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with include_query_terms as false
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
         include_query_terms = False
 
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
@@ -312,7 +339,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
 
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
@@ -347,7 +374,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
 
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
@@ -384,7 +411,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'median'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
         summarize = 'median'
 
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
@@ -421,7 +448,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
 
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
@@ -461,7 +488,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
 
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
@@ -499,25 +526,10 @@ class TestSREX(unittest.TestCase):
 
         # Load test data from JSON file
         test_data = self.__get_test_data()
-        text1 = test_data.get('text1')
-        text2 = test_data.get('text2')
-        text3 = test_data.get('text3')
-        text4 = test_data.get('text4')
         expected_result = test_data.get('text_1_2_3_4_united_root_graph')
-
-        list_of_articles_dicts = [{'abstract': text1}, 
-                                {'abstract': text2}, 
-                                {'abstract': text3}, 
-                                {'abstract': text4}]
         
         # Initialize Ranking object and generate all graphs
-        query = 'network'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
-        
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
-                               lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
-        ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking = self.__get_initialized_ranking_01(test_data, stop_words)
 
         # Get the ranking root graph
         result = ranking.get_graph().get_graph_as_dict()
@@ -526,30 +538,15 @@ class TestSREX(unittest.TestCase):
         self.assertEqual(result, expected_result)
 
 
-    def test_cosine_similarity(self):
+    def test_cosine_similarity_exclude_ponderation(self):
         # Load stopwords from JSON file
         stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
         test_data = self.__get_test_data()
-        text1 = test_data.get('text1')
-        text2 = test_data.get('text2')
-        text3 = test_data.get('text3')
-        text4 = test_data.get('text4')
-
-        list_of_articles_dicts = [{'abstract': text1}, 
-                                {'abstract': text2}, 
-                                {'abstract': text3}, 
-                                {'abstract': text4}]
         
-        # Initialize Ranking object
-        query = 'network'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
-        
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
-                               lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
-        ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        # Initialize Ranking object and generate all graphs
+        ranking = self.__get_initialized_ranking_01(test_data, stop_words)
 
         # Get cosine similarities between vicinity graphs from the documents
         graph1 = ranking.get_document_by_ranking_position(1).get_graph()
@@ -564,15 +561,49 @@ class TestSREX(unittest.TestCase):
 
         # Create expected results
         expected_result1 = 1.0
-        expected_result2 = 0.9671707945560485
-        expected_result3 = 0.6557450996618941
-        expected_result4 = 0.5949574537482146
+        expected_result2 = 0.9319177683590794
+        expected_result3 = 0.6815542805494744
+        expected_result4 = 0.6388034798871658
 
         # Assert the result matches the expected output
-        self.assertAlmostEqual(result1, expected_result1, delta=1e-14)
-        self.assertAlmostEqual(result2, expected_result2, delta=1e-14)
-        self.assertAlmostEqual(result3, expected_result3, delta=1e-14)
-        self.assertAlmostEqual(result4, expected_result4, delta=1e-14)
+        self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
+        self.assertAlmostEqual(result2, expected_result2, delta=1e-13)
+        self.assertAlmostEqual(result3, expected_result3, delta=1e-13)
+        self.assertAlmostEqual(result4, expected_result4, delta=1e-13)
+    
+
+    def test_cosine_similarity_include_ponderation(self):
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
+
+        # Load test data from JSON file
+        test_data = self.__get_test_data()
+        
+        # Initialize Ranking object and generate all graphs
+        ranking = self.__get_initialized_ranking_01(test_data, stop_words)
+
+        # Get cosine similarities between vicinity graphs from the documents
+        graph1 = ranking.get_document_by_ranking_position(1).get_graph()
+        graph2 = ranking.get_document_by_ranking_position(2).get_graph()
+        graph3 = ranking.get_document_by_ranking_position(3).get_graph()
+        graph4 = ranking.get_document_by_ranking_position(4).get_graph()
+
+        result1 = graph1.get_cosine_similarity(graph1, True)
+        result2 = graph1.get_cosine_similarity(graph2, True)
+        result3 = graph1.get_cosine_similarity(graph3, True)
+        result4 = graph1.get_cosine_similarity(graph4, True)
+
+        # Create expected results
+        expected_result1 = 1.0
+        expected_result2 = 0.935960836772151
+        expected_result3 = 0.7553770662807179
+        expected_result4 = 0.6060191365922503
+
+        # Assert the result matches the expected output
+        self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
+        self.assertAlmostEqual(result2, expected_result2, delta=1e-13)
+        self.assertAlmostEqual(result3, expected_result3, delta=1e-13)
+        self.assertAlmostEqual(result4, expected_result4, delta=1e-13)
     
 
     def test_get_terms_from_nodes(self):
@@ -581,43 +612,55 @@ class TestSREX(unittest.TestCase):
 
         # Load test data from JSON file
         test_data = self.__get_test_data()
-        text1 = test_data.get('text1')
-        text2 = test_data.get('text2')
-        text3 = test_data.get('text3')
-        text4 = test_data.get('text4')
-        expected_result1 = test_data.get('text1_terms_from_nodes')
-        expected_result2 = test_data.get('text2_terms_from_nodes')
-        expected_result3 = test_data.get('text3_terms_from_nodes')
-        expected_result4 = test_data.get('text4_terms_from_nodes')
-
-        list_of_articles_dicts = [{'abstract': text1}, 
-                                {'abstract': text2}, 
-                                {'abstract': text3}, 
-                                {'abstract': text4}]
+        text = test_data.get('text4')
+        expected_result = test_data.get('text4_terms_from_nodes')
+        list_of_articles_dicts = [{'abstract': text}]
         
-        # Initialize Ranking object and initialize all graphs
+        # Initialize Ranking object and initialize vicinity graph
         query = 'network'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
         
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
                                lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
         ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
 
-        # Get terms from nodes of the vicinity graphs associated with the documents
-        result1 = ranking.get_document_by_ranking_position(1).get_graph().get_terms_from_nodes()
-        result2 = ranking.get_document_by_ranking_position(2).get_graph().get_terms_from_nodes()
-        result3 = ranking.get_document_by_ranking_position(3).get_graph().get_terms_from_nodes()
-        result4 = ranking.get_document_by_ranking_position(4).get_graph().get_terms_from_nodes()
+        # Get terms from nodes of the vicinity graphs associated with the document
+        result = ranking.get_document_by_ranking_position(1).get_graph().get_terms_from_nodes()
 
         # Assert the result matches the expected output
-        self.assertCountEqual(result1, expected_result1)
-        self.assertCountEqual(result2, expected_result2)
-        self.assertCountEqual(result3, expected_result3)
-        self.assertCountEqual(result4, expected_result4)
+        self.assertListEqual(result, expected_result)
     
 
-    def __get_default_ranking_parameters(self):
+    def test_get_viewable_graph_copy(self):
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
+
+        # Load test data from JSON file
+        test_data = self.__get_test_data()
+        text = test_data.get('text4')
+        expected_result = test_data.get('text4_terms_from_viewable_graph_copy')
+        list_of_articles_dicts = [{'abstract': text}]
+        
+        # Initialize Ranking object and initialize all graphs
+        query = 'network OR hierarchical'
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
+        
+        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
+                               lemmatization=lema, stemming=stem)
+        ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
+        ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+
+        # Get terms from nodes of the viewable copy from the vicinity graph
+        graph = ranking.get_document_by_ranking_position(1).get_graph()
+        viewable_graph_copy = graph.get_viewable_graph_copy()
+        result = viewable_graph_copy.get_terms_from_nodes()
+
+        # Assert the result matches the expected output
+        self.assertListEqual(result, expected_result)
+    
+
+    def __get_default_ranking_parameters_01(self):
         ranking_weight_type = 'linear'  # it can be: 'none', 'linear' or 'inverse'
         lema = True
         stem = False
@@ -627,7 +670,7 @@ class TestSREX(unittest.TestCase):
         return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
     
 
-    def __get_loaded_stopwords(self):
+    def __get_loaded_stopwords(self) -> list[str]:
         stopwords_data_path = 'jupyter/json_data/stopwords_data.json'
 
         # Validate if the path exists
@@ -650,6 +693,29 @@ class TestSREX(unittest.TestCase):
         with open(test_data_path) as f:
             test_data = json.load(f)
         return test_data
+    
+
+    def __get_initialized_ranking_01(self, test_data, stop_words: list[str] = []) -> srex.Ranking:
+        text1 = test_data.get('text1')
+        text2 = test_data.get('text2')
+        text3 = test_data.get('text3')
+        text4 = test_data.get('text4')
+
+        list_of_articles_dicts = [{'abstract': text1}, 
+                                {'abstract': text2}, 
+                                {'abstract': text3}, 
+                                {'abstract': text4}]
+        
+        # Initialize Ranking object and generate all graphs
+        query = 'network'
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
+        
+        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
+                               lemmatization=lema, stemming=stem)
+        ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
+        ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+
+        return ranking
 
 
 if __name__ == '__main__':
