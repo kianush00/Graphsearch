@@ -1118,7 +1118,7 @@ class BinaryExpressionTree:
             for start, end in _2d_matrix_to_join_by_underscore:
                 # Make sure indexes are valid
                 if start < 0 or end >= len(tokens) or start > end:
-                    raise ValueError(f"Índices inválidos para unir elementos: {start}, {end}")
+                    raise ValueError(f"Invalid indexes for joining elements: {start}, {end}")
 
                 # Add the token elements before the current subset
                 while current_index < start:

@@ -3,6 +3,7 @@ import srex_new_classes as srex
 import numpy as np
 from collections import defaultdict
 import json
+import os
 
 class TestSREX(unittest.TestCase):
     
@@ -98,8 +99,7 @@ class TestSREX(unittest.TestCase):
 
     def test_remove_special_characters(self):
         # Load test text data
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_remove_special_characters')
         
@@ -114,14 +114,13 @@ class TestSREX(unittest.TestCase):
     
 
     def test_remove_stopwords(self):
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
+
         # Load test text data
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_remove_stopwords')
-        
-        # Load stopwords
-        stop_words = self.load_stopwords()
         
         # Tokenize the text
         tokens = srex.nltk.word_tokenize(text.lower())
@@ -135,8 +134,7 @@ class TestSREX(unittest.TestCase):
     
     def test_do_lemmatization(self):
         # Load test text data
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_do_lemmatization')
         
@@ -152,8 +150,7 @@ class TestSREX(unittest.TestCase):
 
     def test_do_stemming(self):
         # Load test data and expected result from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_do_stemming')
         
@@ -168,17 +165,13 @@ class TestSREX(unittest.TestCase):
 
 
     def test_get_transformed_text_with_lema(self):
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
+
         # Load test data and expected result from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_transformed_text_with_lema')
-        
-        # Load stopwords from JSON file
-        with open('jupyter/json_data/stopwords_data.json') as f:
-            stopwords_data = json.load(f)
-        
-        stop_words = stopwords_data.get('words')
         
         # Set lema and stem flags
         lema = True
@@ -192,11 +185,12 @@ class TestSREX(unittest.TestCase):
     
 
     def test_get_transformed_text_if_it_has_underscores(self):
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
+
+        # Initialize text variables
         text_with_underscores = "internet_of_things"
         expected_result = "internet_thing"
-        
-        # Load stopwords from JSON file
-        stop_words = self.load_stopwords()
         
         # Set lema and stem flags
         lema = True
@@ -210,15 +204,14 @@ class TestSREX(unittest.TestCase):
         
 
     def test_term_positions_dict(self):
+        # Load test data from JSON file
+        test_data = self.__get_test_data()
+        text = test_data.get('text6')
+        dict_result = test_data.get('text6_term_positions_dict')
+
         # Initialize Ranking object
         ranking = srex.Ranking(query_text="test")
         ranking.calculate_article_dictionaries_list([{'title': 'test'}])
-
-        # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
-        text = test_data.get('text6')
-        dict_result = test_data.get('text6_term_positions_dict')
 
         # Get term positions dictionary from ranking object
         result = ranking.get_documents()[0].get_sentences()[0].get_term_positions_dict(text)
@@ -231,17 +224,17 @@ class TestSREX(unittest.TestCase):
     
 
     def test_query_term_positions_dict(self):
+        # Load term positions dictionaries from JSON file
+        test_data = self.__get_test_data()
+        term_positions_dict = test_data.get('text6_term_positions_dict')
+        expected_result = test_data.get('text6_query_term_positions_dict')
+
         # Initialize Ranking object
         ranking = srex.Ranking(query_text="test")
         ranking.calculate_article_dictionaries_list([{'title': 'test'}])
 
+        # Initialize query terms
         query_terms = ["driven", "adopt", "store"]
-
-        # Term positions dictionary
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
-        term_positions_dict = test_data.get('text6_term_positions_dict')
-        expected_result = test_data.get('text6_query_term_positions_dict')
 
         # Get query term positions dictionary from ranking object
         result = ranking.get_documents()[0].get_sentences()[0].get_query_term_positions_dict(term_positions_dict, query_terms)
@@ -251,21 +244,19 @@ class TestSREX(unittest.TestCase):
     
 
     def test_calculate_vicinity_matrix_with_include_query_terms(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text6')
         expected_result = test_data.get('text6_calculate_vicinity_matrix_with_include_query_terms')
         article_dict = {'abstract': text}
 
         # Initialize Ranking object with include_query_terms as true
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
 
-        # Initialize Ranking object
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms)
@@ -280,22 +271,20 @@ class TestSREX(unittest.TestCase):
 
 
     def test_calculate_vicinity_matrix_without_include_query_terms(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text6')
         expected_result = test_data.get('text6_calculate_vicinity_matrix_without_include_query_terms')
         article_dict = {'abstract': text}
 
         # Initialize Ranking object with include_query_terms as false
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
         include_query_terms = False
 
-        # Initialize Ranking object
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms)
@@ -310,12 +299,11 @@ class TestSREX(unittest.TestCase):
 
 
     def test_get_terms_ponderation_dict(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text6')
         expected_result1 = test_data.get('text6_terms_ponderation_dict1')
         expected_result2 = test_data.get('text6_terms_ponderation_dict2')
@@ -324,9 +312,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
 
-        # Initialize Ranking object
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms)
@@ -347,12 +334,11 @@ class TestSREX(unittest.TestCase):
     
 
     def test_generate_nodes_in_all_leaf_graphs_summarize_mean(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text6')
         expected_result1 = test_data.get('text6_leaf_graph_mean_1')
         expected_result2 = test_data.get('text6_leaf_graph_mean_2')
@@ -361,9 +347,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
 
-        # Initialize Ranking object
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
@@ -386,12 +371,11 @@ class TestSREX(unittest.TestCase):
     
 
     def test_generate_nodes_in_all_leaf_graphs_summarize_median(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text6')
         expected_result1 = test_data.get('text6_leaf_graph_median_1')
         expected_result2 = test_data.get('text6_leaf_graph_median_2')
@@ -400,10 +384,9 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'median'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
         summarize = 'median'
 
-        # Initialize Ranking object
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
@@ -426,12 +409,11 @@ class TestSREX(unittest.TestCase):
     
 
     def test_generate_nodes_in_sentence_graphs(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text = test_data.get('text6')
         expected_result1 = test_data.get('text6_subgraph1')
         expected_result2 = test_data.get('text6_subgraph2')
@@ -439,9 +421,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
 
-        # Initialize Ranking object
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
@@ -466,12 +447,11 @@ class TestSREX(unittest.TestCase):
     
 
     def test_get_union_to_tree(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            test_data = json.load(f)
+        test_data = self.__get_test_data()
         text6 = test_data.get('text6')
         text2 = test_data.get('text2')
         expected_result1 = test_data.get('text6_text2_united_graph_1')
@@ -481,9 +461,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
 
-        # Initialize Ranking object
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list([article_dict])
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
@@ -515,17 +494,16 @@ class TestSREX(unittest.TestCase):
     
 
     def test_generate_all_graphs(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            text_json = json.load(f)
-        text1 = text_json.get('text1')
-        text2 = text_json.get('text2')
-        text3 = text_json.get('text3')
-        text4 = text_json.get('text4')
-        expected_result = text_json.get('text_1_2_3_4_united_root_graph')
+        test_data = self.__get_test_data()
+        text1 = test_data.get('text1')
+        text2 = test_data.get('text2')
+        text3 = test_data.get('text3')
+        text4 = test_data.get('text4')
+        expected_result = test_data.get('text_1_2_3_4_united_root_graph')
 
         list_of_articles_dicts = [{'abstract': text1}, 
                                 {'abstract': text2}, 
@@ -534,7 +512,7 @@ class TestSREX(unittest.TestCase):
         
         # Initialize Ranking object and generate all graphs
         query = 'network'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
         
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
                                lemmatization=lema, stemming=stem)
@@ -549,16 +527,15 @@ class TestSREX(unittest.TestCase):
 
 
     def test_cosine_similarity(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            text_json = json.load(f)
-        text1 = text_json.get('text1')
-        text2 = text_json.get('text2')
-        text3 = text_json.get('text3')
-        text4 = text_json.get('text4')
+        test_data = self.__get_test_data()
+        text1 = test_data.get('text1')
+        text2 = test_data.get('text2')
+        text3 = test_data.get('text3')
+        text4 = test_data.get('text4')
 
         list_of_articles_dicts = [{'abstract': text1}, 
                                 {'abstract': text2}, 
@@ -567,7 +544,7 @@ class TestSREX(unittest.TestCase):
         
         # Initialize Ranking object
         query = 'network'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
         
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
                                lemmatization=lema, stemming=stem)
@@ -599,20 +576,19 @@ class TestSREX(unittest.TestCase):
     
 
     def test_get_terms_from_nodes(self):
-        # Load stopwords
-        stop_words = self.load_stopwords()
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
-        with open('jupyter/json_data/test_data.json') as f:
-            text_json = json.load(f)
-        text1 = text_json.get('text1')
-        text2 = text_json.get('text2')
-        text3 = text_json.get('text3')
-        text4 = text_json.get('text4')
-        expected_result1 = text_json.get('text1_terms_from_nodes')
-        expected_result2 = text_json.get('text2_terms_from_nodes')
-        expected_result3 = text_json.get('text3_terms_from_nodes')
-        expected_result4 = text_json.get('text4_terms_from_nodes')
+        test_data = self.__get_test_data()
+        text1 = test_data.get('text1')
+        text2 = test_data.get('text2')
+        text3 = test_data.get('text3')
+        text4 = test_data.get('text4')
+        expected_result1 = test_data.get('text1_terms_from_nodes')
+        expected_result2 = test_data.get('text2_terms_from_nodes')
+        expected_result3 = test_data.get('text3_terms_from_nodes')
+        expected_result4 = test_data.get('text4_terms_from_nodes')
 
         list_of_articles_dicts = [{'abstract': text1}, 
                                 {'abstract': text2}, 
@@ -621,7 +597,7 @@ class TestSREX(unittest.TestCase):
         
         # Initialize Ranking object and initialize all graphs
         query = 'network'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.get_default_ranking_parameters()
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters()
         
         ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
                                lemmatization=lema, stemming=stem)
@@ -641,7 +617,7 @@ class TestSREX(unittest.TestCase):
         self.assertCountEqual(result4, expected_result4)
     
 
-    def get_default_ranking_parameters(self):
+    def __get_default_ranking_parameters(self):
         ranking_weight_type = 'linear'  # it can be: 'none', 'linear' or 'inverse'
         lema = True
         stem = False
@@ -651,11 +627,29 @@ class TestSREX(unittest.TestCase):
         return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
     
 
-    def load_stopwords(self):
-        with open('jupyter/json_data/stopwords_data.json') as f:
+    def __get_loaded_stopwords(self):
+        stopwords_data_path = 'jupyter/json_data/stopwords_data.json'
+
+        # Validate if the path exists
+        if not os.path.exists(stopwords_data_path):
+            raise FileNotFoundError(f"File '{stopwords_data_path}' does not exist.")
+
+        with open(stopwords_data_path) as f:
             stopwords_data = json.load(f)
         stop_words = stopwords_data.get('words')
         return stop_words
+    
+
+    def __get_test_data(self):
+        test_data_path = 'jupyter/json_data/test_data.json'
+
+        # Validate if the path exists
+        if not os.path.exists(test_data_path):
+            raise FileNotFoundError(f"File '{test_data_path}' does not exist.")
+
+        with open(test_data_path) as f:
+            test_data = json.load(f)
+        return test_data
 
 
 if __name__ == '__main__':
