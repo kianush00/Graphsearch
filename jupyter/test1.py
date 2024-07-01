@@ -9,15 +9,7 @@ class TestSREX(unittest.TestCase):
 
     def test_get_graph_as_dict(self):
         # Initialize vicinity graph
-        graph = srex.VicinityGraph(subquery="")
-
-        # Build graph
-        node1 = srex.VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
-        node2 = srex.VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        node3 = srex.VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        graph.add_node(node1)
-        graph.add_node(node2)
-        graph.add_node(node3)
+        graph = self.__get_initialized_graph_config_01()
 
         # Get the graph as a dictionary
         result = graph.get_graph_as_dict()
@@ -25,12 +17,57 @@ class TestSREX(unittest.TestCase):
         # Define expected result
         expected_result = {
             'x': {'ponderation': 2.0, 'distance': 1.5}, 
-            'y': {'ponderation': 4.0, 'distance': 22.25}, 
-            'z': {'ponderation': 4.0, 'distance': 22.25}
+            'y': {'ponderation': 3.0, 'distance': 2.5}, 
+            'z': {'ponderation': 4.0, 'distance': 2.1}
         }
 
         # Assert the dict match the expected output
         self.assertDictEqual(result, expected_result)
+
+    
+    def test_get_normalized_nodes_dictionary(self):
+        # Initialize vicinity graph
+        graph = self.__get_initialized_graph_config_01()
+
+        # Get the graph as a normalized dictionary
+        result = graph.get_normalized_nodes_dict()
+
+        # Define expected result
+        expected_result = {
+            'x': {'ponderation': 0.5, 'distance': 0.5}, 
+            'y': {'ponderation': 0.75, 'distance': 1.0}, 
+            'z': {'ponderation': 1.0, 'distance': 0.8}
+        }
+
+        # Assert the dict match the expected output
+        self.assertDictEqual(result, expected_result)
+    
+
+    def test_normalize_vector(self):
+        # Initialize vector values and new range
+        vector = [1.0, 2.5, 4.0, 1.75, 3.25]
+        new_min = 0.5
+        new_max = 1.0
+
+        # Normalize vector and assert the results
+        result = srex.VectorUtils.normalize_vector(vector, new_min, new_max)
+        expected_result = [0.5, 0.75, 1.0, 0.625, 0.875]
+        print(result)
+        
+        self.assertListEqual(result, expected_result)
+    
+
+    def test_get_cosine_between_vectors(self):
+        # Initialize vectors values
+        vector1 = [1.2, 2.3, 3.5, 3.0]
+        vector2 = [3.1, 2.4, 1.1, 1.8]
+
+        # Get the cosine between vectors and assert the results
+        result = srex.VectorUtils.get_cosine_between_vectors(vector1, vector2)
+        expected_result = 0.7851655406125303
+        
+        self.assertAlmostEqual(result, expected_result, delta=1e-13)
+
     
 
     def test_union_between_graphs(self):
@@ -282,11 +319,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with include_query_terms as true
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list([article_dict])
-        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms)
+        ranking = self.__get_initialized_ranking_initialized_graph_values_01(
+            self.__get_ranking_parameters_default_config, query, [article_dict], stop_words)
         
         #Calculate the vicinity matrix for the sentence
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
@@ -309,12 +343,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with include_query_terms as false
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-        include_query_terms = False
-
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list([article_dict])
-        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms)
+        ranking = self.__get_initialized_ranking_initialized_graph_values_01(
+            self.__get_ranking_parameters_config_02, query, [article_dict], stop_words)
         
         #Calculate the vicinity matrix for the sentence
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
@@ -339,11 +369,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list([article_dict])
-        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms)
+        ranking = self.__get_initialized_ranking_initialized_graph_values_01(
+            self.__get_ranking_parameters_default_config, query, [article_dict], stop_words)
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         #Calculate the terms ponderation dict for the sentence, by each query term
@@ -374,11 +401,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list([article_dict])
-        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking = self.__get_initialized_ranking_initialized_graph_values_01(
+            self.__get_ranking_parameters_default_config, query, [article_dict], stop_words)
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         # Generate nodes in all graphs in leaf nodes of the query expression tree
@@ -411,12 +435,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'median'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-        summarize = 'median'
-
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list([article_dict])
-        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking = self.__get_initialized_ranking_initialized_graph_values_01(
+            self.__get_ranking_parameters_config_03, query, [article_dict], stop_words)
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         # Generate nodes in all graphs in leaf nodes of the query expression tree
@@ -448,11 +468,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list([article_dict])
-        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking = self.__get_initialized_ranking_initialized_graph_values_01(
+            self.__get_ranking_parameters_default_config, query, [article_dict], stop_words)
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         # Generate nodes in all graphs of the query expression tree
@@ -488,11 +505,8 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object with summarize as 'mean'
         query = 'driven OR adopt AND store'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list([article_dict])
-        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking = self.__get_initialized_ranking_initialized_graph_values_01(
+            self.__get_ranking_parameters_default_config, query, [article_dict], stop_words)
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         # Generate nodes in all graphs of the query expression tree, in the sentences
@@ -529,7 +543,7 @@ class TestSREX(unittest.TestCase):
         expected_result = test_data.get('text_1_2_3_4_united_root_graph')
         
         # Initialize Ranking object and generate all graphs
-        ranking = self.__get_initialized_ranking_01(test_data, stop_words)
+        ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
 
         # Get the ranking root graph
         result = ranking.get_graph().get_graph_as_dict()
@@ -546,7 +560,7 @@ class TestSREX(unittest.TestCase):
         test_data = self.__get_test_data()
         
         # Initialize Ranking object and generate all graphs
-        ranking = self.__get_initialized_ranking_01(test_data, stop_words)
+        ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
 
         # Get cosine similarities between vicinity graphs from the documents
         graph1 = ranking.get_document_by_ranking_position(1).get_graph()
@@ -580,7 +594,7 @@ class TestSREX(unittest.TestCase):
         test_data = self.__get_test_data()
         
         # Initialize Ranking object and generate all graphs
-        ranking = self.__get_initialized_ranking_01(test_data, stop_words)
+        ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
 
         # Get cosine similarities between vicinity graphs from the documents
         graph1 = ranking.get_document_by_ranking_position(1).get_graph()
@@ -595,9 +609,9 @@ class TestSREX(unittest.TestCase):
 
         # Create expected results
         expected_result1 = 1.0
-        expected_result2 = 0.935960836772151
-        expected_result3 = 0.7553770662807179
-        expected_result4 = 0.6060191365922503
+        expected_result2 = 0.922608275231263
+        expected_result3 = 0.721335364243918
+        expected_result4 = 0.649874949441900
 
         # Assert the result matches the expected output
         self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
@@ -614,16 +628,11 @@ class TestSREX(unittest.TestCase):
         test_data = self.__get_test_data()
         text = test_data.get('text4')
         expected_result = test_data.get('text4_terms_from_nodes')
-        list_of_articles_dicts = [{'abstract': text}]
         
         # Initialize Ranking object and initialize vicinity graph
         query = 'network'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-        
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
-                               lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
-        ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking = self.__get_initialized_ranking_generated_all_graphs_01(
+            self.__get_ranking_parameters_default_config, query, articles_dicts_list=[{'abstract': text}], stop_words=stop_words)
 
         # Get terms from nodes of the vicinity graphs associated with the document
         result = ranking.get_document_by_ranking_position(1).get_graph().get_terms_from_nodes()
@@ -640,16 +649,11 @@ class TestSREX(unittest.TestCase):
         test_data = self.__get_test_data()
         text = test_data.get('text4')
         expected_result = test_data.get('text4_terms_from_viewable_graph_copy')
-        list_of_articles_dicts = [{'abstract': text}]
         
         # Initialize Ranking object and initialize all graphs
         query = 'network OR hierarchical'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
-        
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
-                               lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
-        ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+        ranking = self.__get_initialized_ranking_generated_all_graphs_01(
+            self.__get_ranking_parameters_default_config, query, articles_dicts_list=[{'abstract': text}], stop_words=stop_words)
 
         # Get terms from nodes of the viewable copy from the vicinity graph
         graph = ranking.get_document_by_ranking_position(1).get_graph()
@@ -658,17 +662,11 @@ class TestSREX(unittest.TestCase):
 
         # Assert the result matches the expected output
         self.assertListEqual(result, expected_result)
+
+
     
 
-    def __get_default_ranking_parameters_01(self):
-        ranking_weight_type = 'linear'  # it can be: 'none', 'linear' or 'inverse'
-        lema = True
-        stem = False
-        summarize = 'mean'  # it can be: 'mean' or 'median'
-        limit_distance = 4
-        include_query_terms = True
-        return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
-    
+    ############## PRIVATE FUNCTIONS ##############
 
     def __get_loaded_stopwords(self) -> list[str]:
         stopwords_data_path = 'jupyter/json_data/stopwords_data.json'
@@ -695,27 +693,84 @@ class TestSREX(unittest.TestCase):
         return test_data
     
 
-    def __get_initialized_ranking_01(self, test_data, stop_words: list[str] = []) -> srex.Ranking:
+    def __get_initialized_ranking_config_01(self, test_data, stop_words: list[str] = []) -> srex.Ranking:
         text1 = test_data.get('text1')
         text2 = test_data.get('text2')
         text3 = test_data.get('text3')
         text4 = test_data.get('text4')
 
-        list_of_articles_dicts = [{'abstract': text1}, 
+        articles_dicts_list = [{'abstract': text1}, 
                                 {'abstract': text2}, 
                                 {'abstract': text3}, 
                                 {'abstract': text4}]
         
         # Initialize Ranking object and generate all graphs
         query = 'network'
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_default_ranking_parameters_01()
+        ranking = self.__get_initialized_ranking_generated_all_graphs_01(
+            self.__get_ranking_parameters_default_config, query, articles_dicts_list, stop_words)
+
+        return ranking
+    
+
+    def __get_initialized_ranking_generated_all_graphs_01(
+            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: list[str] = []) -> srex.Ranking:
+        # Initialize Ranking object and generate all graphs
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = method_to_call()
         
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, 
-                               lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list(list_of_articles_dicts)
+        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
+        ranking.calculate_article_dictionaries_list(articles_dicts_list)
         ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
 
         return ranking
+    
+
+    def __get_initialized_ranking_initialized_graph_values_01(
+            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: list[str] = []) -> srex.Ranking:
+        # Initialize Ranking object
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = method_to_call()
+
+        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
+        ranking.calculate_article_dictionaries_list(articles_dicts_list)
+        ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
+
+        return ranking
+    
+
+    def __get_initialized_graph_config_01(self) -> srex.VicinityGraph:
+        # Initialize vicinity graph
+        graph = srex.VicinityGraph(subquery="")
+
+        # Build graph
+        node1 = srex.VicinityNode(term='x', ponderation=2.0, distance=np.mean([1.0, 2.0]))
+        node2 = srex.VicinityNode(term='y', ponderation=3.0, distance=np.mean([1.2, 2.3, 3.5, 3.0]))
+        node3 = srex.VicinityNode(term='z', ponderation=4.0, distance=np.mean([3.1, 2.4, 1.1, 1.8]))
+        graph.add_node(node1)
+        graph.add_node(node2)
+        graph.add_node(node3)
+
+        return graph
+    
+
+    def __get_ranking_parameters_default_config(self):
+        ranking_weight_type = 'linear'  # it can be: 'none', 'linear' or 'inverse'
+        lema = True
+        stem = False
+        summarize = 'mean'  # it can be: 'mean' or 'median'
+        limit_distance = 4
+        include_query_terms = True
+        return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
+    
+
+    def __get_ranking_parameters_config_02(self):
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_ranking_parameters_default_config()
+        include_query_terms = False
+        return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
+    
+
+    def __get_ranking_parameters_config_03(self):
+        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_ranking_parameters_default_config()
+        summarize = 'median'
+        return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
 
 
 if __name__ == '__main__':

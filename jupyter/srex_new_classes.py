@@ -17,6 +17,79 @@ from collections import deque
 import re
 
 
+
+class VectorUtils:
+
+    @staticmethod
+    def normalize_vector(
+            vector: list[float], 
+            new_min: float = 0, 
+            new_max: float = 1.0
+            ) -> list[float]:
+        """
+        Normalize the given vector to the new range [new_min, new_max] and return the normalized vector.
+
+        Parameters
+        ----------
+        vector : list[float]
+            Vector to normalize
+        new_min : float, optional
+            Minimum value of the new range to normalize
+        new_max : float, optional
+            Maximum value of the new range to normalize
+        
+        Returns
+        -------
+        normalized_vector : list[float]
+            The normalized vector
+        """
+        # Get the previous vector range
+        old_min = min(vector)
+        old_max = max(vector)
+        
+        # Avoid division by zero if the vector has all the same values
+        if old_max == old_min:
+            return [new_min for _ in vector]
+        
+        # Normalize the vector to the new range using the formula:
+        normalized_vector = [
+            new_min + (new_max - new_min) * (value - old_min) / (old_max - old_min)
+            for value in vector
+        ]
+        
+        return normalized_vector
+    
+    
+    @staticmethod
+    def get_cosine_between_vectors(
+            vector1: list[float], 
+            vector2: list[float]
+            ) -> float:
+        """
+        Calculate and return the cosine of the angle between the two given vectors
+
+        Parameters
+        ----------
+        vector1 : list[float]
+            First vector to calculate
+        vector2 : list[float]
+            Second vector to calculate
+        
+        Returns
+        -------
+        cosine_of_angle : float
+            The cosine of the angle between the two vectors
+        """
+        # Avoid division by zero if the norm of any vector equals zero
+        if norm(vector1) > 0 and norm(vector2) > 0:
+            cosine_of_angle = dot(vector1, vector2) / norm(vector1) / norm(vector2)
+        else:
+            cosine_of_angle = 0
+        
+        return cosine_of_angle
+
+
+
 class TextUtils:
 
     @staticmethod
@@ -368,24 +441,24 @@ class VicinityGraph:
         vector_base = self.__get_terms_from_union_between_graphs(external_graph)
         
         # Get the dictionaries of normalized nodes from each graph 
-        normalized_self_nodes = self.__get_normalized_nodes_dictionary()
-        normalized_external_nodes = external_graph.__get_normalized_nodes_dictionary()
+        normalized_self_nodes = self.get_normalized_nodes_dict()
+        normalized_external_nodes = external_graph.get_normalized_nodes_dict()
 
         # Initialize the vectors
         self_vector = [] 
         external_vector = []
 
-        # Calculate the two vectors in the multidimensional space
-        for term in vector_base:    # Generate the vector space for nodes
+        # Calculate the two vectors in the multidimensional space, i.e. generate the vector space
+        for term in vector_base: 
             if term in normalized_self_nodes.keys():
                 self_vector.append(normalized_self_nodes[term]['distance'])
             else:
-                self_vector.append(0)  # Distance values equal to cero
+                self_vector.append(0)  # Distance value equal to zero
 
             if term in normalized_external_nodes.keys():
                 external_vector.append(normalized_external_nodes[term]['distance'])
             else:
-                external_vector.append(0)  # Distance values equal to cero
+                external_vector.append(0)  # Distance value equal to zero
         
         # Add ponderation values to the two vectors if include ponderation is True
         if include_ponderation:
@@ -393,20 +466,48 @@ class VicinityGraph:
                 if term in normalized_self_nodes.keys():
                     self_vector.append(normalized_self_nodes[term]['ponderation'])
                 else:
-                    self_vector.append(0)  # Ponderation and distance values equal to cero
+                    self_vector.append(0)  # Ponderation value equal to zero
 
                 if term in normalized_external_nodes.keys():
                     external_vector.append(normalized_external_nodes[term]['ponderation'])
                 else:
-                    external_vector.append(0)  # Ponderation and distance values equal to cero
+                    external_vector.append(0)  # Ponderation value equal to zero
 
         # Calculate the cosine of the angle between the vectors
-        if norm(self_vector) > 0 and norm(external_vector) > 0:
-            cosine_of_angle = dot(self_vector, external_vector) / norm(self_vector) / norm(external_vector)
-        else:
-            cosine_of_angle = 0
+        cosine_of_angle = VectorUtils.get_cosine_between_vectors(self_vector, external_vector)
         
         return cosine_of_angle
+    
+
+    def get_normalized_nodes_dict(self) -> dict[str, dict[str, float]]:
+        """
+        Return a dictionary with the normalized ponderations and distances of each node in the graph.
+        Ponderation and distance values are between 0.5 and 1.
+
+        Returns
+        -------
+        normalized_self_nodes : dict[str, dict[str, float]]
+            A dictionary with normalized ponderations and distances of each node in the graph
+            e.g.   {'v_term1': {'ponderation': 0.75, 'distance': 0.57}, 
+                    'v_term2': {'ponderation': 0.63, 'distance': 0.82}, ...}
+        """
+        # Get the ponderations and distances from the graph 
+        normalized_self_nodes = self.get_graph_as_dict()
+
+        # Get the distance and ponderation vectors from the graph
+        ponderation_vector = [value['ponderation'] for value in normalized_self_nodes.values()]
+        distance_vector = [value['distance'] for value in normalized_self_nodes.values()]
+
+        # Get the normalized version of the distance and ponderation vectors, in a range of [0.5, 1.0]
+        normalized_ponderation_vector = VectorUtils.normalize_vector(ponderation_vector, 0.5, 1.0)
+        normalized_distance_vector = VectorUtils.normalize_vector(distance_vector, 0.5, 1.0)
+
+        # Assign the normalized values ​​to the dictionary
+        for index, subdict in enumerate(normalized_self_nodes.values()):
+            subdict['ponderation'] = normalized_ponderation_vector[index]
+            subdict['distance'] = normalized_distance_vector[index]
+
+        return normalized_self_nodes
     
 
     def get_union_to_graph(self,
@@ -529,33 +630,6 @@ class VicinityGraph:
         return base_terms
     
 
-    def __get_normalized_nodes_dictionary(self) -> dict[str, dict[str, float]]:
-        """
-        Return a dictionary with the normalized ponderations and distances of each node in the graph.
-        Ponderation values are between 0 and 1, while distance values are between 0.5 and 1.
-        e.g.   {'v_term1': {'ponderation': 0.75, 'distance': 0.57}, 
-                'v_term2': {'ponderation': 0.63, 'distance': 0.82}, ...}
-        """
-        # Get the ponderations and distances from the graph 
-        normalized_self_nodes = self.get_graph_as_dict()
-
-        # Calculate the maximum and minimum value from the ponderation vector
-        ponderations_min_value = min([value['ponderation'] for value in normalized_self_nodes.values()])
-        ponderations_max_value = max([value['ponderation'] for value in normalized_self_nodes.values()])
-
-        # Calculate the maximum and minimum value from the distance vector
-        distances_min_value = min([value['distance'] for value in normalized_self_nodes.values()])
-        distances_max_value = max([value['distance'] for value in normalized_self_nodes.values()])
-
-        # Normalize each ponderation and distance  ->  x' = (x - xmin) / (xmax - xmin)
-        for subdict in normalized_self_nodes.values():
-            subdict['ponderation'] = (subdict['ponderation'] - ponderations_min_value) / (ponderations_max_value - ponderations_min_value)
-            subdict['distance'] = 0.5 + 0.5 * ((subdict['distance'] - distances_min_value) / (distances_max_value - distances_min_value))
-
-        return normalized_self_nodes
-
-    
-
     def __get_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
         """
         Return the list of nodes sorted by ponderation in descending order, and limit 
@@ -572,7 +646,9 @@ class VicinityGraph:
         splitted_subquery = re.split(r'AND|OR', subquery)
 
         # Ignores the nodes that contain a subquery in its term
-        sorted_nodes_to_visualize = [node for node in sorted_nodes_to_visualize if node.get_term() not in splitted_subquery]
+        sorted_nodes_to_visualize = [
+            node for node in sorted_nodes_to_visualize if node.get_term() not in splitted_subquery
+        ]
 
         # Limits the number of nodes to the number of graph terms
         sorted_nodes_to_visualize = sorted_nodes_to_visualize[:self.__config.get_number_of_graph_terms()]
