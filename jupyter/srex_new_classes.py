@@ -450,28 +450,14 @@ class VicinityGraph:
 
         # Calculate the two vectors in the multidimensional space, i.e. generate the vector space
         for term in vector_base: 
-            if term in normalized_self_nodes.keys():
-                self_vector.append(normalized_self_nodes[term]['distance'])
-            else:
-                self_vector.append(0)  # Distance value equal to zero
-
-            if term in normalized_external_nodes.keys():
-                external_vector.append(normalized_external_nodes[term]['distance'])
-            else:
-                external_vector.append(0)  # Distance value equal to zero
+            self_vector.append(normalized_self_nodes.get(term, {}).get('distance', 0))
+            external_vector.append(normalized_external_nodes.get(term, {}).get('distance', 0))
         
         # Add ponderation values to the two vectors if include ponderation is True
         if include_ponderation:
             for term in vector_base: 
-                if term in normalized_self_nodes.keys():
-                    self_vector.append(normalized_self_nodes[term]['ponderation'])
-                else:
-                    self_vector.append(0)  # Ponderation value equal to zero
-
-                if term in normalized_external_nodes.keys():
-                    external_vector.append(normalized_external_nodes[term]['ponderation'])
-                else:
-                    external_vector.append(0)  # Ponderation value equal to zero
+                self_vector.append(normalized_self_nodes.get(term, {}).get('ponderation', 0))
+                external_vector.append(normalized_external_nodes.get(term, {}).get('ponderation', 0))
 
         # Calculate the cosine of the angle between the vectors
         cosine_of_angle = VectorUtils.get_cosine_between_vectors(self_vector, external_vector)
@@ -905,6 +891,10 @@ class BinaryExpressionTree:
         union_of_trees : BinaryExpressionTree
             The union between the query trees
         """
+        if not query_trees_list:
+            print("query_trees_list must not be empty")
+            return
+
         # reduce() applies a function of two arguments cumulatively to the items of a sequence or 
         #iterable, from left to right, so as to reduce the iterable to a single value. 
         #For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates ((((1+2)+3)+4)+5)
@@ -1693,7 +1683,9 @@ class Document(QueryTreeHandler):
             sentence.generate_nodes_in_sentence_graphs()
         
         #Generate graph nodes in the current document
-        self.set_query_tree(self.__get_union_of_sentences_trees())
+        union_of_trees = self.__get_union_of_sentences_trees()
+        if union_of_trees:
+            self.set_query_tree(union_of_trees)
     
 
     def calculate_vicinity_matrix_of_sentences(self) -> None:
@@ -1740,7 +1732,7 @@ class Document(QueryTreeHandler):
         return list_of_sentence_str
     
 
-    def __get_union_of_sentences_trees(self) -> BinaryExpressionTree:
+    def __get_union_of_sentences_trees(self) -> BinaryExpressionTree | None:
         """
         Get the union between the list of query trees associated with the sentences of the document.
 
@@ -1877,15 +1869,21 @@ class Ranking(QueryTreeHandler):
             Summarization type to operate distances in the vicinity matrix for 
             each sentence (it can be: mean or median)
         """
-        #Set graph attributes to the graphs of each document and the sentences' graphs of each document
-        self.initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, 
-                                               include_query_terms, summarize)
+        if self.__documents:
+            # ranking query graphs are re-initialized
+            self.get_query_tree().remove_graphs_for_each_node()
 
-        #Calculate term positions and vicinity matrix of each sentence by document
-        self.calculate_vicinity_matrix_of_sentences_by_doc()
-        
-        #Generate nodes of all graphs
-        self.generate_nodes_of_all_graphs()
+            #Set graph attributes to the graphs of each document and the sentences' graphs of each document
+            self.initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, 
+                                                include_query_terms, summarize)
+
+            #Calculate term positions and vicinity matrix of each sentence by document
+            self.calculate_vicinity_matrix_of_sentences_by_doc()
+            
+            #Generate nodes of all graphs
+            self.generate_nodes_of_all_graphs()
+        else:
+            print("No documents were found")
     
 
     def get_ieee_xplore_article(self,
@@ -1965,10 +1963,12 @@ class Ranking(QueryTreeHandler):
             document.generate_graph_nodes_of_doc_and_sentences()
         
         #Then, generate nodes of the ranking class query tree
-        self.set_query_tree(self.__get_union_of_documents_trees())
+        union_of_trees = self.__get_union_of_documents_trees()
+        if union_of_trees:
+            self.set_query_tree(union_of_trees)
     
 
-    def __get_union_of_documents_trees(self) -> BinaryExpressionTree:
+    def __get_union_of_documents_trees(self) -> BinaryExpressionTree | None:
         """
         Get the union between the list of query trees associated with the 
         documents of the ranking.
@@ -2030,9 +2030,13 @@ class Ranking(QueryTreeHandler):
         self.get_query_tree().remove_graphs_for_each_node()
 
         for index, article in enumerate(articles_dicts):
-            new_doc = self.__get_new_document_by_article(article, index, results_size=len(articles_dicts))
-            new_doc.do_text_transformations_by_sentence(*self.__text_transformations_config.get_transformations_params())
-            self.__documents.append(new_doc)
+            try:
+                new_doc = self.__get_new_document_by_article(article, index, results_size=len(articles_dicts))
+                new_doc.do_text_transformations_by_sentence(*self.__text_transformations_config.get_transformations_params())
+                self.__documents.append(new_doc)
+            except Exception as e:  # If a document has errors, ignore it and continue to the next document
+                print(f"An error occurred while processing article at index {index}: {e}")
+                continue
     
 
     def __get_new_document_by_article(self, 
@@ -2062,6 +2066,15 @@ class Ranking(QueryTreeHandler):
         _abstract = article.get('abstract', "")
         _title = article.get('title', "")
         _doc_id = article.get('article_number', "1")
+
+        # Check if abstract, title and doc_id are strings
+        if not all(isinstance(atribute, str) for atribute in [_abstract, _title, _doc_id]):
+            raise TypeError("All variables must be strings")
+        
+        # Check if abstract and title are empty strings
+        if not _abstract and not _title:
+            raise ValueError("Abstract and title cannot be both empty")
+
         _ranking_pos = index + 1
         _weight = self.__calculate_weight(self.__ranking_weight_type, results_size, _ranking_pos)
         _query_copy = copy.deepcopy(self.get_query_tree())
