@@ -946,7 +946,7 @@ class BinaryExpressionTree:
     def do_text_transformations_to_query_terms(self, 
             stop_words_list: list[str] = [], 
             lema: bool = True, 
-            stem: bool = True
+            stem: bool = False
             ) -> None:
         """
         Apply text transformations to the terms in the leaf nodes.
@@ -1294,7 +1294,7 @@ class Sentence(QueryTreeHandler):
     def do_text_transformations_if_any_query_term(self,
             stop_words_list: list[str], 
             lema: bool = True, 
-            stem: bool = True
+            stem: bool = False
             ) -> None:
         """
         Apply some text transformations to the sentence and calculate term positions to the 

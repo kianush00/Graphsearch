@@ -7,6 +7,66 @@ import os
 
 class TestSREX(unittest.TestCase):
 
+    def test_binary_expression_tree_query(self):
+        # Initialize binary expression tree query
+        query = '"internet of things" OR iot NOT graph'
+        b_expr_tree = srex.BinaryExpressionTree(query)
+
+        result = str(b_expr_tree)
+        expected_result = 'internet_of_things OR iot'
+
+        # Assert the query string matches the expected output
+        self.assertEqual(result, expected_result)
+    
+
+    def test_binary_expression_tree_query_text_transformations_01(self):
+        # Initialize binary expression tree from query and do text transformations to the tree
+        query = '"internet of things" OR iot NOT graph'
+        b_expr_tree = self.__initialize_binary_expression_tree_with_text_transformations(query)
+
+        result = str(b_expr_tree)
+        expected_result = 'internet_thing OR iot'
+
+        # Assert the query string matches the expected output
+        self.assertEqual(result, expected_result)
+    
+
+    def test_binary_expression_tree_query_text_transformations_02(self):
+        # Initialize binary expression tree from query and do text transformations to the tree
+        query = '("Document Title":internet of things   OR   ("Document Title":iot  AND "Document Title":device  )  )  AND ("Abstract":security NOT  "Abstract":visual OR "Document Title":network)'
+        b_expr_tree = self.__initialize_binary_expression_tree_with_text_transformations(query)
+
+        result = str(b_expr_tree)
+        expected_result = '(internet_thing OR (iot AND device)) AND (security OR network)'
+
+        # Assert the query string matches the expected output
+        self.assertEqual(result, expected_result)
+    
+
+    def test_binary_expression_tree_query_text_transformations_03(self):
+        # Initialize binary expression tree from query and do text transformations to the tree
+        query = '("Document Title":internet of things OR "Document Title":iot) NOT ("Abstract":visual OR "Abstract":retrieval) AND ("All Metadata":security)'
+        b_expr_tree = self.__initialize_binary_expression_tree_with_text_transformations(query)
+
+        result = str(b_expr_tree)
+        expected_result = '(internet_thing OR iot) AND security'
+        
+        # Assert the query string matches the expected output
+        self.assertEqual(result, expected_result)
+    
+
+    def test_binary_expression_tree_query_text_transformations_04(self):
+        # Initialize binary expression tree from query and do text transformations to the tree
+        query = query = '((( literature  OR document OR information OR data ) AND (retrieval OR retrieve)) OR (search AND engine)  )  AND  (query AND  ( expansion OR refinement OR reformulation))'
+        b_expr_tree = self.__initialize_binary_expression_tree_with_text_transformations(query)
+
+        result = str(b_expr_tree)
+        expected_result = '(((((literature OR document) OR information) OR data) AND (retrieval OR retrieve)) OR (search AND engine)) AND (query AND ((expansion OR refinement) OR reformulation))'
+
+        # Assert the query string matches the expected output
+        self.assertEqual(result, expected_result)
+
+
     def test_get_graph_as_dict(self):
         # Initialize vicinity graph
         graph = self.__get_initialized_graph_config_01()
@@ -771,6 +831,20 @@ class TestSREX(unittest.TestCase):
         ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_ranking_parameters_default_config()
         summarize = 'median'
         return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
+    
+
+    def __initialize_binary_expression_tree_with_text_transformations(self, query: str) -> srex.BinaryExpressionTree:
+        # Load stopwords from JSON file
+        stop_words = self.__get_loaded_stopwords()
+
+        # Initialize binary expression tree query
+        lema = True
+        stem = False
+
+        b_expr_tree = srex.BinaryExpressionTree(query)
+        b_expr_tree.do_text_transformations_to_query_terms(stop_words, lema, stem)
+        return b_expr_tree
+
 
 
 if __name__ == '__main__':
