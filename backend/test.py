@@ -1,5 +1,15 @@
 import unittest
-import srex_new_classes as srex
+from app.models.srex.binary_expression_tree import BinaryExpressionTree
+#from app.models.srex.binary_expression_tree import BinaryTreeNode
+from app.models.srex.ranking import Ranking
+#from app.models.srex.ranking import Document
+from app.models.srex.ranking import Sentence
+from app.models.srex.vicinity_graph import VicinityGraph
+from app.models.srex.vicinity_graph import VicinityNode
+from app.utils.text_utils import TextUtils
+from app.utils.vector_utils import VectorUtils
+
+import nltk
 import numpy as np
 from collections import defaultdict
 import json
@@ -10,7 +20,7 @@ class TestSREX(unittest.TestCase):
     def test_binary_expression_tree_query(self):
         # Initialize binary expression tree query
         query = '"internet of things" OR iot NOT graph'
-        b_expr_tree = srex.BinaryExpressionTree(query)
+        b_expr_tree = BinaryExpressionTree(query)
 
         result = str(b_expr_tree)
         expected_result = 'internet_of_things OR iot'
@@ -110,7 +120,7 @@ class TestSREX(unittest.TestCase):
         new_max = 1.0
 
         # Normalize vector and assert the results
-        result = srex.VectorUtils.normalize_vector(vector, new_min, new_max)
+        result = VectorUtils.normalize_vector(vector, new_min, new_max)
         expected_result = [0.5, 0.75, 1.0, 0.625, 0.875]
         print(result)
         
@@ -123,7 +133,7 @@ class TestSREX(unittest.TestCase):
         vector2 = [3.1, 2.4, 1.1, 1.8]
 
         # Get the cosine between vectors and assert the results
-        result = srex.VectorUtils.get_cosine_between_vectors(vector1, vector2)
+        result = VectorUtils.get_cosine_between_vectors(vector1, vector2)
         expected_result = 0.7851655406125303
         
         self.assertAlmostEqual(result, expected_result, delta=1e-13)
@@ -132,28 +142,28 @@ class TestSREX(unittest.TestCase):
 
     def test_union_between_graphs(self):
         # Initialize vicinity graphs
-        g1 = srex.VicinityGraph(subquery="")
-        g2 = srex.VicinityGraph(subquery="")
-        r = srex.VicinityGraph(subquery="")
+        g1 = VicinityGraph(subquery="")
+        g2 = VicinityGraph(subquery="")
+        r = VicinityGraph(subquery="")
 
         # Build graph 1
-        g1_node1 = srex.VicinityNode(term='x', ponderation=2.0, distance=np.mean([3,4]))
-        g1_node2 = srex.VicinityNode(term='y', ponderation=3.0, distance=np.mean([1,3,5]))
+        g1_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([3,4]))
+        g1_node2 = VicinityNode(term='y', ponderation=3.0, distance=np.mean([1,3,5]))
         g1.add_node(g1_node1)
         g1.add_node(g1_node2)
 
         # Build graph 2
-        g2_node1 = srex.VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
-        g2_node2 = srex.VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        g2_node3 = srex.VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        g2_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
+        g2_node2 = VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        g2_node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
         g2.add_node(g2_node1)
         g2.add_node(g2_node2)
         g2.add_node(g2_node3)
 
         # Build graph result to be evaluated
-        r_node1 = srex.VicinityNode(term='x', ponderation=4.0, distance=np.mean([1, 2, 3, 4]))
-        r_node2 = srex.VicinityNode(term='y', ponderation=7.0, distance=np.mean([11, 23, 52, 3, 1, 3, 5]))
-        r_node3 = srex.VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        r_node1 = VicinityNode(term='x', ponderation=4.0, distance=np.mean([1, 2, 3, 4]))
+        r_node2 = VicinityNode(term='y', ponderation=7.0, distance=np.mean([11, 23, 52, 3, 1, 3, 5]))
+        r_node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
         r.add_node(r_node1)
         r.add_node(r_node2)
         r.add_node(r_node3)
@@ -168,27 +178,27 @@ class TestSREX(unittest.TestCase):
 
     def test_intersection_between_graphs(self):
         # Initialize vicinity graphs
-        g1 = srex.VicinityGraph(subquery="")
-        g2 = srex.VicinityGraph(subquery="")
-        r = srex.VicinityGraph(subquery="")
+        g1 = VicinityGraph(subquery="")
+        g2 = VicinityGraph(subquery="")
+        r = VicinityGraph(subquery="")
 
         # Build graph 1
-        g1_node1 = srex.VicinityNode(term='x', ponderation=2.0, distance=np.mean([3,4]))
-        g1_node2 = srex.VicinityNode(term='y', ponderation=3.0, distance=np.mean([1,3,5]))
+        g1_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([3,4]))
+        g1_node2 = VicinityNode(term='y', ponderation=3.0, distance=np.mean([1,3,5]))
         g1.add_node(g1_node1)
         g1.add_node(g1_node2)
 
         # Build graph 2
-        g2_node1 = srex.VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
-        g2_node2 = srex.VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        g2_node3 = srex.VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        g2_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
+        g2_node2 = VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        g2_node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
         g2.add_node(g2_node1)
         g2.add_node(g2_node2)
         g2.add_node(g2_node3)
 
         # Build graph result to be evaluated
-        r_node1 = srex.VicinityNode(term='x', ponderation=4.0, distance=np.mean([1, 2, 3, 4]))
-        r_node2 = srex.VicinityNode(term='y', ponderation=7.0, distance=np.mean([11, 23, 52, 3, 1, 3, 5]))
+        r_node1 = VicinityNode(term='x', ponderation=4.0, distance=np.mean([1, 2, 3, 4]))
+        r_node2 = VicinityNode(term='y', ponderation=7.0, distance=np.mean([11, 23, 52, 3, 1, 3, 5]))
         r.add_node(r_node1)
         r.add_node(r_node2)
 
@@ -202,7 +212,7 @@ class TestSREX(unittest.TestCase):
 
     def test_calculate_ponderation_of_distances_between_term_positions(self):
         # Create a Sentence object with an empty raw_text and a dummy query
-        s = srex.Sentence(raw_text="", query=srex.BinaryExpressionTree(raw_query="test"))
+        s = Sentence(raw_text="", query=BinaryExpressionTree(raw_query="test"))
         
         # Define term positions
         tp1 = [0, 2, 4, 6]
@@ -228,10 +238,10 @@ class TestSREX(unittest.TestCase):
         expected_result = test_data.get('text5_remove_special_characters')
         
         # Tokenize the text
-        tokens = srex.nltk.word_tokenize(text.lower())
+        tokens = nltk.word_tokenize(text.lower())
         
         # Remove special characters
-        result = srex.TextUtils.remove_special_characters(tokens)
+        result = TextUtils.remove_special_characters(tokens)
         
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -247,10 +257,10 @@ class TestSREX(unittest.TestCase):
         expected_result = test_data.get('text5_remove_stopwords')
         
         # Tokenize the text
-        tokens = srex.nltk.word_tokenize(text.lower())
+        tokens = nltk.word_tokenize(text.lower())
         
         # Remove stopwords
-        result = srex.TextUtils.remove_stopwords(tokens, stop_words)
+        result = TextUtils.remove_stopwords(tokens, stop_words)
         
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -263,10 +273,10 @@ class TestSREX(unittest.TestCase):
         expected_result = test_data.get('text5_do_lemmatization')
         
         # Tokenize the text
-        tokens = srex.nltk.word_tokenize(text.lower())
+        tokens = nltk.word_tokenize(text.lower())
         
         # Perform lemmatization
-        result = srex.TextUtils.do_lemmatization(tokens)
+        result = TextUtils.do_lemmatization(tokens)
         
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -279,10 +289,10 @@ class TestSREX(unittest.TestCase):
         expected_result = test_data.get('text5_do_stemming')
         
         # Tokenize the text
-        tokens = srex.nltk.word_tokenize(text.lower())
+        tokens = nltk.word_tokenize(text.lower())
         
         # Perform stemming
-        result = srex.TextUtils.do_stemming(tokens)
+        result = TextUtils.do_stemming(tokens)
         
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -302,7 +312,7 @@ class TestSREX(unittest.TestCase):
         stem = False
         
         # Get transformed text
-        result = srex.TextUtils.get_transformed_text(text, stop_words, lema, stem)
+        result = TextUtils.get_transformed_text(text, stop_words, lema, stem)
         
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -321,7 +331,7 @@ class TestSREX(unittest.TestCase):
         stem = False
         
         # Get transformed text
-        result = srex.TextUtils.get_transformed_text_if_it_has_underscores(text_with_underscores, stop_words, lema, stem)
+        result = TextUtils.get_transformed_text_if_it_has_underscores(text_with_underscores, stop_words, lema, stem)
         
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -334,7 +344,7 @@ class TestSREX(unittest.TestCase):
         dict_result = test_data.get('text6_term_positions_dict')
 
         # Initialize Ranking object
-        ranking = srex.Ranking(query_text="test")
+        ranking = Ranking(query_text="test")
         ranking.calculate_article_dictionaries_list([{'title': 'test'}])
 
         # Get term positions dictionary from ranking object
@@ -354,7 +364,7 @@ class TestSREX(unittest.TestCase):
         expected_result = test_data.get('text6_query_term_positions_dict')
 
         # Initialize Ranking object
-        ranking = srex.Ranking(query_text="test")
+        ranking = Ranking(query_text="test")
         ranking.calculate_article_dictionaries_list([{'title': 'test'}])
 
         # Initialize query terms
@@ -729,7 +739,7 @@ class TestSREX(unittest.TestCase):
     ############## PRIVATE FUNCTIONS ##############
 
     def __get_loaded_stopwords(self) -> list[str]:
-        stopwords_data_path = 'jupyter/json_data/stopwords_data.json'
+        stopwords_data_path = 'backend/app/data/stopwords_data.json'
 
         # Validate if the path exists
         if not os.path.exists(stopwords_data_path):
@@ -742,7 +752,7 @@ class TestSREX(unittest.TestCase):
     
 
     def __get_test_data(self):
-        test_data_path = 'jupyter/json_data/test_data.json'
+        test_data_path = 'backend/app/data/test_data.json'
 
         # Validate if the path exists
         if not os.path.exists(test_data_path):
@@ -753,7 +763,7 @@ class TestSREX(unittest.TestCase):
         return test_data
     
 
-    def __get_initialized_ranking_config_01(self, test_data, stop_words: list[str] = []) -> srex.Ranking:
+    def __get_initialized_ranking_config_01(self, test_data, stop_words: list[str] = []) -> Ranking:
         text1 = test_data.get('text1')
         text2 = test_data.get('text2')
         text3 = test_data.get('text3')
@@ -773,11 +783,11 @@ class TestSREX(unittest.TestCase):
     
 
     def __get_initialized_ranking_generated_all_graphs_01(
-            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: list[str] = []) -> srex.Ranking:
+            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: list[str] = []) -> Ranking:
         # Initialize Ranking object and generate all graphs
         ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = method_to_call()
         
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
+        ranking = Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list(articles_dicts_list)
         ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
 
@@ -785,25 +795,25 @@ class TestSREX(unittest.TestCase):
     
 
     def __get_initialized_ranking_initialized_graph_values_01(
-            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: list[str] = []) -> srex.Ranking:
+            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: list[str] = []) -> Ranking:
         # Initialize Ranking object
         ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = method_to_call()
 
-        ranking = srex.Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
+        ranking = Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
         ranking.calculate_article_dictionaries_list(articles_dicts_list)
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
 
         return ranking
     
 
-    def __get_initialized_graph_config_01(self) -> srex.VicinityGraph:
+    def __get_initialized_graph_config_01(self) -> VicinityGraph:
         # Initialize vicinity graph
-        graph = srex.VicinityGraph(subquery="")
+        graph = VicinityGraph(subquery="")
 
         # Build graph
-        node1 = srex.VicinityNode(term='x', ponderation=2.0, distance=np.mean([1.0, 2.0]))
-        node2 = srex.VicinityNode(term='y', ponderation=3.0, distance=np.mean([1.2, 2.3, 3.5, 3.0]))
-        node3 = srex.VicinityNode(term='z', ponderation=4.0, distance=np.mean([3.1, 2.4, 1.1, 1.8]))
+        node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([1.0, 2.0]))
+        node2 = VicinityNode(term='y', ponderation=3.0, distance=np.mean([1.2, 2.3, 3.5, 3.0]))
+        node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([3.1, 2.4, 1.1, 1.8]))
         graph.add_node(node1)
         graph.add_node(node2)
         graph.add_node(node3)
@@ -833,7 +843,7 @@ class TestSREX(unittest.TestCase):
         return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
     
 
-    def __initialize_binary_expression_tree_with_text_transformations(self, query: str) -> srex.BinaryExpressionTree:
+    def __initialize_binary_expression_tree_with_text_transformations(self, query: str) -> BinaryExpressionTree:
         # Load stopwords from JSON file
         stop_words = self.__get_loaded_stopwords()
 
@@ -841,7 +851,7 @@ class TestSREX(unittest.TestCase):
         lema = True
         stem = False
 
-        b_expr_tree = srex.BinaryExpressionTree(query)
+        b_expr_tree = BinaryExpressionTree(query)
         b_expr_tree.do_text_transformations_to_query_terms(stop_words, lema, stem)
         return b_expr_tree
 

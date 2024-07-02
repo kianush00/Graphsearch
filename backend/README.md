@@ -16,8 +16,8 @@ Required Libraries
 
 - GraphViz
 - Python
-    - pandas
-    - textblob
+    - numpy
+    - scikit_learn
     - nltk
-    - many_stop_words
+    - textblob
 
