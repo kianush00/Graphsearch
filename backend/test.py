@@ -210,7 +210,7 @@ class TestSREX(unittest.TestCase):
         self.assertDictEqual(result, expected_result)
         
 
-    def test_calculate_ponderation_of_distances_between_term_positions(self):
+    def test_calculate_distances_between_term_positions(self):
         # Create a Sentence object with an empty raw_text and a dummy query
         s = Sentence(raw_text="", query=BinaryExpressionTree(raw_query="test"))
         
@@ -221,8 +221,8 @@ class TestSREX(unittest.TestCase):
         # Define limit distance
         limit_distance = 7
         
-        # Calculate ponderation of distances between term positions
-        result = s.calculate_ponderation_of_distances_between_term_positions(tp1, tp2, limit_distance)
+        # Calculate distances between term positions
+        result = s.calculate_distances_between_term_positions(tp1, tp2, limit_distance)
         
         # Define expected result
         expected_result = [7.0, 0.0, 5.0, 0.0, 3.0, 0.0, 1.0]
@@ -425,16 +425,16 @@ class TestSREX(unittest.TestCase):
         self.assertEqual(result, expected_result)
 
 
-    def test_get_terms_ponderation_dict(self):
+    def test_get_terms_frequency_dict(self):
         # Load stopwords from JSON file
         stop_words = self.__get_loaded_stopwords()
 
         # Load test data from JSON file
         test_data = self.__get_test_data()
         text = test_data.get('text6')
-        expected_result1 = test_data.get('text6_terms_ponderation_dict1')
-        expected_result2 = test_data.get('text6_terms_ponderation_dict2')
-        expected_result3 = test_data.get('text6_terms_ponderation_dict3')
+        expected_result1 = test_data.get('text6_terms_frequency_dict1')
+        expected_result2 = test_data.get('text6_terms_frequency_dict2')
+        expected_result3 = test_data.get('text6_terms_frequency_dict3')
         article_dict = {'abstract': text}
 
         # Initialize Ranking object
@@ -443,13 +443,13 @@ class TestSREX(unittest.TestCase):
             self.__get_ranking_parameters_default_config, query, [article_dict], stop_words)
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
-        #Calculate the terms ponderation dict for the sentence, by each query term
+        #Calculate the terms frequency dict for the sentence, by each query term
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
         query_terms = sentence.get_query_tree().get_query_terms_str_list_with_underscores()
 
-        result1 = sentence.get_terms_ponderation_dict(query_terms[0])
-        result2 = sentence.get_terms_ponderation_dict(query_terms[1])
-        result3 = sentence.get_terms_ponderation_dict(query_terms[2])
+        result1 = sentence.get_terms_frequency_dict(query_terms[0])
+        result2 = sentence.get_terms_frequency_dict(query_terms[1])
+        result3 = sentence.get_terms_frequency_dict(query_terms[2])
 
         # Assert the result matches the expected output
         self.assertEqual(result1, expected_result1)
@@ -582,7 +582,7 @@ class TestSREX(unittest.TestCase):
         # Generate nodes in all graphs of the query expression tree, in the sentences
         document = ranking.get_document_by_ranking_position(1)
         for sentence in document.get_sentences():
-            sentence.generate_nodes_in_sentence_graphs()
+            sentence.generate_nodes_in_tree_graphs()
 
         # Get union between two trees
         query_trees_list = document.get_list_of_query_trees_from_sentences()

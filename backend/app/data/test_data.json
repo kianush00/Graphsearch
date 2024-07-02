@@ -112,7 +112,7 @@
         "adopt": [8, 13, 19], 
         "store": [12]
     },
-    "text6_terms_ponderation_dict1": {
+    "text6_terms_frequency_dict1": {
         "hierarchical": 6.0, 
         "simknn": 2.0, 
         "dual": 2.0, 
@@ -124,7 +124,7 @@
         "topology": 2.0, 
         "road": 1.0
     },
-    "text6_terms_ponderation_dict2": {
+    "text6_terms_frequency_dict2": {
         "hierarchical": 6.0, 
         "driven": 5.0, 
         "index": 1.0, 
@@ -134,7 +134,7 @@
         "topology": 2.0, 
         "road": 2.0
     },
-    "text6_terms_ponderation_dict3": {
+    "text6_terms_frequency_dict3": {
         "hierarchical": 2.0, 
         "driven": 2.0, 
         "adopt": 2.0, 

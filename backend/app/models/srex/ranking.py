@@ -43,7 +43,7 @@ class Sentence(QueryTreeHandler):
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__preprocessed_text: str = ""
-        self.__vicinity_matrix: dict[str, dict[str, list[float]]] = []
+        self.__vicinity_matrix: dict[str, dict[str, list[float]]] = {}
 
 
     def get_raw_text(self) -> str:
@@ -126,10 +126,10 @@ class Sentence(QueryTreeHandler):
                 # Iterate query terms that do not contain spaces
                 for query_term, query_positions in query_term_positions_dict.items():
                     if query_term != term:
-                        freq_neighborhood_positions = self.calculate_ponderation_of_distances_between_term_positions(query_positions, 
-                                                                                                                       term_positions,
-                                                                                    self.get_graph().get_config().get_limit_distance(),
-                                                                                                                        self.__weight)
+                        limit_distance = self.get_graph().get_config().get_limit_distance()
+                        freq_neighborhood_positions = self.calculate_distances_between_term_positions(query_positions, 
+                                                                                                       term_positions,
+                                                                                                       limit_distance)
 
                         if (any(frq > 0 for frq in freq_neighborhood_positions)):
                             if (first_one):
@@ -140,10 +140,10 @@ class Sentence(QueryTreeHandler):
         self.__vicinity_matrix = vicinity_matrix
     
 
-    def generate_nodes_in_sentence_graphs(self) -> None:
+    def generate_nodes_in_tree_graphs(self) -> None:
         """
-        Generate nodes to all the graphs associated with the sentence, based on 
-        their isolated query terms as leaves from the query tree.
+        Generate nodes to all the graphs associated with the sentence tree, based 
+        on their isolated query terms as leaves from the query tree.
         """
         #First, generate nodes to the graphs associated with the leaves from the query tree
         self.generate_nodes_in_all_leaf_graphs()
@@ -216,21 +216,19 @@ class Sentence(QueryTreeHandler):
         return query_term_positions_dict
 
 
-    def calculate_ponderation_of_distances_between_term_positions(self,
+    def calculate_distances_between_term_positions(self,
             term1_positions: list[int], 
             term2_positions: list[int],
-            limit_distance: int,
-            weight: float = 1.0
+            limit_distance: int
             ) -> list[float]:
         """
-        Compare the positions vectors of two terms, and return the ponderation 
-        (frequency * weight) list per distance between query terms and vicinity terms
+        Compare the positions vectors of two terms, and return the list of 
+        frequencies per distance between query terms and vicinity terms
         
         E.g.
         term1_positions = [0, 2, 4, 6]
         term2_positions = [1, 3, 5, 7]
         limit_distance = 7
-        weight = 1.0
         result = [7.0, 0.0, 5.0, 0.0, 3.0, 0.0, 1.0]
 
         Parameters
@@ -241,24 +239,96 @@ class Sentence(QueryTreeHandler):
             List of positions of the second term
         limit_distance : int
             Limit distance to calculate between the two term positions lists
-        weight : float, optional
-            Weight to multiply with each frequency, to get its ponderation
 
         Returns
         -------
-        ponderations_per_distance : list[float]
-            List of ponderations per distance between query terms and vicinity terms
+        frequencies_per_distance : list[float]
+            List of frequencies per distance between query terms and vicinity terms
         """
-        ponderations_per_distance = [0] * limit_distance
+        frequencies_per_distance = [0] * limit_distance
 
         for term1_pos in term1_positions:
             for term2_pos in term2_positions:
                 absolute_distance = abs(term1_pos-term2_pos)
                 if (absolute_distance <= limit_distance):
-                    ponderations_per_distance[absolute_distance-1] += 1
-        
-        ponderations_per_distance = [i * weight for i in ponderations_per_distance]
-        return ponderations_per_distance
+                    frequencies_per_distance[absolute_distance-1] += 1
+
+        return frequencies_per_distance
+    
+
+    def generate_nodes_in_leaf_graph(self, 
+            leaf_node: BinaryTreeNode,
+            ) -> None:
+        """
+        Generate nodes for the graph associated with the sentence, based on the isolated query term of 
+        the leaf from the query tree. This method calculates the ponderations of the terms associated 
+        with the query term of the graph, and adds each of them to their respective node.
+
+        Parameters
+        ----------
+        leaf_node : BinaryTreeNode
+            A leaf node associated with the sentence tree
+        """
+        query_term = leaf_node.value  
+        terms_freq_dict = self.get_terms_frequency_dict(query_term)
+
+        # Iterate over each term in the frequency dictionary
+        for neighbor_term in terms_freq_dict.keys():
+            # Retrieve the list of frequencies by distance for the term
+            list_of_freq_by_distance = self.__vicinity_matrix.get(neighbor_term).get(query_term)
+            distance_calculation_list = []
+
+            # Construct a list of distances multiplied by its frequencies
+            # E.g.  [1, 0, 2, 0] -> [1, 3, 3]
+            for idx, frequency in enumerate(list_of_freq_by_distance):
+                distance_calculation_list.extend([idx+1] * frequency)
+            
+            #Summarize the list of distances based on the graph settings (it can be: mean or median)
+            if self.get_graph().get_config().get_summarize() == 'median':
+                _distance = np.median(distance_calculation_list)
+            else:
+                _distance = np.mean(distance_calculation_list)
+            
+            # Calculate the ponderation of the term
+            _ponderation = terms_freq_dict.get(neighbor_term) * self.__weight
+                
+            # Calculate the mean distance for the term
+            new_node = VicinityNode(term=neighbor_term, ponderation=_ponderation, distance=_distance)
+            leaf_node.graph.add_node(new_node)
+
+    
+
+    def get_terms_frequency_dict(self, 
+            query_term: str
+            ) -> dict[str, float]:
+        """
+        This method calculates the frequency of terms from the vicinity matrix 
+        of the sentence, by a specified query term
+
+        Parameters
+        ----------
+        query_term : str
+            The query term of the graph
+
+        Returns
+        -------
+        terms_freq_dict : dict[str, float]
+            A dictionary containing the frequency of terms. Each dictionary has keys corresponding 
+            to terms, and values represent the frequency of the term within the sentence.
+
+        """
+        terms_freq_dict = {}
+
+        # Iterate over each term and its frequencies in the document
+        for neighbor_term, distance_freq_by_query_term in self.__vicinity_matrix.items():
+            # Checks if the query word is in the distance-frequency 
+            # dictionary keys and if the neighbor term isn't a query term
+            if (query_term in distance_freq_by_query_term):
+                sum_of_freqs_in_query_term = sum(distance_freq_by_query_term[query_term])
+                if sum_of_freqs_in_query_term > 0:
+                    terms_freq_dict[neighbor_term] = sum_of_freqs_in_query_term
+            
+        return terms_freq_dict
     
 
     def __get_transformed_sentence_str_with_underscores_in_query_terms(self,
@@ -289,78 +359,6 @@ class Sentence(QueryTreeHandler):
                 sentence_str_with_underscores_in_query_terms = transformed_sentence_str.replace(query_term_with_spaces, 
                                                                                                 query_term_with_underscores)
         return sentence_str_with_underscores_in_query_terms
-    
-
-    def generate_nodes_in_leaf_graph(self, 
-            leaf_node: BinaryTreeNode,
-            ) -> None:
-        """
-        Generate nodes for the graph associated with the sentence, based on the isolated query term of 
-        the leaf from the query tree. This method calculates the ponderations of the terms associated 
-        with the query term of the graph, and adds each of them to their respective node.
-
-        Parameters
-        ----------
-        leaf_node : BinaryTreeNode
-            A leaf node associated with the sentence tree
-        """
-        query_term = leaf_node.value  
-        terms_pond_dict = self.get_terms_ponderation_dict(query_term)
-
-        # Iterate over each term in the ponderation dictionary
-        for neighbor_term in terms_pond_dict.keys():
-            # Retrieve the list of ponderations by distance for the term
-            list_of_pond_by_distance = self.__vicinity_matrix.get(neighbor_term).get(query_term)
-            distance_calculation_list = []
-
-            # Construct a list of distances multiplied by its frequencies
-            for idx, freq_mult_by_weight in enumerate(list_of_pond_by_distance):
-                frequency = round(freq_mult_by_weight / self.__weight)
-                distance_calculation_list.extend([idx+1] * frequency)
-            
-            #Summarize the list of distances based on the graph settings (it can be: mean or median)
-            if self.get_graph().get_config().get_summarize() == 'median':
-                _distance = np.median(distance_calculation_list)
-            else:
-                _distance = np.mean(distance_calculation_list)
-                
-            # Calculate the mean distance for the term
-            new_node = VicinityNode(term=neighbor_term, ponderation=terms_pond_dict.get(neighbor_term), distance=_distance)
-            leaf_node.graph.add_node(new_node)
-
-    
-
-    def get_terms_ponderation_dict(self, 
-            query_term: str
-            ) -> dict[str, float]:
-        """
-        This method calculates the ponderation (frequency * weight) of terms from the 
-        vicinity matrix of the sentence, by a specified query term
-
-        Parameters
-        ----------
-        query_term : str
-            The query term of the graph
-
-        Returns
-        -------
-        terms_pond_dict : dict[str, float]
-            A dictionary containing the ponderation of terms. Each dictionary has keys corresponding 
-            to terms, and values represent the ponderation of the term within the sentence.
-
-        """
-        terms_pond_dict = {}
-
-        # Iterate over each term and its ponderations in the document
-        for neighbor_term, distance_pond_by_query_term in self.__vicinity_matrix.items():
-            # Checks if the query word is in the distance-ponderation 
-            # dictionary keys and if the neighbor term isn't a query term
-            if (query_term in distance_pond_by_query_term):
-                sum_of_ponds_in_query_term = sum(distance_pond_by_query_term[query_term])
-                if sum_of_ponds_in_query_term > 0:
-                    terms_pond_dict[neighbor_term] = sum_of_ponds_in_query_term
-            
-        return terms_pond_dict
 
 
 
@@ -459,7 +457,7 @@ class Document(QueryTreeHandler):
         """
         #Generate graph nodes in sentences
         for sentence in self.__sentences:
-            sentence.generate_nodes_in_sentence_graphs()
+            sentence.generate_nodes_in_tree_graphs()
         
         #Generate graph nodes in the current document
         union_of_trees = self.__get_union_of_sentences_trees()
@@ -648,7 +646,9 @@ class Ranking(QueryTreeHandler):
             Summarization type to operate distances in the vicinity matrix for 
             each sentence (it can be: mean or median)
         """
-        if self.__documents:
+        if not self.__documents:
+            print("No documents were found")
+        else:
             #Set graph attributes to the graphs of each document and the sentences' graphs of each document
             self.initialize_graphs_for_all_trees(nr_of_graph_terms, limit_distance, 
                                                 include_query_terms, summarize)
@@ -657,10 +657,8 @@ class Ranking(QueryTreeHandler):
             self.calculate_vicinity_matrix_of_sentences_by_doc()
             
             #Generate nodes of all graphs
-            self.generate_nodes_of_all_graphs()
-        else:
-            print("No documents were found")
-    
+            self.generate_nodes_of_all_graphs()    
+
 
     def get_ieee_xplore_article(self,
             parameter: str, 
@@ -847,7 +845,7 @@ class Ranking(QueryTreeHandler):
         if not all(isinstance(atribute, str) for atribute in [_abstract, _title, _doc_id]):
             raise TypeError("All variables must be strings")
         
-        # Check if abstract and title are empty strings
+        # Check if abstract and title are not empty strings
         if not _abstract and not _title:
             raise ValueError("Abstract and title cannot be both empty")
 

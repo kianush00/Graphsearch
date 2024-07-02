@@ -8,8 +8,6 @@ from ..srex.vicinity_graph import VicinityGraph
 
 
 
-
-
 class BinaryTreeNode:
     def __init__(self, value: str):
         self.value = value
