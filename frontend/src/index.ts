@@ -399,7 +399,7 @@ class QueryTermService {
     queryService: QueryService
     queryTerm: QueryTerm
     isVisible: boolean = false
-    apiUrl = 'http://localhost:3000/get-neighbour-terms'
+    apiUrl = 'http://localhost:8080/get-neighbour-terms'
 
     constructor(queryService: QueryService, queryTerm: QueryTerm) {
         this.queryService = queryService
@@ -422,9 +422,12 @@ class QueryTermService {
     private async postData(url: string, data: any) {
         try {
           const response = await fetch(url, {
+            mode: 'cors',
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Origin': 'https://localhost:3000',
+              'Access-Control-Allow-Origin': 'http://localhost:8080'
             },
             body: JSON.stringify(data),
           })
