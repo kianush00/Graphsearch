@@ -367,6 +367,10 @@ class VicinityGraph:
             sum_of_ponds = copy_pond + ext_pond
             average_distance = ((copy_distance * copy_pond) + (ext_distance * ext_pond)) / sum_of_ponds
 
+            # round ponderation and distance to six decimal places
+            sum_of_ponds = round(sum_of_ponds, 6)
+            average_distance = round(average_distance, 6)
+
             #set new distance and ponderation to each intersected term
             node_from_copy_graph.set_distance(average_distance)
             node_from_copy_graph.set_ponderation(sum_of_ponds)

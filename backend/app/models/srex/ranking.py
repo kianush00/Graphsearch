@@ -2,6 +2,7 @@ import numpy as np
 from collections import defaultdict
 from sklearn.feature_extraction.text import CountVectorizer
 import copy
+import math
 
 from ..ieee_xplore.xploreapi import XPLORE
 from ..srex.vicinity_graph import VicinityGraph
@@ -289,8 +290,13 @@ class Sentence(QueryTreeHandler):
             else:
                 _distance = np.mean(distance_calculation_list)
             
-            # Calculate the ponderation of the term
-            _ponderation = terms_freq_dict.get(neighbor_term) * self.__weight
+            # Calculate the ponderation of the term, by the formula:  p = (1 + log(tf)) * w
+            term_frequency = terms_freq_dict.get(neighbor_term)
+            _ponderation = (1 + math.log10(term_frequency)) * self.__weight
+
+            # Round the values to 6 decimal places for better readability
+            _distance = round(_distance, 6)
+            _ponderation = round(_ponderation, 6)
                 
             # Calculate the mean distance for the term
             new_node = VicinityNode(term=neighbor_term, ponderation=_ponderation, distance=_distance)
