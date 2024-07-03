@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "@types/cytoscape": "^3.19.11",
+    "cytoscape": "^3.30.0"
+  }
+}

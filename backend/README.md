@@ -11,8 +11,25 @@ This reposotory include the libraries, tests and notebooks of the **S**earch **R
 - **Unittest\*.ipynb :** Jupyter notebooks applying some unit tests to the methods defined in the basic library (srex.py)
 
 
+# Run Uvicorn API
 
-Required Libraries
+For running Uvicorn API, execute the following command:
+
+```bash
+    uvicorn app.main:app --host 127.0.0.1 --port 8080
+```
+
+# Run Tests
+
+Tests are run through the VSCode editor. For the above, follow the steps below:
+
+1. On the left side panel, select the `Testing` option
+
+2. Run Tests
+
+
+
+# Required Libraries
 
 - GraphViz
 - Python
@@ -20,4 +37,6 @@ Required Libraries
     - scikit_learn
     - nltk
     - textblob
+    - fastapi
+    - uvicorn
 

@@ -9,7 +9,7 @@ from ..srex.vicinity_graph import VicinityGraph
 from ..srex.vicinity_graph import VicinityNode
 from ..srex.binary_expression_tree import BinaryExpressionTree
 from ..srex.binary_expression_tree import BinaryTreeNode
-from ...utils.text_utils import TextUtils
+from app.utils.text_utils import TextUtils
 
 
 
