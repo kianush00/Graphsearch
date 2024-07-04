@@ -1,9 +1,22 @@
 {
   "devDependencies": {
-    "typescript": "^5.5.3"
+    "css-loader": "^7.1.2",
+    "http-server": "^14.1.1",
+    "mini-css-extract-plugin": "^2.9.0",
+    "node-sass": "^9.0.0",
+    "sass-loader": "^14.2.1",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.5.3",
+    "webpack": "^5.92.1",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "@types/cytoscape": "^3.19.11",
     "cytoscape": "^3.30.0"
+  },
+  "scripts": {
+    "start": "npx http-server -p 3000",
+    "build": "webpack"
   }
 }
