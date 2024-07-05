@@ -888,9 +888,9 @@ class Ranking(QueryTreeHandler):
             The calculated weight factor.
         """
         if (weighted=='linear'):
-            factor = float((results_size - ((ranking_position - 1) * 0.25)) / results_size)
+            factor = float((results_size - ((ranking_position - 1) * 0.7)) / results_size)
         elif (weighted=='inverse'):
-            factor = float(1 / (((ranking_position - 1) * 0.03) + 1))
+            factor = float(1 / (((ranking_position - 1) * 0.05) + 1))
         else:
             factor = 1.0
 
