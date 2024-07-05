@@ -361,7 +361,8 @@ const cy = cytoscape({
             }
         }
     ],
-    userZoomingEnabled: false
+    userZoomingEnabled: false,
+    userPanningEnabled: false
 })
 
 cy.on('drag', 'node', evt => {
