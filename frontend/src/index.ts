@@ -8,7 +8,7 @@ class MathUtils {
         const dx = pos1.x - pos2.x
         const dy = pos1.y - pos2.y
 
-        return Math.round(Math.sqrt(dx * dx + dy * dy))
+        return Math.round(Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)))
     }
 
     public static getRandomAngularPosition(): Position {
@@ -213,8 +213,8 @@ class NeighbourTerm implements Term {
     node: OuterNode | undefined
     nodePosition: Position = { x: 0, y: 0 }
     edge: Edge | undefined
-
-    hopToDistanceRatio = 60
+    // While max distance is always 200, then -> 200 / (user distance) = hopToDistanceRatio
+    hopToDistanceRatio: number = 50
 
     constructor(queryTerm: QueryTerm, label: string = '', hops: number = 0) {
         this.queryTerm = queryTerm
@@ -240,8 +240,21 @@ class NeighbourTerm implements Term {
     }
 
     setPosition(position: Position) {
-        this.nodePosition = position
+        let positionDistance = Math.sqrt(Math.pow(position.x, 2) + Math.pow(position.y, 2))
         const nodeDistance = this.edge?.getDistance() ?? 0
+
+        // Validate position so that it is within the range
+        if (this.edge !== undefined && this.node !== undefined ) {
+            if (positionDistance < 50.0 || positionDistance > 200.0) {
+                let angle = Math.atan2(position.y, position.x)
+                let adjustedX = Math.cos(angle) * nodeDistance
+                let adjustedY = Math.sin(angle) * nodeDistance
+                position.x = adjustedX
+                position.y = adjustedY
+            }
+        }
+        
+        this.nodePosition = position
         this.hops = this.convertDistanceToHops(nodeDistance)
         this.node?.setPosition(position)
         this.edge?.updateDistance()
@@ -656,6 +669,6 @@ for (let i = 0; i < mockResults.length; i++) {
     })
 }
 
-// quick and dirty way to get instances in console
+// quick way to get instances in console
 ;(window as any).cy = cy
 ;(window as any).queryService = queryService
