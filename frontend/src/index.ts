@@ -56,6 +56,34 @@ class TextUtils {
 }
 
 
+class ApiUtils {
+    public static async postData(endpoint: string, data: any): Promise<any> {
+        try {
+            const url = 'http://localhost:8080/'
+            const response = await fetch(url + endpoint, {
+                mode: 'cors',
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                'Origin': 'https://localhost:3000',
+                'Access-Control-Allow-Origin': 'http://localhost:8080'
+                },
+                body: JSON.stringify(data),
+            })
+        
+            // Handle the response
+            const result = await response.json()
+            console.log('Success:', result)
+            return result
+        } catch (error) {
+            console.error('Error:', error)
+        }
+    }
+
+}
+
+
+
 type Position = {
     x: number
     y: number
@@ -223,16 +251,16 @@ class OuterNode implements GraphNode {
     }
 }
 
-class Term {
+interface Term {
     value: string
-
-    constructor(value: string) {
-        this.value = value
-    }
+    setLabel(value: string): void
+    displayViews(): void
+    removeViews(): void
 }
 
 
-class NeighbourTerm extends Term {
+class NeighbourTerm implements Term {
+    public value: string
     public queryTerm: QueryTerm
     public hops: number
     public node: OuterNode | undefined
@@ -242,7 +270,7 @@ class NeighbourTerm extends Term {
     private hopToDistanceRatio: number = 50
 
     constructor(queryTerm: QueryTerm, value: string = '', hops: number = 0) {
-        super(value)
+        this.value = value
         this.queryTerm = queryTerm
         this.hops = hops
     }
@@ -311,12 +339,13 @@ class NeighbourTerm extends Term {
 }
 
 
-class QueryTerm extends Term {
+class QueryTerm implements Term {
+    public value: string
     public neighbourTerms: NeighbourTerm[] = []
     public node: CentralNode | undefined
 
     constructor(value: string) {
-        super(value)
+        this.value = value
     }
 
     public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
@@ -353,7 +382,7 @@ class QueryTerm extends Term {
 }
 
 
-class NeighbourTermList {
+class NeighbourTermsTable {
     private activeTermsService: QueryTermService | undefined
     private table: HTMLElement
 
@@ -384,7 +413,6 @@ class QueryTermService {
     public queryService: QueryService
     public queryTerm: QueryTerm
     private isVisible: boolean = false
-    private apiUrl: string = 'http://localhost:8080/get-neighbour-terms'
 
     constructor(queryService: QueryService, queryTerm: QueryTerm) {
         this.queryService = queryService
@@ -426,7 +454,8 @@ class QueryTermService {
     }
 
     private async retrieveData() {
-        const result = await this.postData(this.apiUrl, { query: this.queryTerm.value })
+        const endpoint = 'get-neighbour-terms'
+        const result = await ApiUtils.postData(endpoint, { query: this.queryTerm.value })
         if (result) {
             for (let termObject of result['neighbour_terms']) {
                 const neighbourTerm = new NeighbourTerm(this.queryTerm)
@@ -437,28 +466,6 @@ class QueryTermService {
         }
     }
 
-    private async postData(url: string, data: any) {
-        try {
-          const response = await fetch(url, {
-            mode: 'cors',
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Origin': 'https://localhost:3000',
-              'Access-Control-Allow-Origin': 'http://localhost:8080'
-            },
-            body: JSON.stringify(data),
-          })
-      
-          // Handle the response
-          const result = await response.json()
-          console.log('Success:', result)
-          return result
-        } catch (error) {
-          console.error('Error:', error)
-        }
-    }
-
     private addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.queryTerm.addNeighbourTerm(neighbourTerm)
 
@@ -466,6 +473,7 @@ class QueryTermService {
         if (this.isVisible) this.display()
     }
 }
+
 
 class Query {
     private query: string = ''
@@ -492,6 +500,7 @@ class Query {
     }
 }
 
+
 class QueryComponent {
     private query: string = ''
     private queryService: QueryService
@@ -512,9 +521,9 @@ class QueryComponent {
     }
 }
 
-class QueryTermList {
-    dynamicList: HTMLElement
-    queryService: QueryService
+class QueryTermsList {
+    private dynamicList: HTMLElement
+    private queryService: QueryService
 
     constructor(queryService: QueryService) {
         this.queryService = queryService
@@ -541,18 +550,18 @@ class QueryTermList {
 class QueryService {
     public activeQueryTermService: QueryTermService | undefined
     public queryTermServices: QueryTermService[] = []
-    private neighbourTermList: NeighbourTermList
-    private queryTermList: QueryTermList
+    private neighbourTermsTable: NeighbourTermsTable
+    private queryTermsList: QueryTermsList
     private query: Query
 
     constructor() {
-        this.neighbourTermList = new NeighbourTermList()
-        this.queryTermList = new QueryTermList(this)
+        this.neighbourTermsTable = new NeighbourTermsTable()
+        this.queryTermsList = new QueryTermsList(this)
         this.query = new Query('')
     }
 
     public dataWasUpdated(): void {
-        this.neighbourTermList.updateTable()
+        this.neighbourTermsTable.updateTable()
     }
 
     public queryGenerationWasRequested(): void {
@@ -561,20 +570,12 @@ class QueryService {
         this.queryTermServices = []
         this.queryTermServices.push(termService)
         // this.decomposeQuery()
-        this.queryTermList.updateList(
+        this.queryTermsList.updateList(
             this.queryTermServices.map(termService => termService.queryTerm)
         )
         if (this.queryTermServices.length > 0) {
             this.activeQueryTermService = this.queryTermServices[0]
-            this.neighbourTermList.setActiveService(this.activeQueryTermService)
-        }
-    }
-
-    private decomposeQuery(): void {
-        this.queryTermServices = []
-        for (let term of this.query.getQuery().split(' ')) {
-            const termService = new QueryTermService(this, new QueryTerm(term))
-            this.queryTermServices.push(termService)
+            this.neighbourTermsTable.setActiveService(this.activeQueryTermService)
         }
     }
 
@@ -594,13 +595,21 @@ class QueryService {
         if (queryTermService === undefined) return
         this.activeQueryTermService = queryTermService
         this.activeQueryTermService.display()
-        this.neighbourTermList.setActiveService(queryTermService)
+        this.neighbourTermsTable.setActiveService(queryTermService)
         this.dataWasUpdated()
         return
     }
 
     private findQueryTermService(queryTerm: string): QueryTermService | undefined {
         return this.queryTermServices.find(termService => termService.queryTerm.value === queryTerm)
+    }
+
+    private decomposeQuery(): void {
+        this.queryTermServices = []
+        for (let term of this.query.getQuery().split(' ')) {
+            const termService = new QueryTermService(this, new QueryTerm(term))
+            this.queryTermServices.push(termService)
+        }
     }
 }
 
