@@ -3,6 +3,7 @@ from collections import defaultdict
 from sklearn.feature_extraction.text import CountVectorizer
 import copy
 import math
+import re
 
 from models.ieee_xplore.xploreapi import XPLORE
 from models.srex.vicinity_graph import VicinityGraph
@@ -546,7 +547,8 @@ class Ranking(QueryTreeHandler):
     
     def __init__(self, query_text: str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
                  stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
-        super().__init__(query_tree=BinaryExpressionTree(query_text))
+        self.__validate_alnum_query_text_not_empty(query_text)
+        self.__initialize_binary_expression_tree(query_text)
         self.__nr_search_results = nr_search_results
         self.__ranking_weight_type = ranking_weight_type  #Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
         self.__text_transformations_config = TextTransformationsConfig(stop_words, lemmatization, stemming)
@@ -895,3 +897,26 @@ class Ranking(QueryTreeHandler):
             factor = 1.0
 
         return factor
+    
+    
+    def __validate_alnum_query_text_not_empty(self, 
+        query_text: str
+        ) -> None:
+        """
+        Validate that the alphanumeric version of the query text is not empty, otherwise raise an exception.
+        """
+        alnum_query_text = re.sub(r'\W+', '', query_text)
+        if alnum_query_text == '':
+            raise ValueError("Query text cannot be empty")
+    
+    
+    def __initialize_binary_expression_tree(self, 
+        query_text: str
+        ) -> None:
+        """
+        Initialize the binary expression tree. If the query text has invalid syntax, raise an exception.
+        """
+        try:
+            super().__init__(query_tree=BinaryExpressionTree(query_text))
+        except Exception as e:
+            raise ValueError("Invalid query syntax: " + repr(e))

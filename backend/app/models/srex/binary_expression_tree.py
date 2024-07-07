@@ -196,15 +196,7 @@ class BinaryTreeNode:
 class BinaryExpressionTree:
     def __init__(self, raw_query: str):
         self.__raw_query = raw_query
-        self.root: BinaryTreeNode | None = None
-        
-        try:
-            tokens = self.__separate_boolean_query(self.__raw_query)
-            infix_tokens = self.__process_infix_tokens(tokens)
-            postfix_tokens = self.__infix_to_postfix(infix_tokens)
-            self.__construct_tree_from_postfix(postfix_tokens)
-        except Exception as e:
-            print('Error initializing BinaryExpressionTree instance: ' + repr(e))
+        self.root = self.__get_tree_built()
     
 
     def get_raw_query(self) -> str:
@@ -212,27 +204,18 @@ class BinaryExpressionTree:
     
 
     def get_query_terms_str_list_with_underscores(self) -> list[str]:
-        if not self.__check_root_initialized():
-            return []
         return self.root.get_values_from_leaves()
     
 
     def get_query_terms_as_leaves(self) -> list[BinaryTreeNode]:
-        if not self.__check_root_initialized():
-            return []
         return self.root.get_leaves()
     
 
     def get_graph(self) -> VicinityGraph | None:
-        if not self.__check_root_initialized():
-            return
         return self.root.graph
     
 
     def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
-        if not self.__check_root_initialized():
-            return
-        
         graph = self.root.get_graph_from_subtree_by_subquery(query)
         if not graph:
             print('Could not find graph for subquery')
@@ -288,14 +271,6 @@ class BinaryExpressionTree:
         """
         copy_tree = copy.deepcopy(self)
         
-        #Union between self tree and None is self tree
-        if not external_tree.root:
-            return copy_tree
-        
-        #Union between external tree and None is external tree
-        if external_tree.root and not self.root:
-            return copy.deepcopy(external_tree)
-        
         #Get the deep union between the copy root node and the external root node
         copy_root = copy_tree.root.get_union_to_subtree(external_tree.root)
         copy_tree.root = copy_root
@@ -303,8 +278,6 @@ class BinaryExpressionTree:
     
 
     def operate_graphs_from_leaves(self) -> None:
-        if not self.__check_root_initialized():
-            return
         self.root.do_graph_operation_from_subtrees()
     
 
@@ -333,8 +306,6 @@ class BinaryExpressionTree:
                 transform_node_if_leaf(node.left)
                 transform_node_if_leaf(node.right)
 
-        if not self.__check_root_initialized():
-            return
         transform_node_if_leaf(self.root)
     
 
@@ -366,8 +337,6 @@ class BinaryExpressionTree:
                 initialize_graph(node.left)
                 initialize_graph(node.right)
         
-        if not self.__check_root_initialized():
-            return
         initialize_graph(self.root)
     
 
@@ -382,21 +351,23 @@ class BinaryExpressionTree:
             if node.right:
                 remove_graph(node.right)
         
-        if not self.__check_root_initialized():
-            return
         remove_graph(self.root)
 
 
     def __str__(self) -> str:
-        if not self.__check_root_initialized():
-            return ''
         return str(self.root)
     
 
     def tree_str(self) -> str:
-        if not self.__check_root_initialized():
-            return ''
         return self.root.tree_str()
+    
+    
+    def __get_tree_built(self):
+        tokens = self.__separate_boolean_query(self.__raw_query)
+        infix_tokens = self.__process_infix_tokens(tokens)
+        postfix_tokens = self.__infix_to_postfix(infix_tokens)
+        root_node = self.__construct_tree_from_postfix(postfix_tokens)
+        return root_node
     
 
     def __separate_boolean_query(self, query: str) -> list[str]:
@@ -454,7 +425,7 @@ class BinaryExpressionTree:
         return postfix_list
     
     
-    def __construct_tree_from_postfix(self, postfix_tokens: list[str]) -> None:
+    def __construct_tree_from_postfix(self, postfix_tokens: list[str]) -> BinaryTreeNode:
         stack = []
         for token in postfix_tokens:
             if token in ['AND', 'OR']:
@@ -469,7 +440,7 @@ class BinaryExpressionTree:
                 stack.append(node)
         
         # The last element on the stack is the root of the tree
-        self.root = stack.pop()
+        return stack.pop()
 
 
     def __validate_boolean_expression(self, tokens: list[str]) -> tuple[bool, str]:
@@ -589,10 +560,3 @@ class BinaryExpressionTree:
                 current_index += 1       
 
         return processed_tokens
-    
-
-    def __check_root_initialized(self) -> bool:
-        if not self.root:
-            print('Error initializing BinaryExpressionTree instance')
-            return False
-        return True

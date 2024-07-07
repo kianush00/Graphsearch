@@ -8,12 +8,11 @@ from models.srex.vicinity_graph import VicinityGraph
 from models.srex.vicinity_graph import VicinityNode
 from utils.text_utils import TextUtils
 from utils.vector_utils import VectorUtils
+from utils.data_utils import DataUtils
 
 import nltk
 import numpy as np
 from collections import defaultdict
-import json
-import os
 
 
 class TestSREX(unittest.TestCase):
@@ -233,7 +232,7 @@ class TestSREX(unittest.TestCase):
 
     def test_remove_special_characters(self):
         # Load test text data
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_remove_special_characters')
         
@@ -249,10 +248,10 @@ class TestSREX(unittest.TestCase):
 
     def test_remove_stopwords(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test text data
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_remove_stopwords')
         
@@ -268,7 +267,7 @@ class TestSREX(unittest.TestCase):
     
     def test_do_lemmatization(self):
         # Load test text data
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_do_lemmatization')
         
@@ -284,7 +283,7 @@ class TestSREX(unittest.TestCase):
 
     def test_do_stemming(self):
         # Load test data and expected result from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_do_stemming')
         
@@ -300,10 +299,10 @@ class TestSREX(unittest.TestCase):
 
     def test_get_transformed_text_with_lema(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data and expected result from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_transformed_text_with_lema')
         
@@ -320,7 +319,7 @@ class TestSREX(unittest.TestCase):
 
     def test_get_transformed_text_if_it_has_underscores(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Initialize text variables
         text_with_underscores = "internet_of_things"
@@ -339,7 +338,7 @@ class TestSREX(unittest.TestCase):
 
     def test_term_positions_dict(self):
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text6')
         dict_result = test_data.get('text6_term_positions_dict')
 
@@ -359,7 +358,7 @@ class TestSREX(unittest.TestCase):
 
     def test_query_term_positions_dict(self):
         # Load term positions dictionaries from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         term_positions_dict = test_data.get('text6_term_positions_dict')
         expected_result = test_data.get('text6_query_term_positions_dict')
 
@@ -379,10 +378,10 @@ class TestSREX(unittest.TestCase):
 
     def test_calculate_vicinity_matrix_with_include_query_terms(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text6')
         expected_result = test_data.get('text6_calculate_vicinity_matrix_with_include_query_terms')
         article_dict = {'abstract': text}
@@ -403,10 +402,10 @@ class TestSREX(unittest.TestCase):
 
     def test_calculate_vicinity_matrix_without_include_query_terms(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text6')
         expected_result = test_data.get('text6_calculate_vicinity_matrix_without_include_query_terms')
         article_dict = {'abstract': text}
@@ -427,10 +426,10 @@ class TestSREX(unittest.TestCase):
 
     def test_get_terms_frequency_dict(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text6')
         expected_result1 = test_data.get('text6_terms_frequency_dict1')
         expected_result2 = test_data.get('text6_terms_frequency_dict2')
@@ -459,10 +458,10 @@ class TestSREX(unittest.TestCase):
 
     def test_generate_nodes_in_all_leaf_graphs_summarize_mean(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text6')
         expected_result1 = test_data.get('text6_leaf_graph_mean_1')
         expected_result2 = test_data.get('text6_leaf_graph_mean_2')
@@ -493,10 +492,10 @@ class TestSREX(unittest.TestCase):
 
     def test_generate_nodes_in_all_leaf_graphs_summarize_median(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text6')
         expected_result1 = test_data.get('text6_leaf_graph_median_1')
         expected_result2 = test_data.get('text6_leaf_graph_median_2')
@@ -527,10 +526,10 @@ class TestSREX(unittest.TestCase):
 
     def test_generate_nodes_in_sentence_graphs(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text6')
         expected_result1 = test_data.get('text6_subgraph1')
         expected_result2 = test_data.get('text6_subgraph2')
@@ -562,10 +561,10 @@ class TestSREX(unittest.TestCase):
 
     def test_get_union_to_tree(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text6 = test_data.get('text6')
         text2 = test_data.get('text2')
         expected_result1 = test_data.get('text6_text2_united_graph_1')
@@ -606,10 +605,10 @@ class TestSREX(unittest.TestCase):
 
     def test_generate_all_graphs(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         expected_result = test_data.get('text_1_2_3_4_united_root_graph')
         
         # Initialize Ranking object and generate all graphs
@@ -624,10 +623,10 @@ class TestSREX(unittest.TestCase):
 
     def test_cosine_similarity_exclude_ponderation(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         
         # Initialize Ranking object and generate all graphs
         ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
@@ -658,10 +657,10 @@ class TestSREX(unittest.TestCase):
 
     def test_cosine_similarity_include_ponderation(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         
         # Initialize Ranking object and generate all graphs
         ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
@@ -692,10 +691,10 @@ class TestSREX(unittest.TestCase):
 
     def test_get_terms_from_nodes(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text4')
         expected_result = test_data.get('text4_terms_from_nodes')
         
@@ -713,10 +712,10 @@ class TestSREX(unittest.TestCase):
 
     def test_get_viewable_graph_copy(self):
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
-        test_data = self.__get_test_data()
+        test_data = DataUtils.load_test_data()
         text = test_data.get('text4')
         expected_result = test_data.get('text4_terms_from_viewable_graph_copy')
         
@@ -737,31 +736,6 @@ class TestSREX(unittest.TestCase):
     
 
     ############## PRIVATE FUNCTIONS ##############
-
-    def __get_loaded_stopwords(self) -> list[str]:
-        stopwords_data_path = 'app/data/stopwords_data.json'
-
-        # Validate if the path exists
-        if not os.path.exists(stopwords_data_path):
-            raise FileNotFoundError(f"File '{stopwords_data_path}' does not exist.")
-
-        with open(stopwords_data_path) as f:
-            stopwords_data = json.load(f)
-        stop_words = stopwords_data.get('words')
-        return stop_words
-    
-
-    def __get_test_data(self):
-        test_data_path = 'app/data/test_data.json'
-
-        # Validate if the path exists
-        if not os.path.exists(test_data_path):
-            raise FileNotFoundError(f"File '{test_data_path}' does not exist.")
-
-        with open(test_data_path) as f:
-            test_data = json.load(f)
-        return test_data
-    
 
     def __get_initialized_ranking_config_01(self, test_data, stop_words: list[str] = []) -> Ranking:
         text1 = test_data.get('text1')
@@ -845,7 +819,7 @@ class TestSREX(unittest.TestCase):
 
     def __initialize_binary_expression_tree_with_text_transformations(self, query: str) -> BinaryExpressionTree:
         # Load stopwords from JSON file
-        stop_words = self.__get_loaded_stopwords()
+        stop_words = DataUtils.load_stopwords()
 
         # Initialize binary expression tree query
         lema = True

@@ -1,10 +1,10 @@
 from models.request.request import PydanticNeighboursTerm, PydanticNeighboursTerms
 from models.srex.ranking import Ranking
-from utils.text_utils import TextUtils
+from utils.data_utils import DataUtils
 
 
 
-stop_words_list = TextUtils.load_stopwords()
+stop_words_list = DataUtils.load_stopwords()
 
 
 class QueryService:
