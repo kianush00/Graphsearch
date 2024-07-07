@@ -1,15 +1,21 @@
 import cytoscape from "cytoscape";
 
 class MathUtils {
-    public static calculateEuclideanDistance(node1: GraphNode, node2: GraphNode): number {
+    public static getDistanceBetweenNodes(node1: GraphNode, node2: GraphNode): number {
         const pos1 = node1.position
         const pos2 = node2.position
 
         const dx = pos1.x - pos2.x
         const dy = pos1.y - pos2.y
 
-        return Math.round(Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2)))
+        return Math.round(this.calculateEuclideanDistance(dx, dy))
     }
+
+
+    public static calculateEuclideanDistance(value1: number, value2: number): number {
+        return Math.sqrt(Math.pow(value1, 2) + Math.pow(value2, 2))
+    }
+
 
     public static getRandomAngularPosition(): Position {
         const randomDistance = Math.random() * 200
@@ -17,9 +23,11 @@ class MathUtils {
         return this.getAngularPosition(randomAngle, randomDistance)
     }
 
+
     public static getRandomAngle(): number {
         return Math.random() * 2 * Math.PI
     }
+
 
     public static getAngularPosition(angle: number, distance: number): Position {
         return {
@@ -28,11 +36,25 @@ class MathUtils {
         }
     }
 
+
     public static getRandomAngularPositionWithDistance(distance: number): Position {
         const randomAngle = Math.random() * 2 * Math.PI
         return this.getAngularPosition(randomAngle, distance)
     }
 }
+
+
+class TextUtils {
+    public static getRandomString(chars: number): string {
+        const charsList = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        let result = ''
+        for (let i = 0; i < chars; i++) {
+            result += charsList.charAt(Math.floor(Math.random() * charsList.length))
+        }
+        return result
+    }
+}
+
 
 type Position = {
     x: number
@@ -51,39 +73,40 @@ interface EdgeData {
     distance: number
 }
 
+
 class Edge {
-    id: string
-    sourceNode: GraphNode
-    targetNode: GraphNode
+    public id: string
+    public sourceNode: GraphNode
+    public targetNode: GraphNode
     private distance: number
 
     constructor(sourceNode: GraphNode, targetNode: GraphNode) {
         this.id = "e_" + targetNode.id
         this.sourceNode = sourceNode
         this.targetNode = targetNode
-        this.distance = MathUtils.calculateEuclideanDistance(sourceNode, targetNode)
+        this.distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
         cy.add(this.toObject())
     }
 
-    setDistance(distance: number): void {
+    public setDistance(distance: number): void {
         const cyEdge = cy.edges(`[source = "${this.sourceNode.id}"][target = "${this.targetNode.id}"]`)
         cyEdge.data('distance', distance)
         this.distance = distance
     }
 
-    updateDistance(): void {
-        this.setDistance(MathUtils.calculateEuclideanDistance(this.sourceNode, this.targetNode))
+    public updateDistance(): void {
+        this.setDistance(MathUtils.getDistanceBetweenNodes(this.sourceNode, this.targetNode))
     }
 
-    getDistance(): number {
+    public getDistance(): number {
         return this.distance
     }
 
-    remove(): void {
+    public remove(): void {
         cy.remove(cy.getElementById(this.id))
     }
 
-    toObject(): { data: EdgeData } {
+    public toObject(): { data: EdgeData } {
         return {
             data: {
                 id: this.id,
@@ -94,6 +117,7 @@ class Edge {
         }
     }
 }
+
 
 enum NodeType {
     central_node,
@@ -109,10 +133,10 @@ interface GraphNode {
 
 
 class CentralNode implements GraphNode {
-    id: string
-    label: string
-    position: Position
-    type: NodeType
+    public id: string
+    public label: string
+    public position: Position
+    public type: NodeType
 
     constructor(id: string, x: number, y: number) {
         this.id = id
@@ -126,7 +150,7 @@ class CentralNode implements GraphNode {
         .ungrabify()
     }
 
-    toObject(): { data: NodeData; position: Position } {
+    public toObject(): { data: NodeData; position: Position } {
         return {
             data: {
                 id: this.id,
@@ -136,21 +160,21 @@ class CentralNode implements GraphNode {
         }
     }
 
-    remove(): void {
+    public remove(): void {
         cy.remove(cy.getElementById(this.id))
     }
 
-    setLabel(label: string): void {
+    public setLabel(label: string): void {
         this.label = label
         cy.getElementById(this.id).data('label', label)
     }
 }
 
 class OuterNode implements GraphNode {
-    id: string
-    label: string
-    type: NodeType
-    position: Position
+    public id: string
+    public label: string
+    public type: NodeType
+    public position: Position
 
     constructor(id: string, distance: number = 0) {
         this.id = id
@@ -160,35 +184,35 @@ class OuterNode implements GraphNode {
         cy.add(this.toObject()).addClass(this.type.toString())
     }
 
-    remove(): void {
+    public remove(): void {
         cy.remove(cy.getElementById(this.id))
     }
 
-    setLabel(label: string): void {
+    public setLabel(label: string): void {
         this.label = label
         cy.getElementById(this.id).data('label', label)
     }
 
-    setAngle(angle: number): void {
+    public setAngle(angle: number): void {
         this.position = MathUtils.getAngularPosition(angle, this.getDistance())
         cy.getElementById(this.id).position(this.position)
     }
 
-    setDistance(distance: number): void {
+    public setDistance(distance: number): void {
         this.position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance)
         cy.getElementById(this.id).position(this.position)
     }
 
-    getDistance(): number {
-        return Math.sqrt(this.position.x * this.position.x + this.position.y * this.position.y)
+    public getDistance(): number {
+        return MathUtils.calculateEuclideanDistance(this.position.x, this.position.y)
     }
 
-    setPosition(position: Position): void {
+    public setPosition(position: Position): void {
         this.position = position
         cy.getElementById(this.id).position(this.position)
     }
 
-    toObject(): { data: NodeData; position: Position } {
+    public toObject(): { data: NodeData; position: Position } {
       return {
         data: {
             id: this.id,
@@ -209,13 +233,13 @@ class Term {
 
 
 class NeighbourTerm extends Term {
-    queryTerm: QueryTerm
-    hops: number
-    node: OuterNode | undefined
-    nodePosition: Position = { x: 0, y: 0 }
-    edge: Edge | undefined
+    public queryTerm: QueryTerm
+    public hops: number
+    public node: OuterNode | undefined
+    public nodePosition: Position = { x: 0, y: 0 }
+    public edge: Edge | undefined
     // While max distance is always 200, then -> 200 / (user distance) = hopToDistanceRatio
-    hopToDistanceRatio: number = 50
+    private hopToDistanceRatio: number = 50
 
     constructor(queryTerm: QueryTerm, value: string = '', hops: number = 0) {
         super(value)
@@ -223,17 +247,20 @@ class NeighbourTerm extends Term {
         this.hops = hops
     }
 
-    getHops(): number {
+    public getHops(): number {
         return this.hops
     }
 
-    setTerm(value: string): void {
-        this.value = value
-        this.node?.setLabel(value)
+    public setHops(hops: number): void {
+        this.hops = hops
+        const nodeDistance = this.convertHopsToDistance(hops)
+        this.nodePosition = MathUtils.getRandomAngularPositionWithDistance(nodeDistance)
+        this.node?.setPosition(this.nodePosition)
+        this.edge?.updateDistance()
     }
 
-    setPosition(position: Position): void {
-        let positionDistance = Math.sqrt(Math.pow(position.x, 2) + Math.pow(position.y, 2))
+    public setPosition(position: Position): void {
+        let positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
         const nodeDistance = this.edge?.getDistance() ?? 0
 
         // Validate position so that it is within the range
@@ -253,16 +280,13 @@ class NeighbourTerm extends Term {
         this.edge?.updateDistance()
     }
 
-    setHops(hops: number): void {
-        this.hops = hops
-        const nodeDistance = this.convertHopsToDistance(hops)
-        this.nodePosition = MathUtils.getRandomAngularPositionWithDistance(nodeDistance)
-        this.node?.setPosition(this.nodePosition)
-        this.edge?.updateDistance()
+    public setLabel(value: string): void {
+        this.value = value
+        this.node?.setLabel(value)
     }
 
-    displayViews(): void {
-        this.node = new OuterNode(getRandomString(6))
+    public displayViews(): void {
+        this.node = new OuterNode(TextUtils.getRandomString(6))
         this.node.setPosition(this.nodePosition)
         
         this.node.label = this.value
@@ -272,7 +296,7 @@ class NeighbourTerm extends Term {
         this.edge = new Edge(this.queryTerm.node, this.node)
     }
 
-    removeViews(): void {
+    public removeViews(): void {
         this.node?.remove()
         this.edge?.remove()
     }
@@ -286,108 +310,52 @@ class NeighbourTerm extends Term {
     }
 }
 
-class QueryTerm implements Term {
-    neighbourTerms: NeighbourTerm[] = []
-    node: CentralNode | undefined
-    value: string
+
+class QueryTerm extends Term {
+    public neighbourTerms: NeighbourTerm[] = []
+    public node: CentralNode | undefined
 
     constructor(value: string) {
-        this.value = value
+        super(value)
     }
 
-    addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+    public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.neighbourTerms.push(neighbourTerm)
     }
 
-    displayViews(): void {
+    public setLabel(value: string): void {
+        this.value = value
+        this.node?.setLabel(value)
+    }
+
+    public displayViews(): void {
         this.node = new CentralNode(this.value, 0, 0)
         for (let neighbourTerm of this.neighbourTerms) {
             neighbourTerm.displayViews()
         }
     }
 
-    removeViews(): void {
+    public removeViews(): void {
         for (let neighbourTerm of this.neighbourTerms) {
             neighbourTerm.removeViews()
         }
         this.node?.remove()
     }
 
-    setLabel(label: string): void {
-        this.value = label
-        this.node?.setLabel(label)
-    }
-
-    removeNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+    public removeNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.neighbourTerms = this.neighbourTerms.filter(term => term !== neighbourTerm)
         neighbourTerm.removeViews()
     }
 
-    getNeighbourTermById(id: string): NeighbourTerm | undefined {
+    public getNeighbourTermById(id: string): NeighbourTerm | undefined {
         return this.neighbourTerms.find(p => p.node?.id === id)
     }
 }
 
-function getRandomString(chars: number): string {
-    const charsList = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    let result = ''
-    for (let i = 0; i < chars; i++) {
-        result += charsList.charAt(Math.floor(Math.random() * charsList.length))
-    }
-    return result
-}
-
-
-
-const cy = cytoscape({
-    container: document.getElementById("cy") as HTMLElement,
-    layout: {
-        name: "preset",
-    },
-    style: [
-        {
-            selector: '.' + NodeType.central_node,
-            style: {
-            "background-color": 'red',
-            'width': '20px',
-            'height': '20px',
-            'label': "data(id)",
-            },
-        },
-        {
-            selector: "edge",
-            style: {
-            "curve-style": "bezier",
-            "target-arrow-shape": "triangle",
-            "line-color": "#ccc",
-            label: "data(distance)",
-            "width": "2px", // set the width of the edge
-            "font-size": "12px" // set the font size of the label            
-            },
-        },
-        {
-            selector: '.' + NodeType.outer_node,
-            style: {
-              'background-color': 'blue',
-              'width': '15px',
-              'height': '15px',
-              'label': 'data(label)'
-            }
-        }
-    ],
-    userZoomingEnabled: false,
-    userPanningEnabled: false
-})
-
-
-cy.on('drag', 'node', evt => {
-    queryService.activeQueryTermService?.nodeDragged(evt.target.id(), evt.target.position())
-})
-
 
 class NeighbourTermList {
-    activeTermsService: QueryTermService | undefined
-    table: HTMLElement
+    private activeTermsService: QueryTermService | undefined
+    private table: HTMLElement
 
     constructor() {
         this.table = document.getElementById('neighboursTermsTable') as HTMLElement
@@ -413,10 +381,10 @@ class NeighbourTermList {
 }
 
 class QueryTermService {
-    queryService: QueryService
-    queryTerm: QueryTerm
-    isVisible: boolean = false
-    apiUrl = 'http://localhost:8080/get-neighbour-terms'
+    public queryService: QueryService
+    public queryTerm: QueryTerm
+    private isVisible: boolean = false
+    private apiUrl: string = 'http://localhost:8080/get-neighbour-terms'
 
     constructor(queryService: QueryService, queryTerm: QueryTerm) {
         this.queryService = queryService
@@ -424,12 +392,45 @@ class QueryTermService {
         this.retrieveData();
     }
 
+    public nodeDragged(id: string, position: Position): void {
+        const term: NeighbourTerm | undefined = this.queryTerm.getNeighbourTermById(id)
+        if (term === undefined) return
+        term.setPosition(position)
+
+        this.queryService.dataWasUpdated()
+    }
+
+    public display(): void {
+        this.isVisible = true
+        this.queryTerm.removeViews()
+        this.queryTerm.displayViews()
+        this.center()
+    }
+
+    public deactivate(): void {
+        this.isVisible = false
+        this.queryTerm.removeViews()
+    }
+
+    public removeNeighbourTerm(id: string): void {
+        const term: NeighbourTerm | undefined = this.queryTerm.getNeighbourTermById(id)
+        if (term === undefined) return
+        this.queryTerm.removeNeighbourTerm(term)
+        this.queryService.dataWasUpdated()
+    }
+
+    private center(): void {
+        cy.zoom(1.2)
+        if (this.queryTerm.node === undefined) return 
+        cy.center(cy.getElementById(this.queryTerm.node.id))
+    }
+
     private async retrieveData() {
         const result = await this.postData(this.apiUrl, { query: this.queryTerm.value })
         if (result) {
             for (let termObject of result['neighbour_terms']) {
                 const neighbourTerm = new NeighbourTerm(this.queryTerm)
-                neighbourTerm.setTerm(termObject.term)
+                neighbourTerm.setLabel(termObject.term)
                 neighbourTerm.setHops(termObject.distance)
                 this.addNeighbourTerm(neighbourTerm)
             }
@@ -464,40 +465,6 @@ class QueryTermService {
         this.queryService.dataWasUpdated()
         if (this.isVisible) this.display()
     }
-
-    nodeDragged(id: string, position: Position): void {
-        const term: NeighbourTerm | undefined = this.queryTerm.getNeighbourTermById(id)
-        if (term === undefined) return
-        term.setPosition(position)
-
-        this.queryService.dataWasUpdated()
-    }
-
-    public display(): void {
-        this.isVisible = true
-        this.queryTerm.removeViews()
-        this.queryTerm.displayViews()
-        this.center()
-    }
-
-    public deactivate(): void {
-        this.isVisible = false
-        this.queryTerm.removeViews()
-    }
-
-    public removeNeighbourTerm(id: string): void {
-        const term: NeighbourTerm | undefined = this.queryTerm.getNeighbourTermById(id)
-        if (term === undefined) return
-        this.queryTerm.removeNeighbourTerm(term)
-
-        this.queryService.dataWasUpdated()
-    }
-
-    private center(): void {
-        cy.zoom(1.2)
-        if (this.queryTerm.node === undefined) return 
-        cy.center(cy.getElementById(this.queryTerm.node.id))
-    }
 }
 
 class Query {
@@ -508,11 +475,11 @@ class Query {
         this.query = query
     }
 
-    public setValue(query: string): void {
+    public setQuery(query: string): void {
         this.query = query
     }
 
-    public getValue(): string {
+    public getQuery(): string {
         return this.query
     }
 
@@ -589,7 +556,7 @@ class QueryService {
     }
 
     public queryGenerationWasRequested(): void {
-        const termService = new QueryTermService(this, new QueryTerm(this.query.getValue()))
+        const termService = new QueryTermService(this, new QueryTerm(this.query.getQuery()))
 
         this.queryTermServices = []
         this.queryTermServices.push(termService)
@@ -605,7 +572,7 @@ class QueryService {
 
     private decomposeQuery(): void {
         this.queryTermServices = []
-        for (let term of this.query.getValue().split(' ')) {
+        for (let term of this.query.getQuery().split(' ')) {
             const termService = new QueryTermService(this, new QueryTerm(term))
             this.queryTermServices.push(termService)
         }
@@ -636,6 +603,56 @@ class QueryService {
         return this.queryTermServices.find(termService => termService.queryTerm.value === queryTerm)
     }
 }
+
+
+
+
+
+const cy = cytoscape({
+    container: document.getElementById("cy") as HTMLElement,
+    layout: {
+        name: "preset",
+    },
+    style: [
+        {
+            selector: '.' + NodeType.central_node,
+            style: {
+            "background-color": 'red',
+            'width': '20px',
+            'height': '20px',
+            'label': "data(id)",
+            },
+        },
+        {
+            selector: "edge",
+            style: {
+            "curve-style": "bezier",
+            "target-arrow-shape": "triangle",
+            "line-color": "#ccc",
+            label: "data(distance)",
+            "width": "2px", // set the width of the edge
+            "font-size": "12px" // set the font size of the label            
+            },
+        },
+        {
+            selector: '.' + NodeType.outer_node,
+            style: {
+              'background-color': 'blue',
+              'width': '15px',
+              'height': '15px',
+              'label': 'data(label)'
+            }
+        }
+    ],
+    userZoomingEnabled: false,
+    userPanningEnabled: false
+})
+
+
+cy.on('drag', 'node', evt => {
+    queryService.activeQueryTermService?.nodeDragged(evt.target.id(), evt.target.position())
+})
+
 
 const queryService: QueryService = new QueryService()
 const queryComponent: QueryComponent = new QueryComponent(queryService)
