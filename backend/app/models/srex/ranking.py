@@ -4,12 +4,12 @@ from sklearn.feature_extraction.text import CountVectorizer
 import copy
 import math
 
-from ..ieee_xplore.xploreapi import XPLORE
-from ..srex.vicinity_graph import VicinityGraph
-from ..srex.vicinity_graph import VicinityNode
-from ..srex.binary_expression_tree import BinaryExpressionTree
-from ..srex.binary_expression_tree import BinaryTreeNode
-from app.utils.text_utils import TextUtils
+from models.ieee_xplore.xploreapi import XPLORE
+from models.srex.vicinity_graph import VicinityGraph
+from models.srex.vicinity_graph import VicinityNode
+from models.srex.binary_expression_tree import BinaryExpressionTree
+from models.srex.binary_expression_tree import BinaryTreeNode
+from utils.text_utils import TextUtils
 
 
 

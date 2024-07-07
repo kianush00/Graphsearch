@@ -16,16 +16,16 @@ This reposotory include the libraries, tests and notebooks of the **S**earch **R
 For running Uvicorn API, execute the following command:
 
 ```bash
-    uvicorn app.main:app --host 127.0.0.1 --port 8080
+    python run_api.py
 ```
 
 # Run Tests
 
-Tests are run through the VSCode editor. For the above, follow the steps below:
+For running tests, execute the following command:
 
-1. On the left side panel, select the `Testing` option
-
-2. Run Tests
+```bash
+    python run_tests.py
+```
 
 
 

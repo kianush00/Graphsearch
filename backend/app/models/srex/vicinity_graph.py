@@ -1,7 +1,7 @@
 import re
 import copy
 from graphviz import Graph
-from app.utils.vector_utils import VectorUtils
+from utils.vector_utils import VectorUtils
 
 
 

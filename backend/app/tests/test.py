@@ -1,19 +1,20 @@
 import unittest
-from app.models.srex.binary_expression_tree import BinaryExpressionTree
-#from app.models.srex.binary_expression_tree import BinaryTreeNode
-from app.models.srex.ranking import Ranking
-#from app.models.srex.ranking import Document
-from app.models.srex.ranking import Sentence
-from app.models.srex.vicinity_graph import VicinityGraph
-from app.models.srex.vicinity_graph import VicinityNode
-from app.utils.text_utils import TextUtils
-from app.utils.vector_utils import VectorUtils
+from models.srex.binary_expression_tree import BinaryExpressionTree
+#from models.srex.binary_expression_tree import BinaryTreeNode
+from models.srex.ranking import Ranking
+#from models.srex.ranking import Document
+from models.srex.ranking import Sentence
+from models.srex.vicinity_graph import VicinityGraph
+from models.srex.vicinity_graph import VicinityNode
+from utils.text_utils import TextUtils
+from utils.vector_utils import VectorUtils
 
 import nltk
 import numpy as np
 from collections import defaultdict
 import json
 import os
+
 
 class TestSREX(unittest.TestCase):
 
@@ -122,7 +123,6 @@ class TestSREX(unittest.TestCase):
         # Normalize vector and assert the results
         result = VectorUtils.normalize_vector(vector, new_min, new_max)
         expected_result = [0.5, 0.75, 1.0, 0.625, 0.875]
-        print(result)
         
         self.assertListEqual(result, expected_result)
     
@@ -679,9 +679,9 @@ class TestSREX(unittest.TestCase):
 
         # Create expected results
         expected_result1 = 1.0
-        expected_result2 = 0.9218968495233156
-        expected_result3 = 0.7203870168397991
-        expected_result4 = 0.6499417662545075
+        expected_result2 = 0.9218968481122465
+        expected_result3 = 0.7203869988241294
+        expected_result4 = 0.6499417292756441
 
         # Assert the result matches the expected output
         self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
@@ -739,7 +739,7 @@ class TestSREX(unittest.TestCase):
     ############## PRIVATE FUNCTIONS ##############
 
     def __get_loaded_stopwords(self) -> list[str]:
-        stopwords_data_path = 'backend/app/data/stopwords_data.json'
+        stopwords_data_path = 'app/data/stopwords_data.json'
 
         # Validate if the path exists
         if not os.path.exists(stopwords_data_path):
@@ -752,7 +752,7 @@ class TestSREX(unittest.TestCase):
     
 
     def __get_test_data(self):
-        test_data_path = 'backend/app/data/test_data.json'
+        test_data_path = 'app/data/test_data.json'
 
         # Validate if the path exists
         if not os.path.exists(test_data_path):

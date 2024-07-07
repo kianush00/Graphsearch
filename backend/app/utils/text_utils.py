@@ -1,6 +1,8 @@
 import nltk
 from nltk.stem import PorterStemmer
-from nltk.stem import WordNetLemmatizer  
+from nltk.stem import WordNetLemmatizer
+import os
+import json
 
 
 
@@ -139,3 +141,18 @@ class TextUtils:
         stemmer = PorterStemmer()
         filtered_words = [stemmer.stem(word) for word in tokens]
         return filtered_words
+    
+    
+    @staticmethod
+    def load_stopwords() -> list[str]:
+        current_directory = os.path.dirname(__file__)
+        data_file_path = os.path.join(current_directory, '..', 'data', 'stopwords_data.json')
+        
+        # Validate if the path exists
+        if not os.path.exists(data_file_path):
+            raise FileNotFoundError(f"File '{data_file_path}' does not exist.")
+
+        with open(data_file_path) as f:
+            stopwords_data = json.load(f)
+        stop_words_list = stopwords_data.get('words')
+        return stop_words_list

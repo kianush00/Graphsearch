@@ -1,12 +1,10 @@
-from app.models.request.request import PydanticNeighboursTerm, PydanticNeighboursTerms
-from app.models.srex.ranking import Ranking
-import json
+from models.request.request import PydanticNeighboursTerm, PydanticNeighboursTerms
+from models.srex.ranking import Ranking
+from utils.text_utils import TextUtils
 
 
-# Load Stop Words
-with open('app/data/stopwords_data.json') as f:
-    stopwords_data = json.load(f)
-stop_words_list = stopwords_data.get('words')
+
+stop_words_list = TextUtils.load_stopwords()
 
 
 class QueryService:
@@ -38,3 +36,6 @@ class QueryService:
         return PydanticNeighboursTerms(neighbour_terms=neighbour_terms)
 
 queryService = QueryService()
+
+
+

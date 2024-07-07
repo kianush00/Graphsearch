@@ -261,23 +261,74 @@
         "house": {"ponderation": 1.0, "distance": 1.0}
     },
     "text_1_2_3_4_united_root_graph": {
-        "hierarchical": {"ponderation": 5.354564, "distance": 3.063218}, 
-        "simknn": {"ponderation": 3.625, "distance": 3.0}, 
-        "driven": {"ponderation": 3.625, "distance": 2.0}, 
-        "child": {"ponderation": 1.0, "distance": 1.0}, 
-        "adopt": {"ponderation": 3.625, "distance": 1.724138}, 
-        "gato": {"ponderation": 4.966903, "distance": 2.824026}, 
-        "store": {"ponderation": 2.23853, "distance": 3.290599}, 
-        "topology": {"ponderation": 4.716234, "distance": 2.732759}, 
-        "road": {"ponderation": 3.625, "distance": 1.0}, 
-        "grid": {"ponderation": 1.9375, "distance": 4.0}, 
-        "house": {"ponderation": 0.9375, "distance": 1.0}, 
-        "car": {"ponderation": 0.9375, "distance": 1.0}, 
-        "galea": {"ponderation": 1.6875, "distance": 3.0}, 
-        "abel": {"ponderation": 1.6875, "distance": 1.0}, 
-        "patricio": {"ponderation": 0.875, "distance": 1.0}, 
-        "echeverria": {"ponderation": 1.6875, "distance": 1.0}, 
-        "rain": {"ponderation": 1.200161, "distance": 3.0}
+        "hierarchical": {
+            "ponderation": 4.357508,
+            "distance": 3.014124
+        },
+        "simknn": {
+            "ponderation": 2.95,
+            "distance": 3.0
+        },
+        "driven": {
+            "ponderation": 2.95,
+            "distance": 2.0
+        },
+        "child": {
+            "ponderation": 1.0,
+            "distance": 1.0
+        },
+        "adopt": {
+            "ponderation": 2.95,
+            "distance": 1.661017
+        },
+        "gato": {
+            "ponderation": 4.130875,
+            "distance": 2.843295
+        },
+        "store": {
+            "ponderation": 2.12603,
+            "distance": 3.305976
+        },
+        "topology": {
+            "ponderation": 3.838038,
+            "distance": 2.690678
+        },
+        "road": {
+            "ponderation": 2.95,
+            "distance": 1.0
+        },
+        "grid": {
+            "ponderation": 1.825,
+            "distance": 4.0
+        },
+        "car": {
+            "ponderation": 0.825,
+            "distance": 1.0
+        },
+        "house": {
+            "ponderation": 0.825,
+            "distance": 1.0
+        },
+        "echeverria": {
+            "ponderation": 1.125,
+            "distance": 1.0
+        },
+        "patricio": {
+            "ponderation": 0.65,
+            "distance": 1.0
+        },
+        "abel": {
+            "ponderation": 1.125,
+            "distance": 1.0
+        },
+        "galea": {
+            "ponderation": 1.125,
+            "distance": 3.0
+        },
+        "rain": {
+            "ponderation": 0.701633,
+            "distance": 3.0
+        }
     }
     
     

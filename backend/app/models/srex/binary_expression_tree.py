@@ -2,8 +2,8 @@ from collections import deque
 import re
 import copy
 from functools import reduce
-from ...utils.text_utils import TextUtils
-from ..srex.vicinity_graph import VicinityGraph
+from utils.text_utils import TextUtils
+from models.srex.vicinity_graph import VicinityGraph
 
 
 
