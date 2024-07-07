@@ -84,16 +84,6 @@ class ApiUtils {
 
 
 
-type Position = {
-    x: number
-    y: number
-}
-
-interface NodeData {
-    id: string
-    label: string
-}
-
 interface EdgeData {
     id: string
     source: string
@@ -147,9 +137,19 @@ class Edge {
 }
 
 
+type Position = {
+    x: number
+    y: number
+}
+
 enum NodeType {
     central_node,
     outer_node,
+}
+
+interface NodeData {
+    id: string
+    label: string
 }
 
 interface GraphNode {
@@ -253,6 +253,7 @@ class OuterNode implements GraphNode {
 
 interface Term {
     value: string
+    node: GraphNode | undefined
     setLabel(value: string): void
     displayViews(): void
     removeViews(): void
@@ -364,6 +365,9 @@ class QueryTerm implements Term {
         }
     }
 
+    /**
+    * Removes the views of the neighbour terms and the central node.
+    */
     public removeViews(): void {
         for (let neighbourTerm of this.neighbourTerms) {
             neighbourTerm.removeViews()
@@ -425,7 +429,7 @@ class QueryTermService {
         if (term === undefined) return
         term.setPosition(position)
 
-        this.queryService.dataWasUpdated()
+        this.queryService.updateNeighbourTermsTable()
     }
 
     public display(): void {
@@ -441,10 +445,10 @@ class QueryTermService {
     }
 
     public removeNeighbourTerm(id: string): void {
-        const term: NeighbourTerm | undefined = this.queryTerm.getNeighbourTermById(id)
-        if (term === undefined) return
-        this.queryTerm.removeNeighbourTerm(term)
-        this.queryService.dataWasUpdated()
+        const neighbourTerm = this.queryTerm.getNeighbourTermById(id)
+        if (neighbourTerm === undefined) return
+        this.queryTerm.removeNeighbourTerm(neighbourTerm)
+        this.queryService.updateNeighbourTermsTable()
     }
 
     private center(): void {
@@ -469,7 +473,7 @@ class QueryTermService {
     private addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.queryTerm.addNeighbourTerm(neighbourTerm)
 
-        this.queryService.dataWasUpdated()
+        this.queryService.updateNeighbourTermsTable()
         if (this.isVisible) this.display()
     }
 }
@@ -500,26 +504,6 @@ class Query {
     }
 }
 
-
-class QueryComponent {
-    private query: string = ''
-    private queryService: QueryService
-    private input: HTMLInputElement
-
-    constructor(queryService: QueryService) {
-        this.queryService = queryService
-        this.input = document.getElementById('queryInput') as HTMLInputElement
-
-        this.input.addEventListener("keyup", event => {
-            if(event.key !== "Enter") return
-            event.stopImmediatePropagation()
-            this.query = this.input.value.trim()
-            this.input.value = ''
-            event.preventDefault()
-            this.queryService.setQuery(this.query)
-        })
-    }
-}
 
 class QueryTermsList {
     private dynamicList: HTMLElement
@@ -560,25 +544,6 @@ class QueryService {
         this.query = new Query('')
     }
 
-    public dataWasUpdated(): void {
-        this.neighbourTermsTable.updateTable()
-    }
-
-    public queryGenerationWasRequested(): void {
-        const termService = new QueryTermService(this, new QueryTerm(this.query.getQuery()))
-
-        this.queryTermServices = []
-        this.queryTermServices.push(termService)
-        // this.decomposeQuery()
-        this.queryTermsList.updateList(
-            this.queryTermServices.map(termService => termService.queryTerm)
-        )
-        if (this.queryTermServices.length > 0) {
-            this.activeQueryTermService = this.queryTermServices[0]
-            this.neighbourTermsTable.setActiveService(this.activeQueryTermService)
-        }
-    }
-
     public setQuery(query: string): void {
         this.activeQueryTermService?.deactivate()
         
@@ -596,12 +561,31 @@ class QueryService {
         this.activeQueryTermService = queryTermService
         this.activeQueryTermService.display()
         this.neighbourTermsTable.setActiveService(queryTermService)
-        this.dataWasUpdated()
+        this.updateNeighbourTermsTable()
         return
     }
 
-    private findQueryTermService(queryTerm: string): QueryTermService | undefined {
-        return this.queryTermServices.find(termService => termService.queryTerm.value === queryTerm)
+    public updateNeighbourTermsTable(): void {
+        this.neighbourTermsTable.updateTable()
+    }
+
+    private queryGenerationWasRequested(): void {
+        const termService = new QueryTermService(this, new QueryTerm(this.query.getQuery()))
+
+        this.queryTermServices = []
+        this.queryTermServices.push(termService)
+        // this.decomposeQuery()
+        this.queryTermsList.updateList(
+            this.queryTermServices.map(termService => termService.queryTerm)
+        )
+        if (this.queryTermServices.length > 0) {
+            this.activeQueryTermService = this.queryTermServices[0]
+            this.neighbourTermsTable.setActiveService(this.activeQueryTermService)
+        }
+    }
+
+    private findQueryTermService(queryTermValue: string): QueryTermService | undefined {
+        return this.queryTermServices.find(termService => termService.queryTerm.value === queryTermValue)
     }
 
     private decomposeQuery(): void {
@@ -610,6 +594,27 @@ class QueryService {
             const termService = new QueryTermService(this, new QueryTerm(term))
             this.queryTermServices.push(termService)
         }
+    }
+}
+
+
+class QueryComponent {
+    private query: string = ''
+    private queryService: QueryService
+    private input: HTMLInputElement
+
+    constructor(queryService: QueryService) {
+        this.queryService = queryService
+        this.input = document.getElementById('queryInput') as HTMLInputElement
+
+        this.input.addEventListener("keyup", event => {
+            if(event.key !== "Enter") return
+            event.stopImmediatePropagation()
+            this.query = this.input.value.trim()
+            this.input.value = ''
+            event.preventDefault()
+            this.queryService.setQuery(this.query)
+        })
     }
 }
 
