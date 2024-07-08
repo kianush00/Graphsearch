@@ -159,10 +159,10 @@ class GraphNode {
     protected type: NodeType
     
     constructor(id: string, label: string, position: Position, type: NodeType) {
-        this.id = id;
-        this.label = label;
-        this.position = position;
-        this.type = type;
+        this.id = id
+        this.label = label
+        this.position = position
+        this.type = type
     }
 
     public getId(): string {
@@ -214,7 +214,7 @@ class OuterNode extends GraphNode {
     constructor(id: string, distance: number = 0) {
         let _id = id
         let _label = id
-        let _position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance);
+        let _position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance)
         let _type = NodeType.outer_node
         super(_id, _label, _position, _type)
         this.addVisualNodeToInterface()
@@ -431,28 +431,48 @@ class QueryTermService {
     constructor(queryService: QueryService, queryTerm: QueryTerm) {
         this.queryService = queryService
         this.queryTerm = queryTerm
-        this.retrieveData();
+        this.retrieveData()
     }
 
     public getQueryTerm(): QueryTerm {
         return this.queryTerm
     }
 
+    /**
+     * If the node is dragged, updates the position of the neighbour term node and 
+     * updates the neighbour term's hops.
+     * @param id - The id of the neighbour term node.
+     * @param position - The new position of the neighbour term node.
+     */
     public nodeDragged(id: string, position: Position): void {
         const term: NeighbourTerm | undefined = this.queryTerm.getNeighbourTermById(id)
         if (term === undefined) return
         term.setPosition(position)
 
+        // Update the neighbour terms table with the new hops values
         this.queryService.updateNeighbourTermsTable()
     }
 
+    /**
+     * Displays the QueryTerm and its associated views in the graph.
+     * This includes creating and positioning the CentralNode and OuterNodes.
+     */
     public display(): void {
-        this.isVisible = true
+        this.isVisible = true // Mark the QueryTerm as visible
+
+        // Remove any existing views associated with the QueryTerm
         this.queryTerm.removeViews()
+
+        // Display the views associated with the QueryTerm
         this.queryTerm.displayViews()
+
+        // Center the graph on the CentralNode
         this.center()
     }
 
+    /**
+     * This method removes the visual nodes and edges from the graph interface.
+     */
     public deactivate(): void {
         this.isVisible = false
         this.queryTerm.removeViews()
@@ -486,35 +506,8 @@ class QueryTermService {
 
     private addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.queryTerm.addNeighbourTerm(neighbourTerm)
-
         this.queryService.updateNeighbourTermsTable()
         if (this.isVisible) this.display()
-    }
-}
-
-
-class Query {
-    private query: string = ''
-    private queryTerms: QueryTerm[] = []
-
-    constructor(query: string) {
-        this.query = query
-    }
-
-    public setQuery(query: string): void {
-        this.query = query
-    }
-
-    public getQuery(): string {
-        return this.query
-    }
-
-    public setQueryTerms(queryTerms: QueryTerm[]): void {
-        this.queryTerms = queryTerms
-    }
-
-    public getQueryTerms(): QueryTerm[] {
-        return this.queryTerms
     }
 }
 
@@ -536,7 +529,7 @@ class QueryTermsList {
             listItem.textContent = queryTerm.getValue()
 
             listItem.addEventListener("click", () => {
-                this.queryService.setActiveTermsService(queryTerm.getValue())
+                this.queryService.setActiveQueryTermService(queryTerm.getValue())
             })
 
             // Append the list item to the dynamic list container
@@ -547,76 +540,94 @@ class QueryTermsList {
 
 
 class QueryService {
-    public activeQueryTermService: QueryTermService | undefined
-    private queryTermServices: QueryTermService[] = []
+    private activeQueryTermService: QueryTermService | undefined
+    private queryTermServices: QueryTermService[]
     private neighbourTermsTable: NeighbourTermsTable
     private queryTermsList: QueryTermsList
-    private query: Query
 
     constructor() {
+        this.queryTermServices = []
         this.neighbourTermsTable = new NeighbourTermsTable()
         this.queryTermsList = new QueryTermsList(this)
-        this.query = new Query('')
     }
 
-    public setQuery(query: string): void {
+    /**
+     * Sets the query for the service.
+     * Deactivates the currently active QueryTermService, creates a new Query object,
+     * and triggers the query generation process.
+     * @param query - The new query string.
+     */
+    public setQuery(queryValue: string): void {
         this.activeQueryTermService?.deactivate()
-        
-        this.query = new Query(query)
-        this.queryGenerationWasRequested()
-
-        if (this.queryTermServices.length === 0) return
-        this.setActiveTermsService(this.queryTermServices[0].getQueryTerm().getValue())
+        this.generateNewQueryTermService(queryValue)
+        if (this.queryTermServices.length > 0) {
+            this.setActiveQueryTermService(queryValue)
+        }
     }
 
-    public setActiveTermsService(queryTerm: string): void {
+    public getActiveQueryTermService(): QueryTermService | undefined { 
+        return this.activeQueryTermService 
+    }
+
+    /**
+     * Sets the active QueryTermService based on the provided query value.
+     * Deactivates the currently active QueryTermService, finds the corresponding QueryTermService,
+     * by the provided queryValue, and displays the views associated with the QueryTerm.
+     *
+     * @param queryValue - The value of the query term for which to set the active QueryTermService.
+     */
+    public setActiveQueryTermService(queryValue: string): void {
         this.activeQueryTermService?.deactivate()
-        const queryTermService = this.findQueryTermService(queryTerm)
-        if (queryTermService === undefined) return
-        this.activeQueryTermService = queryTermService
-        this.activeQueryTermService.display()
-        this.neighbourTermsTable.setActiveService(queryTermService)
-        this.updateNeighbourTermsTable()
-        return
+        const queryTermService = this.findQueryTermService(queryValue)
+        if (queryTermService !== undefined) {
+            this.activeQueryTermService = queryTermService
+            this.activeQueryTermService.display()
+            this.neighbourTermsTable.setActiveService(this.activeQueryTermService)
+            this.updateNeighbourTermsTable()
+        }
     }
 
     public updateNeighbourTermsTable(): void {
         this.neighbourTermsTable.updateTable()
     }
 
-    private queryGenerationWasRequested(): void {
-        const queryTermService = new QueryTermService(this, new QueryTerm(this.query.getQuery()))
+    /**
+     * Generates a new QueryTermService for a given query value.
+     * This method checks if a QueryTermService for the given query value already exists.
+     * If not, it creates a new QueryTermService, adds it to the queryTermServices array,
+     * and updates the query terms list.
+     *
+     * @param queryValue - The value of the query term for which to generate a new QueryTermService.
+     */
+    private generateNewQueryTermService(queryValue: string): void {
+        if (this.findQueryTermService(queryValue) === undefined) {
+            const queryTermService = new QueryTermService(this, new QueryTerm(queryValue))
+            this.queryTermServices.push(queryTermService)
+            this.updateQueryTermsList()
+        }
+    }
 
-        this.queryTermServices = []
-        this.queryTermServices.push(queryTermService)
-        // this.decomposeQuery()
+    private findQueryTermService(queryValue: string): QueryTermService | undefined {
+        return this.queryTermServices.find(
+            termService => termService.getQueryTerm().getValue() === queryValue
+        )
+    }
+
+    private updateQueryTermsList(): void {
         this.queryTermsList.updateList(
             this.queryTermServices.map(termService => termService.getQueryTerm())
         )
-        if (this.queryTermServices.length > 0) {
-            this.activeQueryTermService = this.queryTermServices[0]
-            this.neighbourTermsTable.setActiveService(this.activeQueryTermService)
-        }
-    }
-
-    private findQueryTermService(queryTermValue: string): QueryTermService | undefined {
-        return this.queryTermServices.find(
-            termService => termService.getQueryTerm().getValue() === queryTermValue
-        )
-    }
-
-    private decomposeQuery(): void {
-        this.queryTermServices = []
-        for (let term of this.query.getQuery().split(' ')) {
-            const termService = new QueryTermService(this, new QueryTerm(term))
-            this.queryTermServices.push(termService)
-        }
     }
 }
 
 
+/**
+ * Represents a component responsible for handling query input interactions.
+ * 
+ * This class is responsible for capturing user input from an HTML input element,
+ * and sending the query to a query service when the Enter key is pressed.
+ */
 class QueryComponent {
-    private query: string = ''
     private queryService: QueryService
     private input: HTMLInputElement
 
@@ -624,13 +635,19 @@ class QueryComponent {
         this.queryService = queryService
         this.input = document.getElementById('queryInput') as HTMLInputElement
 
+        // Add event listener to the input element to handle "Enter" key presses
         this.input.addEventListener("keyup", event => {
-            if(event.key !== "Enter") return
-            event.stopImmediatePropagation()
-            this.query = this.input.value.trim()
-            this.input.value = ''
-            event.preventDefault()
-            this.queryService.setQuery(this.query)
+            if(event.key !== "Enter") return // Only proceed if the "Enter" key is pressed
+            event.stopImmediatePropagation() // Prevent other handlers from being called
+            let queryValue = this.input.value.trim() // Get the trimmed input value
+            this.input.value = '' // Clear the input field
+            event.preventDefault() // Prevent the default action
+            const alphanumericRegex = /[a-zA-Z0-9]/
+            if (alphanumericRegex.test(queryValue)) {   // Check if the value contains at least one alphanumeric character
+                this.queryService.setQuery(queryValue) // Send the query to the query service
+            } else {
+                alert("Please enter a valid query.")    // Alert the user if the query is invalid
+            }
         })
     }
 }
@@ -681,7 +698,7 @@ const cy = cytoscape({
 
 
 cy.on('drag', 'node', evt => {
-    queryService.activeQueryTermService?.nodeDragged(evt.target.id(), evt.target.position())
+    queryService.getActiveQueryTermService()?.nodeDragged(evt.target.id(), evt.target.position())
 })
 
 
