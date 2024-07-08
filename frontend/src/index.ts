@@ -56,7 +56,15 @@ class TextUtils {
 }
 
 
-class ApiUtils {
+class HTTPRequestUtils {
+    /**
+     * Sends a POST request to the specified endpoint with the provided data.
+     *
+     * @param endpoint - The endpoint to which the request will be sent.
+     * @param data - The data to be sent in the request body.
+     *
+     * @returns A Promise that resolves with the response data.
+     */
     public static async postData(endpoint: string, data: any): Promise<any> {
         try {
             const url = 'http://localhost:8080/'
@@ -214,6 +222,7 @@ class OuterNode extends GraphNode {
     constructor(id: string, distance: number = 0) {
         let _id = id
         let _label = id
+        // Generates a random angle from the provided distance, to calculate the new position
         let _position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance)
         let _type = NodeType.outer_node
         super(_id, _label, _position, _type)
@@ -249,6 +258,10 @@ class OuterNode extends GraphNode {
 }
 
 
+/**
+ * Represents a term in a graph.
+ * It is associated with a graph node.
+ */
 class Term {
     protected value: string
     protected node: GraphNode | undefined
@@ -272,13 +285,17 @@ class Term {
 }
 
 
-interface View {
+interface ViewManager {
     displayViews(): void
     removeViews(): void
 }
 
 
-class NeighbourTerm extends Term implements View {
+/**
+ * Represents a neighbour term in the graph.
+ * It manages the associated views, such as the OuterNode and Edge.
+ */
+class NeighbourTerm extends Term implements ViewManager {
     protected node: OuterNode | undefined
     private queryTerm: QueryTerm
     private hops: number
@@ -293,8 +310,12 @@ class NeighbourTerm extends Term implements View {
         this.hops = hops
     }
 
+    /**
+     * Displays the views of the neighbour term in the graph.
+     * This includes creating and positioning the OuterNode and Edge.
+     */
     public displayViews(): void {
-        this.node = new OuterNode(TextUtils.getRandomString(6))
+        this.node = new OuterNode(TextUtils.getRandomString(20))
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
         if (this.queryTerm.getNode() === undefined) return 
@@ -310,6 +331,13 @@ class NeighbourTerm extends Term implements View {
         return this.hops
     }
 
+    /**
+     * Sets the number of hops for the neighbour term node and updates the neighbour term's position.
+     *
+     * @param hops - The new number of hops for the neighbour term node.
+     *
+     * @returns {void}
+     */
     public setHops(hops: number): void {
         this.hops = hops
         const nodeDistance = this.convertHopsToDistance(hops)
@@ -317,6 +345,13 @@ class NeighbourTerm extends Term implements View {
         this.updateNodePosition(this.nodePosition)
     }
 
+    /**
+     * Sets the position of the neighbour term node and updates the neighbour term's hops.
+     *
+     * @param position - The new position of the neighbour term node.
+     *
+     * @returns {void}
+     */
     public setPosition(position: Position): void {
         let positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
         const nodeDistance = this.edge?.getDistance() ?? 0
@@ -352,7 +387,11 @@ class NeighbourTerm extends Term implements View {
 }
 
 
-class QueryTerm extends Term implements View {
+/**
+ * Represents a query term that is associated with a central node in the graph.
+ * It also manages neighbour terms related to the query term.
+ */
+class QueryTerm extends Term implements ViewManager {
     protected node: CentralNode | undefined
     private neighbourTerms: NeighbourTerm[] = []
 
@@ -360,6 +399,10 @@ class QueryTerm extends Term implements View {
         super(value)
     }
 
+    /**
+     * Displays the views of the query term and its associated neighbour terms in the graph.
+     * This includes creating and positioning the CentralNode and OuterNodes.
+     */
     public displayViews(): void {
         this.node = new CentralNode(this.value, 0, 0)
         for (let neighbourTerm of this.neighbourTerms) {
@@ -408,15 +451,30 @@ class NeighbourTermsTable {
         this.activeTermsService = termsService
     }
 
+    /**
+     * Updates the table with the values of neighbour terms.
+     * Clears existing rows in the table before adding new ones.
+     */
     public updateTable(): void {
+        // Get the table body element
         const tbody = this.table.getElementsByTagName('tbody')[0]
-        tbody.innerHTML = '' // Clear existing rows
+
+        // Clear existing rows in the table
+        tbody.innerHTML = '' 
+
+        // Check if the activeTermsService is defined
         if (this.activeTermsService === undefined) return
+
+        // Iterate over the neighbour terms of the active query term
         for(const neighbourTerm of this.activeTermsService.getQueryTerm().getNeighbourTerms()) {
+            // Create a new row in the table
             const row = tbody.insertRow()
+
+            // Create cells for the row
             const cell1 = row.insertCell(0)
             const cell2 = row.insertCell(1)
 
+            // Set the text content of the cells
             cell1.innerHTML = neighbourTerm.getValue()
             cell2.innerHTML = neighbourTerm.getHops().toFixed(1)
         }
@@ -491,19 +549,47 @@ class QueryTermService {
         cy.center(cy.getElementById((this.queryTerm.getNode() as CentralNode).getId()))
     }
 
+    /**
+     * Retrieves data related to neighbour terms for the current query term.
+     * The retrieved data is then used to create new NeighbourTerm instances,
+     * which are added to the QueryTerm's neighbour terms list.
+     *
+     * @returns {Promise<void>} - A promise that resolves when the data retrieval and processing are complete.
+     */
     private async retrieveData() {
+        // Define the endpoint for retrieving neighbour terms data
         const endpoint = 'get-neighbour-terms'
-        const result = await ApiUtils.postData(endpoint, { query: this.queryTerm.getValue() })
+
+        // Send a POST request to the endpoint with the query term value
+        const result = await HTTPRequestUtils.postData(endpoint, { query: this.queryTerm.getValue() })
+
+        // Check if the result is not null
         if (result) {
+            // Iterate over the neighbour terms in the result
             for (let termObject of result['neighbour_terms']) {
+                // Create a new NeighbourTerm instance for each term object
                 const neighbourTerm = new NeighbourTerm(this.queryTerm)
+
+                // Set the label of the neighbour term to the term value from the term object
                 neighbourTerm.setLabel(termObject.term)
+
+                // Set the hops of the neighbour term to the distance value from the term object
                 neighbourTerm.setHops(termObject.distance)
+
+                // Add the neighbour term to the QueryTerm's neighbour terms list
                 this.addNeighbourTerm(neighbourTerm)
             }
         }
     }
 
+    /**
+     * Adds a neighbour term to the QueryTerm's neighbour terms list.
+     * It also updates the neighbour terms table in the QueryService.
+     * If the QueryTerm is currently visible, it displays the views of the neighbour term.
+     *
+     * @param neighbourTerm - The neighbour term to be added.
+     * @returns {void}
+     */
     private addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.queryTerm.addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
@@ -521,14 +607,26 @@ class QueryTermsList {
         this.dynamicList = document.getElementById('queryTermsList') as HTMLElement
     }
 
+    /**
+     * Updates the list of query terms with new query terms.
+     *
+     * @param queryTerms - An array of QueryTerm objects to be displayed in the list.
+     */
     public updateList(queryTerms: QueryTerm[]): void {
+        // Clear existing list items
         this.dynamicList.innerHTML = ''
+
+        // Iterate over the query terms and create list items for each one
         queryTerms.forEach(queryTerm => {
             // Create a new list item element
             const listItem = document.createElement("li")
+
+            // Set the text content of the list item to be the value of the query term
             listItem.textContent = queryTerm.getValue()
 
+            // Add a click event listener to the list item
             listItem.addEventListener("click", () => {
+                // When the list item is clicked, set the active query term service to the value of the query term
                 this.queryService.setActiveQueryTermService(queryTerm.getValue())
             })
 
