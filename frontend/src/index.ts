@@ -156,7 +156,7 @@ class GraphNode {
     protected id: string
     protected label: string
     protected position: Position
-    private type: NodeType
+    protected type: NodeType
     
     constructor(id: string, label: string, position: Position, type: NodeType) {
         this.id = id;
@@ -195,14 +195,17 @@ class GraphNode {
 
 
 class CentralNode extends GraphNode {
-
     constructor(id: string, x: number, y: number) {
         let _id = id
         let _label = id
         let _position = { x, y }
         let _type = NodeType.central_node
         super(_id, _label, _position, _type)
-        cy.add(this.toObject()).addClass(_type.toString()).lock().ungrabify()
+        this.addVisualNodeToInterface()
+    }
+
+    private addVisualNodeToInterface(): void {
+        cy.add(this.toObject()).addClass(this.type.toString()).lock().ungrabify()
     }
 }
 
@@ -214,33 +217,41 @@ class OuterNode extends GraphNode {
         let _position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance);
         let _type = NodeType.outer_node
         super(_id, _label, _position, _type)
-        cy.add(this.toObject()).addClass(_type.toString());
+        this.addVisualNodeToInterface()
     }
 
-    public setAngle(angle: number): void {
+    public setPosition(position: Position): void {
+        this.position = position
+        this.updateVisualPosition()
+    }
+
+    public setPositionFromAngle(angle: number): void {
         this.position = MathUtils.getAngularPosition(angle, this.getDistance())
-        cy.getElementById(this.id).position(this.position)
+        this.updateVisualPosition()
     }
 
-    public setDistance(distance: number): void {
+    public setPositionFromDistance(distance: number): void {
         this.position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance)
-        cy.getElementById(this.id).position(this.position)
+        this.updateVisualPosition()
     }
 
     public getDistance(): number {
         return MathUtils.calculateEuclideanDistance(this.position.x, this.position.y)
     }
 
-    public setPosition(position: Position): void {
-        this.position = position
+    private updateVisualPosition(): void {
         cy.getElementById(this.id).position(this.position)
+    }
+
+    private addVisualNodeToInterface(): void {
+        cy.add(this.toObject()).addClass(this.type.toString())
     }
 }
 
 
 class Term {
-    public value: string
-    public node: GraphNode | undefined
+    protected value: string
+    protected node: GraphNode | undefined
 
     constructor(value: string) {
         this.value = value
@@ -249,6 +260,14 @@ class Term {
     public setLabel(value: string): void {
         this.value = value
         this.node?.setLabel(value)
+    }
+
+    public getValue(): string {
+        return this.value
+    }
+
+    public getNode(): GraphNode | undefined {
+        return this.node
     }
 }
 
@@ -260,7 +279,7 @@ interface View {
 
 
 class NeighbourTerm extends Term implements View {
-    public node: OuterNode | undefined
+    protected node: OuterNode | undefined
     private queryTerm: QueryTerm
     private hops: number
     private nodePosition: Position = { x: 0, y: 0 }
@@ -278,8 +297,8 @@ class NeighbourTerm extends Term implements View {
         this.node = new OuterNode(TextUtils.getRandomString(6))
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
-        if (this.queryTerm.node === undefined) return 
-        this.edge = new Edge(this.queryTerm.node, this.node)
+        if (this.queryTerm.getNode() === undefined) return 
+        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node)
     }
 
     public removeViews(): void {
@@ -334,7 +353,7 @@ class NeighbourTerm extends Term implements View {
 
 
 class QueryTerm extends Term implements View {
-    public node: CentralNode | undefined
+    protected node: CentralNode | undefined
     private neighbourTerms: NeighbourTerm[] = []
 
     constructor(value: string) {
@@ -363,7 +382,7 @@ class QueryTerm extends Term implements View {
     }
 
     public getNeighbourTermById(id: string): NeighbourTerm | undefined {
-        return this.neighbourTerms.find(p => p.node?.getId() === id)
+        return this.neighbourTerms.find(p => p.getNode()?.getId() === id)
     }
 
     public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
@@ -398,7 +417,7 @@ class NeighbourTermsTable {
             const cell1 = row.insertCell(0)
             const cell2 = row.insertCell(1)
 
-            cell1.innerHTML = neighbourTerm.value
+            cell1.innerHTML = neighbourTerm.getValue()
             cell2.innerHTML = neighbourTerm.getHops().toFixed(1)
         }
     }
@@ -448,13 +467,13 @@ class QueryTermService {
 
     private center(): void {
         cy.zoom(1.2)
-        if (this.queryTerm.node === undefined) return 
-        cy.center(cy.getElementById(this.queryTerm.node.getId()))
+        if (this.queryTerm.getNode() === undefined) return 
+        cy.center(cy.getElementById((this.queryTerm.getNode() as CentralNode).getId()))
     }
 
     private async retrieveData() {
         const endpoint = 'get-neighbour-terms'
-        const result = await ApiUtils.postData(endpoint, { query: this.queryTerm.value })
+        const result = await ApiUtils.postData(endpoint, { query: this.queryTerm.getValue() })
         if (result) {
             for (let termObject of result['neighbour_terms']) {
                 const neighbourTerm = new NeighbourTerm(this.queryTerm)
@@ -514,10 +533,10 @@ class QueryTermsList {
         queryTerms.forEach(queryTerm => {
             // Create a new list item element
             const listItem = document.createElement("li")
-            listItem.textContent = queryTerm.value
+            listItem.textContent = queryTerm.getValue()
 
             listItem.addEventListener("click", () => {
-                this.queryService.setActiveTermsService(queryTerm.value)
+                this.queryService.setActiveTermsService(queryTerm.getValue())
             })
 
             // Append the list item to the dynamic list container
@@ -547,7 +566,7 @@ class QueryService {
         this.queryGenerationWasRequested()
 
         if (this.queryTermServices.length === 0) return
-        this.setActiveTermsService(this.queryTermServices[0].getQueryTerm().value)
+        this.setActiveTermsService(this.queryTermServices[0].getQueryTerm().getValue())
     }
 
     public setActiveTermsService(queryTerm: string): void {
@@ -581,7 +600,9 @@ class QueryService {
     }
 
     private findQueryTermService(queryTermValue: string): QueryTermService | undefined {
-        return this.queryTermServices.find(termService => termService.getQueryTerm().value === queryTermValue)
+        return this.queryTermServices.find(
+            termService => termService.getQueryTerm().getValue() === queryTermValue
+        )
     }
 
     private decomposeQuery(): void {
