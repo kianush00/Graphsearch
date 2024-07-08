@@ -2,8 +2,8 @@ import cytoscape from "cytoscape";
 
 class MathUtils {
     public static getDistanceBetweenNodes(node1: GraphNode, node2: GraphNode): number {
-        const pos1 = node1.position
-        const pos2 = node2.position
+        const pos1 = node1.getPosition()
+        const pos2 = node2.getPosition()
 
         const dx = pos1.x - pos2.x
         const dy = pos1.y - pos2.y
@@ -93,13 +93,13 @@ interface EdgeData {
 
 
 class Edge {
-    public id: string
-    public sourceNode: GraphNode
-    public targetNode: GraphNode
+    private id: string
+    private sourceNode: GraphNode
+    private targetNode: GraphNode
     private distance: number
 
     constructor(sourceNode: GraphNode, targetNode: GraphNode) {
-        this.id = "e_" + targetNode.id
+        this.id = "e_" + targetNode.getId()
         this.sourceNode = sourceNode
         this.targetNode = targetNode
         this.distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
@@ -107,7 +107,7 @@ class Edge {
     }
 
     public setDistance(distance: number): void {
-        const cyEdge = cy.edges(`[source = "${this.sourceNode.id}"][target = "${this.targetNode.id}"]`)
+        const cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
         cyEdge.data('distance', distance)
         this.distance = distance
     }
@@ -128,8 +128,8 @@ class Edge {
         return {
             data: {
                 id: this.id,
-                source: this.sourceNode.id,
-                target: this.targetNode.id,
+                source: this.sourceNode.getId(),
+                target: this.targetNode.getId(),
                 distance: this.distance,
             },
         }
@@ -152,30 +152,34 @@ interface NodeData {
     label: string
 }
 
-interface GraphNode {
-    id: string
-    position: Position
-    type: NodeType
-    toObject(): { data: NodeData; position: Position }
-}
+class GraphNode {
+    protected id: string
+    protected label: string
+    protected position: Position
+    private type: NodeType
+    
+    constructor(id: string, label: string, position: Position, type: NodeType) {
+        this.id = id;
+        this.label = label;
+        this.position = position;
+        this.type = type;
+    }
 
+    public getId(): string {
+        return this.id
+    }
 
-class CentralNode implements GraphNode {
-    public id: string
-    public label: string
-    public position: Position
-    public type: NodeType
+    public getPosition(): Position { 
+        return this.position
+    }
 
-    constructor(id: string, x: number, y: number) {
-        this.id = id
-        this.label = id
-        this.position = { x, y }
-        this.type = NodeType.central_node
-        cy
-        .add(this.toObject())
-        .addClass(this.type.toString())
-        .lock()
-        .ungrabify()
+    public setLabel(label: string): void {
+        this.label = label
+        cy.getElementById(this.id).data('label', label)
+    }
+
+    public remove(): void {
+        cy.remove(cy.getElementById(this.id))
     }
 
     public toObject(): { data: NodeData; position: Position } {
@@ -187,38 +191,30 @@ class CentralNode implements GraphNode {
             position: this.position,
         }
     }
+}
 
-    public remove(): void {
-        cy.remove(cy.getElementById(this.id))
-    }
 
-    public setLabel(label: string): void {
-        this.label = label
-        cy.getElementById(this.id).data('label', label)
+class CentralNode extends GraphNode {
+
+    constructor(id: string, x: number, y: number) {
+        let _id = id
+        let _label = id
+        let _position = { x, y }
+        let _type = NodeType.central_node
+        super(_id, _label, _position, _type)
+        cy.add(this.toObject()).addClass(_type.toString()).lock().ungrabify()
     }
 }
 
-class OuterNode implements GraphNode {
-    public id: string
-    public label: string
-    public type: NodeType
-    public position: Position
 
+class OuterNode extends GraphNode {
     constructor(id: string, distance: number = 0) {
-        this.id = id
-        this.label = id
-        this.position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance)
-        this.type = NodeType.outer_node
-        cy.add(this.toObject()).addClass(this.type.toString())
-    }
-
-    public remove(): void {
-        cy.remove(cy.getElementById(this.id))
-    }
-
-    public setLabel(label: string): void {
-        this.label = label
-        cy.getElementById(this.id).data('label', label)
+        let _id = id
+        let _label = id
+        let _position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance);
+        let _type = NodeType.outer_node
+        super(_id, _label, _position, _type)
+        cy.add(this.toObject()).addClass(_type.toString());
     }
 
     public setAngle(angle: number): void {
@@ -239,41 +235,56 @@ class OuterNode implements GraphNode {
         this.position = position
         cy.getElementById(this.id).position(this.position)
     }
+}
 
-    public toObject(): { data: NodeData; position: Position } {
-      return {
-        data: {
-            id: this.id,
-            label: this.label,
-        },
-        position: this.position,
-      }
+
+class Term {
+    public value: string
+    public node: GraphNode | undefined
+
+    constructor(value: string) {
+        this.value = value
+    }
+
+    public setLabel(value: string): void {
+        this.value = value
+        this.node?.setLabel(value)
     }
 }
 
-interface Term {
-    value: string
-    node: GraphNode | undefined
-    setLabel(value: string): void
+
+interface View {
     displayViews(): void
     removeViews(): void
 }
 
 
-class NeighbourTerm implements Term {
-    public value: string
-    public queryTerm: QueryTerm
-    public hops: number
+class NeighbourTerm extends Term implements View {
     public node: OuterNode | undefined
-    public nodePosition: Position = { x: 0, y: 0 }
-    public edge: Edge | undefined
+    private queryTerm: QueryTerm
+    private hops: number
+    private nodePosition: Position = { x: 0, y: 0 }
+    private edge: Edge | undefined
     // While max distance is always 200, then -> 200 / (user distance) = hopToDistanceRatio
     private hopToDistanceRatio: number = 50
 
     constructor(queryTerm: QueryTerm, value: string = '', hops: number = 0) {
-        this.value = value
+        super(value)
         this.queryTerm = queryTerm
         this.hops = hops
+    }
+
+    public displayViews(): void {
+        this.node = new OuterNode(TextUtils.getRandomString(6))
+        this.node.setPosition(this.nodePosition)
+        this.node.setLabel(this.value)
+        if (this.queryTerm.node === undefined) return 
+        this.edge = new Edge(this.queryTerm.node, this.node)
+    }
+
+    public removeViews(): void {
+        this.node?.remove()
+        this.edge?.remove()
     }
 
     public getHops(): number {
@@ -284,8 +295,7 @@ class NeighbourTerm implements Term {
         this.hops = hops
         const nodeDistance = this.convertHopsToDistance(hops)
         this.nodePosition = MathUtils.getRandomAngularPositionWithDistance(nodeDistance)
-        this.node?.setPosition(this.nodePosition)
-        this.edge?.updateDistance()
+        this.updateNodePosition(this.nodePosition)
     }
 
     public setPosition(position: Position): void {
@@ -305,29 +315,7 @@ class NeighbourTerm implements Term {
         
         this.nodePosition = position
         this.hops = this.convertDistanceToHops(nodeDistance)
-        this.node?.setPosition(position)
-        this.edge?.updateDistance()
-    }
-
-    public setLabel(value: string): void {
-        this.value = value
-        this.node?.setLabel(value)
-    }
-
-    public displayViews(): void {
-        this.node = new OuterNode(TextUtils.getRandomString(6))
-        this.node.setPosition(this.nodePosition)
-        
-        this.node.label = this.value
-        cy.getElementById(this.node.id).data('label', this.value)
-        
-        if (this.queryTerm.node === undefined) return 
-        this.edge = new Edge(this.queryTerm.node, this.node)
-    }
-
-    public removeViews(): void {
-        this.node?.remove()
-        this.edge?.remove()
+        this.updateNodePosition(position)
     }
 
     private convertHopsToDistance(hops: number): number {
@@ -337,25 +325,20 @@ class NeighbourTerm implements Term {
     private convertDistanceToHops(distance: number): number {
         return distance / this.hopToDistanceRatio
     }
+
+    private updateNodePosition(position: Position): void {
+        this.node?.setPosition(position)
+        this.edge?.updateDistance()
+    }
 }
 
 
-class QueryTerm implements Term {
-    public value: string
-    public neighbourTerms: NeighbourTerm[] = []
+class QueryTerm extends Term implements View {
     public node: CentralNode | undefined
+    private neighbourTerms: NeighbourTerm[] = []
 
     constructor(value: string) {
-        this.value = value
-    }
-
-    public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        this.neighbourTerms.push(neighbourTerm)
-    }
-
-    public setLabel(value: string): void {
-        this.value = value
-        this.node?.setLabel(value)
+        super(value)
     }
 
     public displayViews(): void {
@@ -375,13 +358,21 @@ class QueryTerm implements Term {
         this.node?.remove()
     }
 
-    public removeNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        this.neighbourTerms = this.neighbourTerms.filter(term => term !== neighbourTerm)
-        neighbourTerm.removeViews()
+    public getNeighbourTerms(): NeighbourTerm[] {
+        return this.neighbourTerms
     }
 
     public getNeighbourTermById(id: string): NeighbourTerm | undefined {
-        return this.neighbourTerms.find(p => p.node?.id === id)
+        return this.neighbourTerms.find(p => p.node?.getId() === id)
+    }
+
+    public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+        this.neighbourTerms.push(neighbourTerm)
+    }
+
+    public removeNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+        this.neighbourTerms = this.neighbourTerms.filter(term => term !== neighbourTerm)
+        neighbourTerm.removeViews()
     }
 }
 
@@ -402,7 +393,7 @@ class NeighbourTermsTable {
         const tbody = this.table.getElementsByTagName('tbody')[0]
         tbody.innerHTML = '' // Clear existing rows
         if (this.activeTermsService === undefined) return
-        for(const neighbourTerm of this.activeTermsService.queryTerm.neighbourTerms) {
+        for(const neighbourTerm of this.activeTermsService.getQueryTerm().getNeighbourTerms()) {
             const row = tbody.insertRow()
             const cell1 = row.insertCell(0)
             const cell2 = row.insertCell(1)
@@ -414,14 +405,18 @@ class NeighbourTermsTable {
 }
 
 class QueryTermService {
-    public queryService: QueryService
-    public queryTerm: QueryTerm
+    private queryService: QueryService
+    private queryTerm: QueryTerm
     private isVisible: boolean = false
 
     constructor(queryService: QueryService, queryTerm: QueryTerm) {
         this.queryService = queryService
         this.queryTerm = queryTerm
         this.retrieveData();
+    }
+
+    public getQueryTerm(): QueryTerm {
+        return this.queryTerm
     }
 
     public nodeDragged(id: string, position: Position): void {
@@ -454,7 +449,7 @@ class QueryTermService {
     private center(): void {
         cy.zoom(1.2)
         if (this.queryTerm.node === undefined) return 
-        cy.center(cy.getElementById(this.queryTerm.node.id))
+        cy.center(cy.getElementById(this.queryTerm.node.getId()))
     }
 
     private async retrieveData() {
@@ -531,9 +526,10 @@ class QueryTermsList {
     }
 }
 
+
 class QueryService {
     public activeQueryTermService: QueryTermService | undefined
-    public queryTermServices: QueryTermService[] = []
+    private queryTermServices: QueryTermService[] = []
     private neighbourTermsTable: NeighbourTermsTable
     private queryTermsList: QueryTermsList
     private query: Query
@@ -551,7 +547,7 @@ class QueryService {
         this.queryGenerationWasRequested()
 
         if (this.queryTermServices.length === 0) return
-        this.setActiveTermsService(this.queryTermServices[0].queryTerm.value)
+        this.setActiveTermsService(this.queryTermServices[0].getQueryTerm().value)
     }
 
     public setActiveTermsService(queryTerm: string): void {
@@ -570,13 +566,13 @@ class QueryService {
     }
 
     private queryGenerationWasRequested(): void {
-        const termService = new QueryTermService(this, new QueryTerm(this.query.getQuery()))
+        const queryTermService = new QueryTermService(this, new QueryTerm(this.query.getQuery()))
 
         this.queryTermServices = []
-        this.queryTermServices.push(termService)
+        this.queryTermServices.push(queryTermService)
         // this.decomposeQuery()
         this.queryTermsList.updateList(
-            this.queryTermServices.map(termService => termService.queryTerm)
+            this.queryTermServices.map(termService => termService.getQueryTerm())
         )
         if (this.queryTermServices.length > 0) {
             this.activeQueryTermService = this.queryTermServices[0]
@@ -585,7 +581,7 @@ class QueryService {
     }
 
     private findQueryTermService(queryTermValue: string): QueryTermService | undefined {
-        return this.queryTermServices.find(termService => termService.queryTerm.value === queryTermValue)
+        return this.queryTermServices.find(termService => termService.getQueryTerm().value === queryTermValue)
     }
 
     private decomposeQuery(): void {
