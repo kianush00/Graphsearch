@@ -56,6 +56,20 @@ class TextUtils {
 }
 
 
+class HopConversionUtils {
+    // While max distance is always 200, then -> 200 / (user distance) = hopToDistanceRatio
+    private static hopToDistanceRatio: number = 50;
+
+    public static convertHopsToDistance(hops: number): number {
+        return hops * this.hopToDistanceRatio
+    }
+
+    public static convertDistanceToHops(distance: number): number {
+        return parseFloat((distance / this.hopToDistanceRatio).toFixed(1))
+    }
+}
+
+
 class HTTPRequestUtils {
     /**
      * Sends a POST request to the specified endpoint with the provided data.
@@ -115,9 +129,9 @@ class Edge {
     }
 
     public setDistance(distance: number): void {
-        const cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
-        cyEdge.data('distance', distance)
         this.distance = distance
+        const cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
+        cyEdge.data('distance', HopConversionUtils.convertDistanceToHops(this.distance))
     }
 
     public updateDistance(): void {
@@ -138,7 +152,7 @@ class Edge {
                 id: this.id,
                 source: this.sourceNode.getId(),
                 target: this.targetNode.getId(),
-                distance: this.distance,
+                distance: HopConversionUtils.convertDistanceToHops(this.distance)
             },
         }
     }
@@ -244,7 +258,7 @@ class OuterNode extends GraphNode {
         this.updateVisualPosition()
     }
 
-    public getDistance(): number {
+    private getDistance(): number {
         return MathUtils.calculateEuclideanDistance(this.position.x, this.position.y)
     }
 
@@ -298,16 +312,15 @@ interface ViewManager {
 class NeighbourTerm extends Term implements ViewManager {
     protected node: OuterNode | undefined
     private queryTerm: QueryTerm
-    private hops: number
+    private hops: number = 0
     private nodePosition: Position = { x: 0, y: 0 }
     private edge: Edge | undefined
-    // While max distance is always 200, then -> 200 / (user distance) = hopToDistanceRatio
-    private hopToDistanceRatio: number = 50
 
-    constructor(queryTerm: QueryTerm, value: string = '', hops: number = 0) {
+    constructor(queryTerm: QueryTerm, value: string, hops: number) {
         super(value)
         this.queryTerm = queryTerm
-        this.hops = hops
+        this.setLabel(value)
+        this.initializeHops(hops)
     }
 
     /**
@@ -315,7 +328,7 @@ class NeighbourTerm extends Term implements ViewManager {
      * This includes creating and positioning the OuterNode and Edge.
      */
     public displayViews(): void {
-        this.node = new OuterNode(TextUtils.getRandomString(20))
+        this.node = new OuterNode(TextUtils.getRandomString(24))
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
         if (this.queryTerm.getNode() === undefined) return 
@@ -332,20 +345,6 @@ class NeighbourTerm extends Term implements ViewManager {
     }
 
     /**
-     * Sets the number of hops for the neighbour term node and updates the neighbour term's position.
-     *
-     * @param hops - The new number of hops for the neighbour term node.
-     *
-     * @returns {void}
-     */
-    public setHops(hops: number): void {
-        this.hops = hops
-        const nodeDistance = this.convertHopsToDistance(hops)
-        this.nodePosition = MathUtils.getRandomAngularPositionWithDistance(nodeDistance)
-        this.updateNodePosition(this.nodePosition)
-    }
-
-    /**
      * Sets the position of the neighbour term node and updates the neighbour term's hops.
      *
      * @param position - The new position of the neighbour term node.
@@ -353,10 +352,30 @@ class NeighbourTerm extends Term implements ViewManager {
      * @returns {void}
      */
     public setPosition(position: Position): void {
-        let positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
         const nodeDistance = this.edge?.getDistance() ?? 0
+        this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
+        const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
+        this.hops = HopConversionUtils.convertDistanceToHops(distance)
+        this.updateNodePosition()
+    }
 
-        // Validate position so that it is within the range
+    /**
+     * Sets the number of hops for the neighbour term node and updates the neighbour term's position.
+     *
+     * @param hops - The new number of hops for the neighbour term node.
+     *
+     * @returns {void}
+     */
+    private initializeHops(hops: number): void {
+        this.hops = hops
+        const nodeDistance = HopConversionUtils.convertHopsToDistance(hops)
+        this.nodePosition = MathUtils.getRandomAngularPositionWithDistance(nodeDistance)
+        this.updateNodePosition()
+    }
+
+    private validatePositionWithinRange(position: Position, nodeDistance: number): Position {
+        let positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
+
         if (this.edge !== undefined && this.node !== undefined ) {
             if (positionDistance < 50.0 || positionDistance > 200.0) {
                 let angle = Math.atan2(position.y, position.x)
@@ -366,22 +385,11 @@ class NeighbourTerm extends Term implements ViewManager {
                 position.y = adjustedY
             }
         }
-        
-        this.nodePosition = position
-        this.hops = this.convertDistanceToHops(nodeDistance)
-        this.updateNodePosition(position)
+        return position
     }
 
-    private convertHopsToDistance(hops: number): number {
-        return hops * this.hopToDistanceRatio
-    }
-
-    private convertDistanceToHops(distance: number): number {
-        return distance / this.hopToDistanceRatio
-    }
-
-    private updateNodePosition(position: Position): void {
-        this.node?.setPosition(position)
+    private updateNodePosition(): void {
+        this.node?.setPosition(this.nodePosition)
         this.edge?.updateDistance()
     }
 }
@@ -568,13 +576,7 @@ class QueryTermService {
             // Iterate over the neighbour terms in the result
             for (let termObject of result['neighbour_terms']) {
                 // Create a new NeighbourTerm instance for each term object
-                const neighbourTerm = new NeighbourTerm(this.queryTerm)
-
-                // Set the label of the neighbour term to the term value from the term object
-                neighbourTerm.setLabel(termObject.term)
-
-                // Set the hops of the neighbour term to the distance value from the term object
-                neighbourTerm.setHops(termObject.distance)
+                const neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, termObject.distance)
 
                 // Add the neighbour term to the QueryTerm's neighbour terms list
                 this.addNeighbourTerm(neighbourTerm)
