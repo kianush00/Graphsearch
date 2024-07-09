@@ -447,61 +447,83 @@ class QueryTerm extends Term implements ViewManager {
 }
 
 
-class NeighbourTermsTable {
-    private activeTermsService: QueryTermService | undefined
-    private dynamicTable: HTMLElement
-
-    constructor() {
-        this.dynamicTable = document.getElementById('neighboursTermsTable') as HTMLElement
-    }
-
-    public setActiveService(queryTermService: QueryTermService): void {
-        this.activeTermsService = queryTermService
-    }
-
-    /**
-     * Updates the table with the values of neighbour terms.
-     * Clears existing rows in the table before adding new ones.
-     */
-    public updateTable(): void {
-        // Get the table body element
-        const tbody = this.dynamicTable.getElementsByTagName('tbody')[0]
-
-        // Clear existing rows in the table
-        tbody.innerHTML = '' 
-
-        // Check if the activeTermsService is defined
-        if (this.activeTermsService === undefined) return
-
-        // Iterate over the neighbour terms of the active query term
-        for(const neighbourTerm of this.activeTermsService.getQueryTerm().getNeighbourTerms()) {
-            // Create a new row in the table
-            const row = tbody.insertRow()
-
-            // Create cells for the row
-            const cell1 = row.insertCell(0)
-            const cell2 = row.insertCell(1)
-
-            // Set the text content of the cells
-            cell1.innerHTML = neighbourTerm.getValue()
-            cell2.innerHTML = neighbourTerm.getHops().toFixed(1)
-        }
-    }
-}
-
-class QueryTermService {
-    private queryService: QueryService
+class Document {
     private queryTerm: QueryTerm
-    private isVisible: boolean = false
+    private id: string
+    private title: string
+    private abstract: string
 
-    constructor(queryService: QueryService, queryTerm: QueryTerm) {
-        this.queryService = queryService
-        this.queryTerm = queryTerm
-        this.retrieveData()
+    constructor(queryTermValue: string, id: string, title: string, abstract: string) {
+        this.queryTerm = new QueryTerm(queryTermValue)
+        this.id = id
+        this.title = title
+        this.abstract = abstract
     }
 
     public getQueryTerm(): QueryTerm {
         return this.queryTerm
+    }
+
+    public getId(): string {
+        return this.id
+    }
+
+    public getTitle(): string {
+        return this.title
+    }
+
+    public getAbstract(): string {
+        return this.abstract
+    }
+    
+}
+
+
+class Ranking {
+    private visibleQueryTerm: QueryTerm
+    private completeQueryTerm: QueryTerm
+    private documents: Document[] = []
+
+    constructor(queryTermValue: string) {
+        this.visibleQueryTerm = new QueryTerm(queryTermValue)
+        this.completeQueryTerm = new QueryTerm(queryTermValue)
+    }
+
+    public getVisibleQueryTerm(): QueryTerm {
+        return this.visibleQueryTerm
+    }
+
+    public getCompleteQueryTerm(): QueryTerm {
+        return this.completeQueryTerm
+    }
+
+    public getDocuments(): Document[] {
+        return this.documents
+    }
+
+    public addDocument(document: Document): void {
+        this.documents.push(document)
+    }
+}
+
+
+class QueryTermService {
+    private queryService: QueryService
+    private ranking: Ranking
+    private isVisible: boolean = false
+
+    constructor(queryService: QueryService, queryTermValue: string) {
+        this.queryService = queryService
+        this.ranking = new Ranking(queryTermValue)
+        this.retrieveData()
+    }
+
+    public getVisibleQueryTerm(): QueryTerm {
+        return this.ranking.getVisibleQueryTerm()
+    }
+
+    public getRanking(): Ranking {
+        return this.ranking
     }
 
     /**
@@ -511,7 +533,7 @@ class QueryTermService {
      * @param position - The new position of the neighbour term node.
      */
     public nodeDragged(id: string, position: Position): void {
-        const term: NeighbourTerm | undefined = this.queryTerm.getNeighbourTermById(id)
+        const term: NeighbourTerm | undefined = this.getVisibleQueryTerm().getNeighbourTermById(id)
         if (term === undefined) return
         term.setPosition(position)
 
@@ -527,10 +549,10 @@ class QueryTermService {
         this.isVisible = true // Mark the QueryTerm as visible
 
         // Remove any existing views associated with the QueryTerm
-        this.queryTerm.removeViews()
+        this.getVisibleQueryTerm().removeViews()
 
         // Display the views associated with the QueryTerm
-        this.queryTerm.displayViews()
+        this.getVisibleQueryTerm().displayViews()
 
         // Center the graph on the CentralNode
         this.center()
@@ -541,20 +563,20 @@ class QueryTermService {
      */
     public deactivate(): void {
         this.isVisible = false
-        this.queryTerm.removeViews()
+        this.getVisibleQueryTerm().removeViews()
     }
 
     public removeNeighbourTerm(id: string): void {
-        const neighbourTerm = this.queryTerm.getNeighbourTermById(id)
+        const neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermById(id)
         if (neighbourTerm === undefined) return
-        this.queryTerm.removeNeighbourTerm(neighbourTerm)
+        this.getVisibleQueryTerm().removeNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
     }
 
     private center(): void {
         cy.zoom(1.2)
-        if (this.queryTerm.getNode() === undefined) return 
-        cy.center(cy.getElementById((this.queryTerm.getNode() as CentralNode).getId()))
+        if (this.getVisibleQueryTerm().getNode() === undefined) return 
+        cy.center(cy.getElementById((this.getVisibleQueryTerm().getNode() as CentralNode).getId()))
     }
 
     /**
@@ -566,21 +588,38 @@ class QueryTermService {
      */
     private async retrieveData() {
         // Define the endpoint for retrieving neighbour terms data
-        const endpoint = 'get-neighbour-terms'
+        const endpoint = 'get-ranking'
 
         // Send a POST request to the endpoint with the query term value
-        const result = await HTTPRequestUtils.postData(endpoint, { query: this.queryTerm.getValue() })
+        let _query = this.getVisibleQueryTerm().getValue()
+        const result = await HTTPRequestUtils.postData(endpoint, { query: _query })
 
         // Check if the result is not null
         if (result) {
-            // Iterate over the neighbour terms in the result
-            for (let termObject of result['visible_neighbour_terms']) {
-                // Create a new NeighbourTerm instance for each term object
-                const neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, termObject.distance)
+            this.generateVisibleNeighbourTerms(result)
+            this.generateRankingDocuments(result)
+        }
+    }
 
-                // Add the neighbour term to the QueryTerm's neighbour terms list
-                this.addNeighbourTerm(neighbourTerm)
-            }
+    private generateVisibleNeighbourTerms(result: any) {
+        // Iterate over the neighbour terms in the result
+        for (let termObject of result['visible_neighbour_terms']) {
+            // Create a new NeighbourTerm instance for each term object
+            const neighbourTerm = new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, termObject.distance)
+
+            // Add the neighbour term to the QueryTerm's neighbour terms list
+            this.addNeighbourTerm(neighbourTerm)
+        }
+    }
+
+    private generateRankingDocuments(result: any) {
+        // Iterate over the documents in the result
+        for (let documentObject of result['documents']) {
+            const id = documentObject['doc_id']
+            const title = documentObject['title']
+            const abstract = documentObject['abstract']
+            const document = new Document(this.ranking.getVisibleQueryTerm().getValue(), id, title, abstract)
+            this.addDocument(document)
         }
     }
 
@@ -593,10 +632,110 @@ class QueryTermService {
      * @returns {void}
      */
     private addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        this.queryTerm.addNeighbourTerm(neighbourTerm)
+        this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         if (this.isVisible) this.display()
     }
+
+    private addDocument(document: Document): void {
+        this.getRanking().addDocument(document)
+        this.queryService.updateResultsList()
+    }
+}
+
+
+class NeighbourTermsTable {
+    private activeTermService: QueryTermService | undefined
+    private dynamicTable: HTMLElement
+
+    constructor() {
+        this.dynamicTable = document.getElementById('neighboursTermsTable') as HTMLElement
+    }
+
+    public setActiveTermService(queryTermService: QueryTermService): void {
+        this.activeTermService = queryTermService
+    }
+
+    /**
+     * Updates the table with the values of neighbour terms.
+     * Clears existing rows in the table before adding new ones.
+     */
+    public updateTable(): void {
+        // Get the table body element
+        const tbody = this.dynamicTable.getElementsByTagName('tbody')[0]
+
+        // Clear existing rows in the table
+        tbody.innerHTML = '' 
+
+        // Check if the activeTermService is defined
+        if (this.activeTermService === undefined) return
+
+        // Iterate over the neighbour terms of the active query term
+        for(const neighbourTerm of this.activeTermService.getVisibleQueryTerm().getNeighbourTerms()) {
+            // Create a new row in the table
+            const row = tbody.insertRow()
+
+            // Create cells for the row
+            const cell1 = row.insertCell(0)
+            const cell2 = row.insertCell(1)
+
+            // Set the text content of the cells
+            cell1.innerHTML = neighbourTerm.getValue()
+            cell2.innerHTML = neighbourTerm.getHops().toFixed(1)
+        }
+    }
+}
+
+
+class ResultsList {
+    private activeTermService: QueryTermService | undefined
+    private dynamicList: HTMLElement
+
+    constructor() {
+        this.dynamicList = document.getElementById('resultsList') as HTMLElement
+    }
+
+    public setActiveTermService(queryTermService: QueryTermService): void {
+        this.activeTermService = queryTermService
+    }
+
+    public updateList(): void {
+        // Clear existing list items
+        this.dynamicList.innerHTML = '';
+
+        // Check if the activeTermService is defined
+        if (this.activeTermService === undefined) return
+
+        // Get the ranking of the active query term
+        let documents = this.activeTermService.getRanking().getDocuments()
+    
+        for (let i = 0; i < documents.length; i++) {
+            // Create a new list item element
+            const listItem = document.createElement('li');
+    
+            // Create a title element
+            const titleElement = document.createElement('span');
+            titleElement.textContent = (i + 1) + ". " + documents[i].getTitle();
+    
+            // Create an abstract element
+            const abstractElement = document.createElement('p');
+            abstractElement.textContent = documents[i].getAbstract();
+    
+            // Add a click event listener to the list item
+            listItem.addEventListener('click', () => {
+                // When the list item is clicked, opens the original URL document webpage in a new tab
+                window.open('https://ieeexplore.ieee.org/document/' + documents[i].getId(), '_blank');
+            });
+    
+            // Append the title and abstract to the list item
+            listItem.appendChild(titleElement);
+            listItem.appendChild(abstractElement);
+    
+            // Append the list item to the dynamic list container
+            this.dynamicList.appendChild(listItem);
+        }
+    }
+    
 }
 
 
@@ -644,13 +783,14 @@ class QueryService {
     private queryTermServices: QueryTermService[]
     private neighbourTermsTable: NeighbourTermsTable
     private queryTermsList: QueryTermsList
-    private queryComponent: QueryComponent
+    private resultsList: ResultsList
 
     constructor() {
         this.queryTermServices = []
         this.neighbourTermsTable = new NeighbourTermsTable()
+        this.resultsList = new ResultsList()
         this.queryTermsList = new QueryTermsList(this)
-        this.queryComponent = new QueryComponent(this)
+        new QueryComponent(this)
     }
 
     /**
@@ -684,13 +824,20 @@ class QueryService {
         if (queryTermService !== undefined) {
             this.activeQueryTermService = queryTermService
             this.activeQueryTermService.display()
-            this.neighbourTermsTable.setActiveService(this.activeQueryTermService)
+
+            this.neighbourTermsTable.setActiveTermService(this.activeQueryTermService)
+            this.resultsList.setActiveTermService(this.activeQueryTermService)
             this.updateNeighbourTermsTable()
+            this.updateResultsList()
         }
     }
 
     public updateNeighbourTermsTable(): void {
         this.neighbourTermsTable.updateTable()
+    }
+
+    public updateResultsList(): void {
+        this.resultsList.updateList()
     }
 
     /**
@@ -703,7 +850,7 @@ class QueryService {
      */
     private generateNewQueryTermService(queryValue: string): void {
         if (this.findQueryTermService(queryValue) === undefined) {
-            const queryTermService = new QueryTermService(this, new QueryTerm(queryValue))
+            const queryTermService = new QueryTermService(this, queryValue)
             this.queryTermServices.push(queryTermService)
             this.updateQueryTermsList()
         }
@@ -711,13 +858,13 @@ class QueryService {
 
     private findQueryTermService(queryValue: string): QueryTermService | undefined {
         return this.queryTermServices.find(
-            termService => termService.getQueryTerm().getValue() === queryValue
+            termService => termService.getVisibleQueryTerm().getValue() === queryValue
         )
     }
 
     private updateQueryTermsList(): void {
         this.queryTermsList.updateList(
-            this.queryTermServices.map(termService => termService.getQueryTerm())
+            this.queryTermServices.map(termService => termService.getVisibleQueryTerm())
         )
     }
 }
@@ -751,6 +898,36 @@ class QueryComponent {
                 alert("Please enter a valid query.")    // Alert the user if the query is invalid
             }
         })
+    }
+}
+
+
+class RerankComponent {
+    private queryService: QueryService
+    private button: HTMLButtonElement
+
+    constructor(queryService: QueryService) {
+        this.queryService = queryService
+        this.button = document.getElementById('rerankButton') as HTMLButtonElement
+
+        // Add event listener to the button element
+        this.button.addEventListener('click', this.handleRerankClick.bind(this))
+    }
+
+    private async handleRerankClick() {
+        // Create the data to be sent in the POST request
+        const data = {
+            // Add the necessary data structure here
+            message: "Rerank request"
+        }
+
+        // Send the POST request
+        const response = await HTTPRequestUtils.postData('rerank', data)
+        
+        if (response) {
+            // Handle the response accordingly
+
+        }
     }
 }
 
@@ -803,7 +980,6 @@ cy.on('drag', 'node', evt => {
     queryService.getActiveQueryTermService()?.nodeDragged(evt.target.id(), evt.target.position())
 })
 
-
 const queryService: QueryService = new QueryService()
 
 cy.ready(() => {
@@ -815,28 +991,6 @@ cy.ready(() => {
     // queryService.queryTermServices[1].addNeighbourTerm('mundoC')
 })
 
-let searchTerm = "Graphs"
-
-const mockResults = [
-    "Paper 1 about " + searchTerm,
-    "Paper 2 related to " + searchTerm,
-    "Another paper discussing " + searchTerm,
-    "Further findings on " + searchTerm
-]
-
-// Display results
-const resultsList = document.getElementById('resultsList') as HTMLElement
-resultsList.innerHTML = "" // Clear previous results
-
-for (let i = 0; i < mockResults.length; i++) {
-    let listItem = document.createElement('li')
-    listItem.textContent = (i + 1) + ". " + mockResults[i]
-    resultsList.appendChild(listItem)
-
-    listItem.addEventListener("click", () => {
-        alert(mockResults[i])
-    })
-}
 
 // quick way to get instances in console
 ;(window as any).cy = cy
