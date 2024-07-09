@@ -320,7 +320,7 @@ class NeighbourTerm extends Term implements ViewManager {
         super(value)
         this.queryTerm = queryTerm
         this.setLabel(value)
-        this.initializeHops(hops)
+        this.initializeHopsAndNodePosition(hops)
     }
 
     /**
@@ -366,7 +366,7 @@ class NeighbourTerm extends Term implements ViewManager {
      *
      * @returns {void}
      */
-    private initializeHops(hops: number): void {
+    private initializeHopsAndNodePosition(hops: number): void {
         this.hops = hops
         const nodeDistance = HopConversionUtils.convertHopsToDistance(hops)
         this.nodePosition = MathUtils.getRandomAngularPositionWithDistance(nodeDistance)
@@ -449,14 +449,14 @@ class QueryTerm extends Term implements ViewManager {
 
 class NeighbourTermsTable {
     private activeTermsService: QueryTermService | undefined
-    private table: HTMLElement
+    private dynamicTable: HTMLElement
 
     constructor() {
-        this.table = document.getElementById('neighboursTermsTable') as HTMLElement
+        this.dynamicTable = document.getElementById('neighboursTermsTable') as HTMLElement
     }
 
-    public setActiveService(termsService: QueryTermService): void {
-        this.activeTermsService = termsService
+    public setActiveService(queryTermService: QueryTermService): void {
+        this.activeTermsService = queryTermService
     }
 
     /**
@@ -465,7 +465,7 @@ class NeighbourTermsTable {
      */
     public updateTable(): void {
         // Get the table body element
-        const tbody = this.table.getElementsByTagName('tbody')[0]
+        const tbody = this.dynamicTable.getElementsByTagName('tbody')[0]
 
         // Clear existing rows in the table
         tbody.innerHTML = '' 
@@ -574,7 +574,7 @@ class QueryTermService {
         // Check if the result is not null
         if (result) {
             // Iterate over the neighbour terms in the result
-            for (let termObject of result['neighbour_terms']) {
+            for (let termObject of result['visible_neighbour_terms']) {
                 // Create a new NeighbourTerm instance for each term object
                 const neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, termObject.distance)
 
@@ -644,11 +644,13 @@ class QueryService {
     private queryTermServices: QueryTermService[]
     private neighbourTermsTable: NeighbourTermsTable
     private queryTermsList: QueryTermsList
+    private queryComponent: QueryComponent
 
     constructor() {
         this.queryTermServices = []
         this.neighbourTermsTable = new NeighbourTermsTable()
         this.queryTermsList = new QueryTermsList(this)
+        this.queryComponent = new QueryComponent(this)
     }
 
     /**
@@ -803,7 +805,6 @@ cy.on('drag', 'node', evt => {
 
 
 const queryService: QueryService = new QueryService()
-const queryComponent: QueryComponent = new QueryComponent(queryService)
 
 cy.ready(() => {
     // queryService.queryTermServices[0].addNeighbourTerm('holaA')
