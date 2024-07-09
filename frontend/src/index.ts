@@ -745,7 +745,7 @@ class QueryComponent {
             const alphanumericRegex = /[a-zA-Z0-9]/
             if (alphanumericRegex.test(queryValue)) {   // Check if the value contains at least one alphanumeric character
                 this.queryService.setQuery(queryValue) // Send the query to the query service
-            } else {
+            } else if (queryValue !== '') {
                 alert("Please enter a valid query.")    // Alert the user if the query is invalid
             }
         })
