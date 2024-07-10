@@ -715,10 +715,12 @@ class ResultsList {
     
             // Create a title element
             const titleElement = document.createElement('span');
+            titleElement.className = 'title';
             titleElement.textContent = (i + 1) + ". " + documents[i].getTitle();
     
             // Create an abstract element
             const abstractElement = document.createElement('p');
+            abstractElement.className = 'abstract';
             abstractElement.textContent = documents[i].getAbstract();
     
             // Add a click event listener to the list item
