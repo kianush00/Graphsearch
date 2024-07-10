@@ -791,6 +791,7 @@ class QueryService {
         this.resultsList = new ResultsList()
         this.queryTermsList = new QueryTermsList(this)
         new QueryComponent(this)
+        new RerankComponent(this)
     }
 
     /**

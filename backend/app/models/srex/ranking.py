@@ -417,11 +417,11 @@ class Document(QueryTreeHandler):
     
 
     def get_sentence_by_position_in_doc(self, position: int) -> Sentence | None:
-        for sentence in self.__sentences:
-            if sentence.get_position_in_doc() == position:
-                return sentence
-        print(f'No sentence with position: {position}')
-        return None
+        try:
+            return self.__sentences[position]
+        except IndexError:
+            print(f'No sentence with position: {position}')
+            return None
     
 
     def get_list_of_query_trees_from_sentences(self) -> list[BinaryExpressionTree]:
@@ -582,11 +582,11 @@ class Ranking(QueryTreeHandler):
     
 
     def get_document_by_ranking_position(self, position: int) -> Document | None:
-        for document in self.__documents:
-            if document.get_ranking_position() == position:
-                return document
-        print(f'No document with ranking position: {position}')
-        return None
+        try:
+            return self.__documents[position-1]
+        except IndexError:
+            print(f'No document with ranking position: {position}')
+            return None
     
 
     def get_list_of_query_trees_from_documents(self) -> list[BinaryExpressionTree]:

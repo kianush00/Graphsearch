@@ -18,7 +18,7 @@ class QueryService:
         lema                     = True
         stem                     = False
         summarize                = 'mean'   # it can be: 'mean' or 'median'
-        nr_of_graph_terms        = 8
+        nr_of_graph_terms        = 10
         limit_distance           = 4 
         include_query_terms  = True
         

@@ -109,7 +109,7 @@ class BinaryTreeNode:
         #Checks if both nodes have a non-null graph attribute, to then join them and set 
         #them in the copy attribute
         if self.graph and external_peer_node.graph:
-            current_node_united_graph = self.graph.get_union_to_graph(external_peer_node.graph)
+            current_node_united_graph = self.graph.get_union_to_graph(external_peer_node.graph, True)
             self.graph = current_node_united_graph
         
         #Checks if both nodes have a left node, to continue the recursion
@@ -146,9 +146,9 @@ class BinaryTreeNode:
             if left_graph.subquery == right_graph.subquery:
                 graph = left_graph
             elif self.value == 'AND':
-                graph = left_graph.get_intersection_to_graph(right_graph)
+                graph = left_graph.get_intersection_to_graph(right_graph, False)
             elif self.value == 'OR':
-                graph = left_graph.get_union_to_graph(right_graph)
+                graph = left_graph.get_union_to_graph(right_graph, False)
             
             #The new graph inherits the same subquery from the self graph
             if self.graph:

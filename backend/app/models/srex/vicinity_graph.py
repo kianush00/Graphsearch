@@ -275,7 +275,8 @@ class VicinityGraph:
     
 
     def get_union_to_graph(self,
-            external_graph: 'VicinityGraph'
+            external_graph: 'VicinityGraph',
+            sum_ponderations: bool = True
             ) -> 'VicinityGraph':
         """
         Unites an external graph with the own graph and obtains a new graph
@@ -286,13 +287,17 @@ class VicinityGraph:
         ----------
         external_graph : VicinityGraph
             The external graph to be united
+        sum_ponderations : bool, optional
+            If True, then get the new ponderation of each intersected node by adding 
+            their values, else get the new ponderation by getting the max value 
+            between local and external ponderations.
 
         Returns
         -------
         united_graph : VicinityGraph
             The union between copy of the graph itself and an external graph
         """
-        united_graph = self.__get_calculation_of_intersected_terms(external_graph)
+        united_graph = self.__get_calculation_of_intersected_terms(external_graph, sum_ponderations)
         
         node_terms_from_copy_graph = united_graph.get_terms_from_nodes()
         node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
@@ -306,7 +311,8 @@ class VicinityGraph:
     
 
     def get_intersection_to_graph(self,
-            external_graph: 'VicinityGraph'
+            external_graph: 'VicinityGraph',
+            sum_ponderations: bool = True
             ) -> 'VicinityGraph':
         """
         Intersects an external graph with the own graph and obtains a new graph
@@ -317,6 +323,10 @@ class VicinityGraph:
         ----------
         external_graph : VicinityGraph
             The external graph to be intersected
+        sum_ponderations : bool, optional
+            If True, then get the new ponderation of each intersected node by adding 
+            their values, else get the new ponderation by getting the max value 
+            between local and external ponderations.
 
         Returns
         -------
@@ -324,7 +334,7 @@ class VicinityGraph:
             The intersection between copy of the graph itself and an external graph
         """
         #if the graph copy term is already in the external graph
-        intersected_graph = self.__get_calculation_of_intersected_terms(external_graph)
+        intersected_graph = self.__get_calculation_of_intersected_terms(external_graph, sum_ponderations)
 
         node_terms_from_copy_graph = intersected_graph.get_terms_from_nodes()
         node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
@@ -336,7 +346,8 @@ class VicinityGraph:
     
 
     def __get_calculation_of_intersected_terms(self,
-            external_graph: 'VicinityGraph'
+            external_graph: 'VicinityGraph',
+            sum_ponderations: bool = True
             ) -> 'VicinityGraph':
         """
         Calculates the sum of weights and the average distances of the nodes between 
@@ -346,6 +357,10 @@ class VicinityGraph:
         ----------
         external_graph : VicinityGraph
             The external graph to calculate the intersected terms
+        sum_ponderations : bool, optional
+            If True, then get the new ponderation of each intersected node by adding 
+            their values, else get the new ponderation by getting the max value 
+            between local and external ponderations.
 
         Returns
         -------
@@ -364,8 +379,11 @@ class VicinityGraph:
             ext_distance = node_from_ext_graph.get_distance()
             ext_pond = node_from_ext_graph.get_ponderation()
 
-            sum_of_ponds = copy_pond + ext_pond
-            average_distance = ((copy_distance * copy_pond) + (ext_distance * ext_pond)) / sum_of_ponds
+            if sum_ponderations:
+                sum_of_ponds = copy_pond + ext_pond
+            else:
+                sum_of_ponds = max(copy_pond, ext_pond)
+            average_distance = ((copy_distance * copy_pond) + (ext_distance * ext_pond)) / (copy_pond + ext_pond)
 
             # round ponderation and distance to six decimal places
             sum_of_ponds = round(sum_of_ponds, 6)
