@@ -72,3 +72,20 @@ class VectorUtils:
             cosine_of_angle = 0
         
         return cosine_of_angle
+    
+    
+    @staticmethod
+    def get_sorted_positions(values: list[float]) -> list[int]:
+        """
+        Sort the given list of values in descending order and return a list of their indices.
+        """
+        # Enumerate the original list to keep track of the original indices
+        indexed_values = list(enumerate(values))
+        
+        # Sort the list of tuples (index, value) by the value in descending order
+        sorted_indexed_values = sorted(indexed_values, key=lambda x: x[1], reverse=True)
+        
+        # Extract the sorted indices
+        sorted_positions = [index for index, value in sorted_indexed_values]
+        
+        return sorted_positions

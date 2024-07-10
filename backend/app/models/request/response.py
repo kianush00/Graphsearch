@@ -2,6 +2,9 @@ from pydantic import BaseModel
 from typing import List
 
 
+class RerankNewPositions(BaseModel):
+    ranking_new_positions: list[int]
+
 class PydanticNeighbourTerm(BaseModel):
     term: str
     ponderation: float

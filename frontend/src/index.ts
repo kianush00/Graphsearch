@@ -995,12 +995,12 @@ class RerankComponent {
         console.log(ranking)
 
         // Send the POST request
-        //const response = await HTTPRequestUtils.postData('rerank', ranking)
+        const response = await HTTPRequestUtils.postData('rerank', ranking)
         
-        //if (response) {
+        if (response) {
             // Handle the response accordingly
-
-        //}
+            console.log(response)
+        }
     }
 }
 
