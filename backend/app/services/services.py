@@ -52,7 +52,7 @@ class QueryService:
                     term=k, 
                     ponderation=v.get('ponderation'), 
                     distance=v.get('distance')
-                    ) for k, v in d.get_graph().get_viewable_graph_copy().get_graph_as_dict().items()
+                    ) for k, v in d.get_graph().get_graph_as_dict().items()
                 ]
                 _doc_id = d.get_doc_id()
                 _title = d.get_title()

@@ -304,6 +304,11 @@ interface ViewManager {
     removeViews(): void
 }
 
+interface NTermObject {
+    term: string;
+    ponderation: number;
+    distance: number;
+}
 
 /**
  * Represents a neighbour term in the graph.
@@ -315,10 +320,12 @@ class NeighbourTerm extends Term implements ViewManager {
     private hops: number = 0
     private nodePosition: Position = { x: 0, y: 0 }
     private edge: Edge | undefined
+    private ponderation: number
 
-    constructor(queryTerm: QueryTerm, value: string, hops: number) {
+    constructor(queryTerm: QueryTerm, value: string, hops: number, ponderation: number) {
         super(value)
         this.queryTerm = queryTerm
+        this.ponderation = ponderation
         this.setLabel(value)
         this.initializeHopsAndNodePosition(hops)
     }
@@ -342,6 +349,14 @@ class NeighbourTerm extends Term implements ViewManager {
 
     public getHops(): number {
         return this.hops
+    }
+
+    public toObject(): NTermObject {
+        return {
+            term: this.value,
+            ponderation: this.ponderation,
+            distance: this.hops
+        }
     }
 
     /**
@@ -432,6 +447,14 @@ class QueryTerm extends Term implements ViewManager {
         return this.neighbourTerms
     }
 
+    public setNeighbourTerms(neighbourTerms: NeighbourTerm[]): void {
+        this.neighbourTerms = neighbourTerms
+    }
+
+    public getNeighbourTermsAsObjects(): NTermObject[] {
+        return this.neighbourTerms.map(term => term.toObject())
+    }
+
     public getNeighbourTermById(id: string): NeighbourTerm | undefined {
         return this.neighbourTerms.find(p => p.getNode()?.getId() === id)
     }
@@ -447,17 +470,25 @@ class QueryTerm extends Term implements ViewManager {
 }
 
 
+interface DocumentObject {
+    doc_id: string;
+    title: string;
+    abstract: string;
+    neighbour_terms: NTermObject[];
+}
+
 class Document {
     private queryTerm: QueryTerm
     private id: string
     private title: string
     private abstract: string
 
-    constructor(queryTermValue: string, id: string, title: string, abstract: string) {
+    constructor(queryTermValue: string, id: string, title: string, abstract: string, response_neighbour_terms: any[]){
         this.queryTerm = new QueryTerm(queryTermValue)
         this.id = id
         this.title = title
         this.abstract = abstract
+        this.initializeNeighbourTermsFromResponse(response_neighbour_terms)
     }
 
     public getQueryTerm(): QueryTerm {
@@ -475,9 +506,30 @@ class Document {
     public getAbstract(): string {
         return this.abstract
     }
+
+    public toObject(): DocumentObject {
+        return {
+            doc_id: this.id,
+            title: this.title,
+            abstract: this.abstract,
+            neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
+        }
+    }
+
+    private initializeNeighbourTermsFromResponse(response_neighbour_terms: any[]): void {
+        const neighbourTerms = []
+        for (const termObject of response_neighbour_terms) {
+            neighbourTerms.push(new NeighbourTerm(this.queryTerm, termObject.term, termObject.distance, termObject.ponderation))
+        }
+        this.queryTerm.setNeighbourTerms(neighbourTerms)
+    }
     
 }
 
+interface RankingObject {
+    visible_neighbour_terms: NTermObject[];
+    documents: DocumentObject[];
+}
 
 class Ranking {
     private visibleQueryTerm: QueryTerm
@@ -503,6 +555,25 @@ class Ranking {
 
     public addDocument(document: Document): void {
         this.documents.push(document)
+    }
+
+    public reorderDocuments(positions: number[]): void {
+        if (positions.length !== this.documents.length) {
+            console.log('Positions array length must match documents array length.');
+            return
+        }
+        const reorderedDocuments = new Array(this.documents.length);
+        for (let i = 0; i < positions.length; i++) {
+            reorderedDocuments[i] = this.documents[positions[i]];
+        }
+        this.documents = reorderedDocuments;
+    }
+
+    public toObject(): RankingObject {
+        return {
+            visible_neighbour_terms: this.visibleQueryTerm.getNeighbourTermsAsObjects(),
+            documents: this.documents.map(document => document.toObject())
+        }
     }
 }
 
@@ -605,7 +676,7 @@ class QueryTermService {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            const neighbourTerm = new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, termObject.distance)
+            const neighbourTerm = new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, termObject.distance, termObject.ponderation)
 
             // Add the neighbour term to the QueryTerm's neighbour terms list
             this.addNeighbourTerm(neighbourTerm)
@@ -615,10 +686,11 @@ class QueryTermService {
     private generateRankingDocuments(result: any) {
         // Iterate over the documents in the result
         for (let documentObject of result['documents']) {
-            const id = documentObject['doc_id']
+            const doc_id = documentObject['doc_id']
             const title = documentObject['title']
             const abstract = documentObject['abstract']
-            const document = new Document(this.ranking.getVisibleQueryTerm().getValue(), id, title, abstract)
+            const response_neighbour_terms = documentObject['neighbour_terms']
+            const document = new Document(this.ranking.getVisibleQueryTerm().getValue(), doc_id, title, abstract, response_neighbour_terms)
             this.addDocument(document)
         }
     }
@@ -919,18 +991,16 @@ class RerankComponent {
 
     private async handleRerankClick() {
         // Create the data to be sent in the POST request
-        const data = {
-            // Add the necessary data structure here
-            message: "Rerank request"
-        }
+        const ranking = queryService.getActiveQueryTermService()?.getRanking().toObject()
+        console.log(ranking)
 
         // Send the POST request
-        const response = await HTTPRequestUtils.postData('rerank', data)
+        //const response = await HTTPRequestUtils.postData('rerank', ranking)
         
-        if (response) {
+        //if (response) {
             // Handle the response accordingly
 
-        }
+        //}
     }
 }
 
