@@ -118,6 +118,24 @@ class TextUtils {
         }
         return result
     }
+
+    public static separateBooleanQuery(query: string): string[] {
+        // Defines a regular expression to match boolean operators, parentheses, colons, and terms
+        const pattern = /\bAND\b|\bOR\b|\bNOT\b|\(|\)|\w+|:/g;
+        
+        // Finds all matches using the regular expression
+        let tokens = query.match(pattern);
+
+        // Defines a set of elements to remove
+        const elementsToRemove = new Set(['(', ')', 'AND', 'OR', 'NOT']);
+
+        // Filters the array, removing the specified elements
+        if (tokens !== null) {
+            return tokens.filter(item => !elementsToRemove.has(item));
+        }
+
+        return []
+    }
 }
 
 
@@ -910,7 +928,10 @@ class ResultsList {
     }
 
     private applyHighlighting(element: HTMLElement): void {
-        const queryTermsList = ['iot']
+        const queryTerms = this.activeTermService?.getVisibleQueryTerm().getValue() as string
+        const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
+        console.log("queryTerms: " + queryTerms)
+        console.log("queryTermsList: " + queryTermsList)
         const neighbourTermsList = this.activeTermService?.getVisibleQueryTerm().getNeighbourTermsValues() as string[]
         this.applyHighlightingToWords(element, queryTermsList, 'orange');
         this.applyHighlightingToWords(element, neighbourTermsList, 'yellow');
