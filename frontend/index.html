@@ -14,6 +14,17 @@
             <div id="rerank">
                 <button id="rerankButton">Rerank</button>
             </div>
+            <table id="neighboursTermsTable" class="termsTable">
+                <thead>
+                    <tr>
+                        <th>Neighbour Term</th>
+                        <th>Distance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be added here dynamically -->
+                </tbody>
+            </table>
         </div>
         <div id="rightContainer">
             <h3 style="text-align: center;">Query history</h3>
@@ -28,17 +39,6 @@
                     <!-- Rows will be added here dynamically -->
                 </ul>
             </div>
-            <table id="neighboursTermsTable" class="termsTable">
-                <thead>
-                    <tr>
-                        <th>Neighbour Term</th>
-                        <th>Distance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be added here dynamically -->
-                </tbody>
-            </table>
         </div>
     </div>
     <script src="dist/bundle.js"></script>

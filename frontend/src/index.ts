@@ -794,12 +794,10 @@ class ResultsList {
             const abstractElement = document.createElement('p');
             abstractElement.className = 'abstract';
             abstractElement.textContent = documents[i].getAbstract();
+            abstractElement.style.display = "none";
     
-            // Add a click event listener to the list item
-            listItem.addEventListener('click', () => {
-                // When the list item is clicked, opens the original URL document webpage in a new tab
-                window.open('https://ieeexplore.ieee.org/document/' + documents[i].getId(), '_blank');
-            });
+            // Add a click event listener and mouse event listeners to the title element
+            this.addEventListenersToTitleElement(titleElement, abstractElement)
     
             // Append the title and abstract to the list item
             listItem.appendChild(titleElement);
@@ -808,6 +806,27 @@ class ResultsList {
             // Append the list item to the dynamic list container
             this.dynamicList.appendChild(listItem);
         }
+    }
+
+    private addEventListenersToTitleElement(titleElement: HTMLSpanElement, abstractElement: HTMLParagraphElement): void {
+        titleElement.addEventListener('click', () => {
+            // When the list item is clicked, opens the original URL document webpage in a new tab
+            //window.open('https://ieeexplore.ieee.org/document/' + documents[i].getId(), '_blank');
+            if (abstractElement.style.display === "none") {
+                abstractElement.style.display = "";
+            } else {
+                abstractElement.style.display = "none";
+            }
+        });
+
+        titleElement.addEventListener("mouseenter", () => {
+            titleElement.style.color = "darkblue";
+            titleElement.style.cursor = "pointer";
+        });
+    
+        titleElement.addEventListener("mouseleave", () => {
+            titleElement.style.color = "black";
+        });
     }
     
 }
@@ -990,16 +1009,19 @@ class RerankComponent {
     }
 
     private async handleRerankClick() {
-        // Create the data to be sent in the POST request
-        const ranking = queryService.getActiveQueryTermService()?.getRanking().toObject()
-        console.log(ranking)
+        if (this.queryService.getActiveQueryTermService() !== undefined) {
+            // Create the data to be sent in the POST request
+            const ranking = this.queryService.getActiveQueryTermService()?.getRanking().toObject()
 
-        // Send the POST request
-        const response = await HTTPRequestUtils.postData('rerank', ranking)
-        
-        if (response) {
-            // Handle the response accordingly
-            console.log(response)
+            // Send the POST request
+            const response = await HTTPRequestUtils.postData('rerank', ranking)
+            
+            if (response) {
+                // Handle the response accordingly
+                const ranking_new_positions: number[] = response['ranking_new_positions'] 
+                this.queryService.getActiveQueryTermService()?.getRanking().reorderDocuments(ranking_new_positions)
+                this.queryService.updateResultsList()
+            }
         }
     }
 }
