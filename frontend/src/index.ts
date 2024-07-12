@@ -1,6 +1,14 @@
 import cytoscape from "cytoscape";
 
 class MathUtils {
+    /**
+     * Gets the distance between two nodes in a graph.
+     *
+     * @param node1 - The first node in the graph.
+     * @param node2 - The second node in the graph.
+     *
+     * @returns The distance between the two nodes, rounded to the nearest whole number.
+     */
     public static getDistanceBetweenNodes(node1: GraphNode, node2: GraphNode): number {
         const pos1 = node1.getPosition()
         const pos2 = node2.getPosition()
@@ -12,23 +20,59 @@ class MathUtils {
     }
 
 
-    public static calculateEuclideanDistance(value1: number, value2: number): number {
-        return Math.sqrt(Math.pow(value1, 2) + Math.pow(value2, 2))
+    /**
+     * Calculates the Euclidean distance between two points in a 2D space.
+     *
+     * @param dx - The difference in the x-coordinates of the two points.
+     * @param dy - The difference in the y-coordinates of the two points.
+     *
+     * @returns The Euclidean distance between the two points.
+     */
+    public static calculateEuclideanDistance(dx: number, dy: number): number {
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
 
+    /**
+     * A static method that generates a random position within a circular area.
+     * The position is represented as an object with x and y coordinates.
+     *
+     * @returns {Position} - An object representing the random position within the circular area.
+     * The object has properties x and y, representing the coordinates of the position.
+     *
+     * @example
+     * const randomPosition = MathUtils.getRandomAngularPosition();
+     * console.log(randomPosition); // Output: { x: 123.45, y: 67.89 }
+     */
     public static getRandomAngularPosition(): Position {
         const randomDistance = Math.random() * 200
         const randomAngle = Math.random() * 2 * Math.PI
         return this.getAngularPosition(randomAngle, randomDistance)
     }
 
-
+    /**
+     * A static method that generates a random angle in radians.
+     *
+     * @returns {number} A random angle between 0 (inclusive) and 2pi (exclusive).
+     */
     public static getRandomAngle(): number {
         return Math.random() * 2 * Math.PI
     }
 
-
+    /**
+     * A static method that calculates the position of a node in a circular layout based on an angle and distance.
+     *
+     * @param angle - The angle in radians from the center of the circle.
+     * @param distance - The distance from the center of the circle.
+     *
+     * @returns {Position} - An object containing the x and y coordinates of the node's position.
+     *
+     * @example
+     * const angle = Math.PI / 4;
+     * const distance = 100;
+     * const position = QueryTermService.getAngularPosition(angle, distance);
+     * console.log(position); // Output: { x: 70.71, y: 70.71 }
+     */
     public static getAngularPosition(angle: number, distance: number): Position {
         return {
             x: distance * Math.cos(angle),
@@ -36,7 +80,16 @@ class MathUtils {
         }
     }
 
-
+    /**
+     * A static method that generates a random angular position with a given distance.
+     *
+     * @param distance - The distance from the origin for the position.
+     * @returns {Position} - An object representing the position with x and y coordinates.
+     *
+     * @example
+     * const randomPosition = MathUtils.getRandomAngularPositionWithDistance(100);
+     * console.log(randomPosition); // Output: { x: 70.71, y: 70.71 }
+     */
     public static getRandomAngularPositionWithDistance(distance: number): Position {
         const randomAngle = Math.random() * 2 * Math.PI
         return this.getAngularPosition(randomAngle, distance)
@@ -45,6 +98,18 @@ class MathUtils {
 
 
 class TextUtils {
+    /**
+     * A static utility function to generate a random string of a specified length.
+     *
+     * @param chars - The length of the random string to be generated.
+     * @returns {string} - A random string of the specified length.
+     *
+     * @example
+     * ```typescript
+     * const randomString = getRandomString(10);
+     * console.log(randomString); // Output: "aRFd4fK2Qj"
+     * ```
+     */
     public static getRandomString(chars: number): string {
         const charsList = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         let result = ''
@@ -727,10 +792,17 @@ class NeighbourTermsTable {
     public setActiveTermService(queryTermService: QueryTermService): void {
         this.activeTermService = queryTermService
     }
-
+    
     /**
-     * Updates the table with the values of neighbour terms.
-     * Clears existing rows in the table before adding new ones.
+     * Updates the table with neighbour terms data.
+     * 
+     * This function retrieves the table body element, clears existing rows, and then iterates over the neighbour terms of the active query term.
+     * For each neighbour term, it creates a new row in the table and populates the cells with the term's value and hops.
+     * 
+     * @remarks
+     * This function assumes that the table body element is already present in the HTML structure.
+     * 
+     * @returns {void}
      */
     public updateTable(): void {
         // Get the table body element
@@ -771,6 +843,17 @@ class ResultsList {
         this.activeTermService = queryTermService
     }
 
+    /**
+     * Updates the list of query results with new documents.
+     * Clears existing list items in the results list before adding new ones.
+     * 
+     * @remarks
+     * This function is responsible for populating the results list with the documents retrieved from the active query term.
+     * It iterates over the documents in the ranking and creates list items for each one, including title and abstract elements.
+     * Click event listeners and mouse event listeners are added to the title elements to handle user interactions.
+     * 
+     * @returns {void}
+     */
     public updateList(): void {
         // Clear existing list items
         this.dynamicList.innerHTML = '';
@@ -782,19 +865,10 @@ class ResultsList {
         let documents = this.activeTermService.getRanking().getDocuments()
     
         for (let i = 0; i < documents.length; i++) {
-            // Create a new list item element
+            // Create a new list item, title and abstract elements
             const listItem = document.createElement('li');
-    
-            // Create a title element
-            const titleElement = document.createElement('span');
-            titleElement.className = 'title';
-            titleElement.textContent = (i + 1) + ". " + documents[i].getTitle();
-    
-            // Create an abstract element
-            const abstractElement = document.createElement('p');
-            abstractElement.className = 'abstract';
-            abstractElement.textContent = documents[i].getAbstract();
-            abstractElement.style.display = "none";
+            const titleElement = this.createTitleElement(i, documents[i])
+            const abstractElement = this.createAbstractElement(documents[i])
     
             // Add a click event listener and mouse event listeners to the title element
             this.addEventListenersToTitleElement(titleElement, abstractElement)
@@ -808,6 +882,52 @@ class ResultsList {
         }
     }
 
+    private createTitleElement(index: number, doc: Document): HTMLSpanElement {
+        const titleElement = document.createElement('span');
+        titleElement.className = 'title';
+        titleElement.textContent = (index + 1) + ". " + doc.getTitle();
+        // Highlight the title element with orange color for the query terms and yellow color for the neighbour terms
+        this.applyHighlighting(titleElement, ['iot'], 'orange');
+        this.applyHighlighting(titleElement, ['system', 'protocol', 'device'], 'yellow');
+        return titleElement;
+    }
+
+    private createAbstractElement(doc: Document): HTMLParagraphElement {
+        const abstractElement = document.createElement('p');
+        abstractElement.className = 'abstract';
+        abstractElement.textContent = doc.getAbstract();
+        this.applyHighlighting(abstractElement, ['iot'], 'orange');
+        this.applyHighlighting(abstractElement, ['system', 'protocol', 'device'], 'yellow');
+        abstractElement.style.display = "none";
+        return abstractElement;
+    }
+    
+    private applyHighlighting(element: HTMLElement, words: string[], color: string = 'orange'): void {
+        const originalText = element.innerHTML;
+        const highlightedText = this.highlightWords(originalText, words, color);
+        element.innerHTML = highlightedText;
+    }
+
+    private highlightWords(text: string, words: string[], color: string = 'orange'): string {
+        // Create a regular expression to find words that contain any substring of 'words'
+        const regex = new RegExp(words.join('|'), 'gi');
+    
+        // Split text by spaces and replace matching words
+        const highlightedText = text.split(' ').map(word => {
+            if (regex.test(word)) {
+                return `<span style="background-color: ${color};">${word}</span>`;
+            }
+            return word;
+        }).join(' ');
+    
+        return highlightedText;
+    }
+
+    /**
+     * This function adds a click event listener to the title element, which opens the original URL document webpage in a new tab when clicked.
+     * It also adds mouseenter and mouseleave event listeners to change the title's color and cursor style.
+     * @returns {void}
+    */
     private addEventListenersToTitleElement(titleElement: HTMLSpanElement, abstractElement: HTMLParagraphElement): void {
         titleElement.addEventListener('click', () => {
             // When the list item is clicked, opens the original URL document webpage in a new tab
@@ -1000,6 +1120,11 @@ class RerankComponent {
     private queryService: QueryService
     private button: HTMLButtonElement
 
+    /**
+     * Constructs a new instance of RerankComponent.
+     * 
+     * @param queryService - The QueryService instance to be used for reranking operations.
+     */
     constructor(queryService: QueryService) {
         this.queryService = queryService
         this.button = document.getElementById('rerankButton') as HTMLButtonElement
@@ -1008,6 +1133,15 @@ class RerankComponent {
         this.button.addEventListener('click', this.handleRerankClick.bind(this))
     }
 
+    /**
+     * Handles the reranking button click event.
+     * 
+     * If the active QueryTermService exists, it creates a ranking object,
+     * sends a POST request to the reranking endpoint, and handles the response.
+     * 
+     * @remarks
+     * This method is asynchronous and uses the await keyword to handle the POST request.
+     */
     private async handleRerankClick() {
         if (this.queryService.getActiveQueryTermService() !== undefined) {
             // Create the data to be sent in the POST request
