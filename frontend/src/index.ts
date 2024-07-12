@@ -416,6 +416,10 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.hops
     }
 
+    public getPonderation(): number {
+        return this.ponderation
+    }
+
     public toObject(): NTermObject {
         return {
             term: this.value,
@@ -514,6 +518,10 @@ class QueryTerm extends Term implements ViewManager {
 
     public setNeighbourTerms(neighbourTerms: NeighbourTerm[]): void {
         this.neighbourTerms = neighbourTerms
+    }
+
+    public getNeighbourTermsValues(): string[] {
+        return this.neighbourTerms.map(term => term.getValue())
     }
 
     public getNeighbourTermsAsObjects(): NTermObject[] {
@@ -887,8 +895,7 @@ class ResultsList {
         titleElement.className = 'title';
         titleElement.textContent = (index + 1) + ". " + doc.getTitle();
         // Highlight the title element with orange color for the query terms and yellow color for the neighbour terms
-        this.applyHighlighting(titleElement, ['iot'], 'orange');
-        this.applyHighlighting(titleElement, ['system', 'protocol', 'device'], 'yellow');
+        this.applyHighlighting(titleElement)
         return titleElement;
     }
 
@@ -896,13 +903,20 @@ class ResultsList {
         const abstractElement = document.createElement('p');
         abstractElement.className = 'abstract';
         abstractElement.textContent = doc.getAbstract();
-        this.applyHighlighting(abstractElement, ['iot'], 'orange');
-        this.applyHighlighting(abstractElement, ['system', 'protocol', 'device'], 'yellow');
+        // Highlight the abstract element with orange color for the query terms and yellow color for the neighbour terms
+        this.applyHighlighting(abstractElement)
         abstractElement.style.display = "none";
         return abstractElement;
     }
+
+    private applyHighlighting(element: HTMLElement): void {
+        const queryTermsList = ['iot']
+        const neighbourTermsList = this.activeTermService?.getVisibleQueryTerm().getNeighbourTermsValues() as string[]
+        this.applyHighlightingToWords(element, queryTermsList, 'orange');
+        this.applyHighlightingToWords(element, neighbourTermsList, 'yellow');
+    }
     
-    private applyHighlighting(element: HTMLElement, words: string[], color: string = 'orange'): void {
+    private applyHighlightingToWords(element: HTMLElement, words: string[], color: string = 'orange'): void {
         const originalText = element.innerHTML;
         const highlightedText = this.highlightWords(originalText, words, color);
         element.innerHTML = highlightedText;
