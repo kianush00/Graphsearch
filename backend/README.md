@@ -27,6 +27,24 @@ For running tests, execute the following command:
     python run_tests.py
 ```
 
+# Run Static Analysis
+
+Run the following command from the backend/ directory to launch analysis:
+
+### Windows
+
+```bash
+    sonar-scanner.bat -D"sonar.token=myAuthenticationToken"
+```
+
+### Linux / MacOS
+
+```bash
+    sonar-scanner -Dsonar.token=myAuthenticationToken
+```
+
+
+
 
 
 # Required Libraries

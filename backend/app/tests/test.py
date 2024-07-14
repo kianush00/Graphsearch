@@ -139,23 +139,8 @@ class TestSREX(unittest.TestCase):
 
     def test_union_between_graphs(self):
         # Initialize vicinity graphs
-        g1 = VicinityGraph(subquery="")
-        g2 = VicinityGraph(subquery="")
+        g1, g2 = self.__initialize_graph_1_and_2()
         r = VicinityGraph(subquery="")
-
-        # Build graph 1
-        g1_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([3,4]))
-        g1_node2 = VicinityNode(term='y', ponderation=3.0, distance=np.mean([1,3,5]))
-        g1.add_node(g1_node1)
-        g1.add_node(g1_node2)
-
-        # Build graph 2
-        g2_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
-        g2_node2 = VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        g2_node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        g2.add_node(g2_node1)
-        g2.add_node(g2_node2)
-        g2.add_node(g2_node3)
 
         # Build graph result to be evaluated
         r_node1 = VicinityNode(term='x', ponderation=4.0, distance=np.mean([1, 2, 3, 4]))
@@ -175,23 +160,8 @@ class TestSREX(unittest.TestCase):
 
     def test_intersection_between_graphs(self):
         # Initialize vicinity graphs
-        g1 = VicinityGraph(subquery="")
-        g2 = VicinityGraph(subquery="")
+        g1, g2 = self.__initialize_graph_1_and_2()
         r = VicinityGraph(subquery="")
-
-        # Build graph 1
-        g1_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([3,4]))
-        g1_node2 = VicinityNode(term='y', ponderation=3.0, distance=np.mean([1,3,5]))
-        g1.add_node(g1_node1)
-        g1.add_node(g1_node2)
-
-        # Build graph 2
-        g2_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
-        g2_node2 = VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        g2_node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        g2.add_node(g2_node1)
-        g2.add_node(g2_node2)
-        g2.add_node(g2_node3)
 
         # Build graph result to be evaluated
         r_node1 = VicinityNode(term='x', ponderation=4.0, distance=np.mean([1, 2, 3, 4]))
@@ -470,17 +440,8 @@ class TestSREX(unittest.TestCase):
         query = 'driven OR adopt AND store'
         ranking = self.__get_initialized_ranking_initialized_graph_values_01(
             self.__get_ranking_parameters_default_config, query, [article_dict], stop_words)
-        ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
-        # Generate nodes in all graphs in leaf nodes of the query expression tree
-        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
-        sentence.generate_nodes_in_all_leaf_graphs()
-
-        # Get vicinity graphs from the sentence, as dicts
-        query_terms = sentence.get_query_tree().get_query_terms_str_list_with_underscores()
-        result1 = sentence.get_graph_by_subquery(query_terms[0]).get_graph_as_dict()
-        result2 = sentence.get_graph_by_subquery(query_terms[1]).get_graph_as_dict()
-        result3 = sentence.get_graph_by_subquery(query_terms[2]).get_graph_as_dict()
+        result1, result2, result3 = self.__get_results_from_generate_nodes_in_all_leaf_graphs(ranking)
 
         # Assert the result matches the expected output
         self.assertEqual(result1, expected_result1)
@@ -504,17 +465,8 @@ class TestSREX(unittest.TestCase):
         query = 'driven OR adopt AND store'
         ranking = self.__get_initialized_ranking_initialized_graph_values_01(
             self.__get_ranking_parameters_config_03, query, [article_dict], stop_words)
-        ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
-        # Generate nodes in all graphs in leaf nodes of the query expression tree
-        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
-        sentence.generate_nodes_in_all_leaf_graphs()
-
-        # Get vicinity graphs from the sentence, as dicts
-        query_terms = sentence.get_query_tree().get_query_terms_str_list_with_underscores()
-        result1 = sentence.get_graph_by_subquery(query_terms[0]).get_graph_as_dict()
-        result2 = sentence.get_graph_by_subquery(query_terms[1]).get_graph_as_dict()
-        result3 = sentence.get_graph_by_subquery(query_terms[2]).get_graph_as_dict()
+        result1, result2, result3 = self.__get_results_from_generate_nodes_in_all_leaf_graphs(ranking)
 
         # Assert the result matches the expected output
         self.assertEqual(result1, expected_result1)
@@ -826,6 +778,44 @@ class TestSREX(unittest.TestCase):
         b_expr_tree = BinaryExpressionTree(query)
         b_expr_tree.do_text_transformations_to_query_terms(stop_words, lema, stem)
         return b_expr_tree
+    
+    
+    def __initialize_graph_1_and_2(self) -> tuple[VicinityGraph, VicinityGraph]:
+        # Initialize vicinity graphs
+        g1 = VicinityGraph(subquery="")
+        g2 = VicinityGraph(subquery="")
+
+        # Build graph 1
+        g1_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([3,4]))
+        g1_node2 = VicinityNode(term='y', ponderation=3.0, distance=np.mean([1,3,5]))
+        g1.add_node(g1_node1)
+        g1.add_node(g1_node2)
+
+        # Build graph 2
+        g2_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
+        g2_node2 = VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        g2_node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        g2.add_node(g2_node1)
+        g2.add_node(g2_node2)
+        g2.add_node(g2_node3)
+        
+        return g1, g2
+    
+    
+    def __get_results_from_generate_nodes_in_all_leaf_graphs(self, ranking: Ranking) -> tuple[dict, dict, dict]:
+        ranking.calculate_vicinity_matrix_of_sentences_by_doc()
+        
+        # Generate nodes in all graphs in leaf nodes of the query expression tree
+        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
+        sentence.generate_nodes_in_all_leaf_graphs()
+
+        # Get vicinity graphs from the sentence, as dicts
+        query_terms = sentence.get_query_tree().get_query_terms_str_list_with_underscores()
+        result1 = sentence.get_graph_by_subquery(query_terms[0]).get_graph_as_dict()
+        result2 = sentence.get_graph_by_subquery(query_terms[1]).get_graph_as_dict()
+        result3 = sentence.get_graph_by_subquery(query_terms[2]).get_graph_as_dict()
+        
+        return result1, result2, result3
 
 
 

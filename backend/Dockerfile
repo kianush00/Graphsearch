@@ -11,10 +11,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code to the working directory
-COPY . .
+COPY ./app /app
+COPY ./run_api.py /run_api.py
 
 # Expose the port the app runs on
 EXPOSE 8080
 
 # Define the command to run the app using uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8080"]
+CMD ["python", "run_api.py"]

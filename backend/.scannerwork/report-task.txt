@@ -1,0 +1,6 @@
+projectKey=Graphsearch
+serverUrl=http://localhost:9000
+serverVersion=10.6.0.92116
+dashboardUrl=http://localhost:9000/dashboard?id=Graphsearch
+ceTaskId=a05cfc18-3170-4826-af5f-5642d2e613f2
+ceTaskUrl=http://localhost:9000/api/ce/task?id=a05cfc18-3170-4826-af5f-5642d2e613f2
