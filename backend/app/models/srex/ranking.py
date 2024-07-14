@@ -73,7 +73,7 @@ class Sentence(QueryTreeHandler):
 
 
     def do_text_transformations_if_any_query_term(self,
-            stop_words_list: list[str], 
+            stop_words: tuple[str] = (), 
             lema: bool = True, 
             stem: bool = False
             ) -> None:
@@ -83,7 +83,7 @@ class Sentence(QueryTreeHandler):
 
         Parameters
         ----------
-        stop_words_list : list[str]
+        stop_words : tuple[str]
             List of stop words to be removed from the sentence
         lema : bool, optional
             If True, lematization is applied
@@ -93,7 +93,7 @@ class Sentence(QueryTreeHandler):
         # Sentence query graphs is re-initialized
         self.get_query_tree().remove_graphs_for_each_node()
         
-        transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words_list, lema, stem)
+        transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words, lema, stem)
         query_terms_with_underscores = self.get_query_tree().get_query_terms_str_list_with_underscores()
         query_terms_with_spaces = [term.replace('_', ' ') for term in query_terms_with_underscores]
 
@@ -437,9 +437,9 @@ class Document(QueryTreeHandler):
     
 
     def do_text_transformations_by_sentence(self,
-            stop_words_list: list[str], 
-            lema: bool,
-            stem: bool
+            stop_words: tuple[str] = (), 
+            lema: bool = True,
+            stem: bool = False
             ) -> None:
         """
         Apply some text transformations to each sentence of the document 
@@ -447,7 +447,7 @@ class Document(QueryTreeHandler):
 
         Parameters
         ----------
-        stop_words_list : list[str]
+        stop_words : tuple[str]
             List of stop words to be removed from the sentence
         lema : bool
             If True, lematization is applied
@@ -458,7 +458,7 @@ class Document(QueryTreeHandler):
         self.get_query_tree().remove_graphs_for_each_node()
         
         for sentence in self.__sentences:
-            sentence.do_text_transformations_if_any_query_term(stop_words_list, lema, stem)
+            sentence.do_text_transformations_if_any_query_term(stop_words, lema, stem)
 
 
     def generate_graph_nodes_of_doc_and_sentences(self) -> None:
@@ -536,15 +536,13 @@ class Document(QueryTreeHandler):
 
 
 class TextTransformationsConfig:
-    def __init__(self, stop_words: list[str] = None, lemmatization: bool = True, stemming: bool = False):
-        if stop_words is None:
-            stop_words = []
+    def __init__(self, stop_words: tuple[str] = (), lemmatization: bool = True, stemming: bool = False):
         self.__stop_words = stop_words
         self.__lemmatization = lemmatization
         self.__stemming = stemming
     
 
-    def get_transformations_params(self) -> tuple[list[str], bool, bool]:
+    def get_transformations_params(self) -> tuple[tuple[str], bool, bool]:
         return self.__stop_words, self.__lemmatization, self.__stemming
 
 
@@ -552,7 +550,7 @@ class TextTransformationsConfig:
 class Ranking(QueryTreeHandler):
     
     def __init__(self, query_text: str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
-                 stop_words: list[str] = [], lemmatization: bool = True, stemming: str = False):
+                 stop_words: tuple[str] = (), lemmatization: bool = True, stemming: str = False):
         self.__validate_alnum_query_text_not_empty(query_text)
         self.__initialize_binary_expression_tree(query_text)
         self.__nr_search_results = nr_search_results

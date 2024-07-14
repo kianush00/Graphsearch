@@ -735,7 +735,7 @@ class TestSREX(unittest.TestCase):
 
     ############## PRIVATE FUNCTIONS ##############
 
-    def __get_initialized_ranking_config_01(self, test_data, stop_words: list[str] = []) -> Ranking:
+    def __get_initialized_ranking_config_01(self, test_data, stop_words: tuple[str] = []) -> Ranking:
         text1 = test_data.get('text1')
         text2 = test_data.get('text2')
         text3 = test_data.get('text3')
@@ -755,7 +755,7 @@ class TestSREX(unittest.TestCase):
     
 
     def __get_initialized_ranking_generated_all_graphs_01(
-            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: list[str] = []) -> Ranking:
+            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: tuple[str] = []) -> Ranking:
         # Initialize Ranking object and generate all graphs
         ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = method_to_call()
         
@@ -767,7 +767,7 @@ class TestSREX(unittest.TestCase):
     
 
     def __get_initialized_ranking_initialized_graph_values_01(
-            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: list[str] = []) -> Ranking:
+            self, method_to_call, query: str, articles_dicts_list: list[dict[str, str]], stop_words: tuple[str] = []) -> Ranking:
         # Initialize Ranking object
         ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = method_to_call()
 

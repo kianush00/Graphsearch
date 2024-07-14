@@ -437,7 +437,7 @@ class BinaryExpressionTree:
     
 
     def do_text_transformations_to_query_terms(self, 
-            stop_words_list: list[str] = [], 
+            stop_words: tuple[str] = (), 
             lema: bool = True, 
             stem: bool = False
             ) -> None:
@@ -446,7 +446,7 @@ class BinaryExpressionTree:
 
         Parameters
         ----------
-        stop_words_list : list[str], optional
+        stop_words : tuple[str], optional
             List of stop words to be removed from the terms
         lema : bool, optional
             If True, lemmatization is applied
@@ -455,7 +455,7 @@ class BinaryExpressionTree:
         """
         def transform_node_if_leaf(node: BinaryTreeNode) -> None:
             if node.is_leaf():
-                node.value = TextUtils.get_transformed_text_if_it_has_underscores(node.value, stop_words_list, 
+                node.value = TextUtils.get_transformed_text_if_it_has_underscores(node.value, stop_words, 
                                                                                   lema, stem)
             else:
                 transform_node_if_leaf(node.left)

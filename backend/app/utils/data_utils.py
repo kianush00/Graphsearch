@@ -7,7 +7,7 @@ import json
 class DataUtils:
 
     @staticmethod
-    def load_stopwords() -> list[str]:
+    def load_stopwords() -> tuple[str]:
         current_directory = os.path.dirname(__file__)
         data_file_path = os.path.join(current_directory, '..', 'data', 'stopwords_data.json')
         
@@ -17,7 +17,7 @@ class DataUtils:
 
         with open(data_file_path) as f:
             stopwords_data = json.load(f)
-        stop_words_list = stopwords_data.get('words')
+        stop_words_list = tuple(stopwords_data.get('words'))
         return stop_words_list
     
     

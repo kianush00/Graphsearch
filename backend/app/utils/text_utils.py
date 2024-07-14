@@ -9,7 +9,7 @@ class TextUtils:
     @staticmethod
     def get_transformed_text_if_it_has_underscores(
             text_with_underscores: str,
-            stop_words_list: list[str] = [], 
+            stop_words: tuple[str] = (), 
             lema: bool = True, 
             stem: bool = False
             ) -> str:
@@ -22,7 +22,7 @@ class TextUtils:
         ----------
         text_with_underscores : str
             Text with underscores to be transformed
-        stop_words_list : list[str]
+        stop_words : tuple[str]
             List of stop words to be removed from the text provided
         lema : bool, optional
             If True, lemmatization is applied
@@ -36,7 +36,7 @@ class TextUtils:
         """
         text_with_underscores = text_with_underscores.replace('_', ' ')
         transformed_text = TextUtils.get_transformed_text(text_with_underscores, 
-                                                          stop_words_list, lema, stem)
+                                                          stop_words, lema, stem)
         transformed_text = transformed_text.replace(' ', '_')
         
         return transformed_text
@@ -45,7 +45,7 @@ class TextUtils:
     @staticmethod
     def get_transformed_text(
             text: str,
-            stop_words: list[str] = [], 
+            stop_words: tuple[str] = (), 
             lema: bool = True, 
             stem: bool = False
             ) -> str:
@@ -57,7 +57,7 @@ class TextUtils:
         ----------
         text : str
             Text to be transformed
-        stop_words : list[str]
+        stop_words : tuple[str]
             List of stop words to be removed from the text provided
         lema : bool, optional
             If True, lemmatization is applied
@@ -107,15 +107,12 @@ class TextUtils:
     @staticmethod
     def remove_stopwords(
         tokens: list[str], 
-        stop_words: list[str]
+        stop_words: tuple[str]
         ) -> list[str]:
         """
         Remove specified stop words from a list of tokens.
         """
-        if len(stop_words) > 0:
-            filtered_words = [word for word in tokens if word not in stop_words]
-        else:
-            filtered_words = tokens
+        filtered_words = [word for word in tokens if word not in stop_words]
         return filtered_words
     
 
