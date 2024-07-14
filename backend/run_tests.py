@@ -12,7 +12,7 @@ def run_tests():
     # Discover and execute all tests
     loader = unittest.TestLoader()
     tests = loader.discover(start_dir=os.path.join(app_path, 'tests'))
-    test_runner = unittest.TextTestRunner()
+    test_runner = unittest.TextTestRunner(verbosity=2)  # Set verbosity level to 2
     result = test_runner.run(tests)
     
     # Return exit code
