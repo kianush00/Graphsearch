@@ -1,8 +1,6 @@
 import unittest
 from models.srex.binary_expression_tree import BinaryExpressionTree
-#from models.srex.binary_expression_tree import BinaryTreeNode
 from models.srex.ranking import Ranking
-#from models.srex.ranking import Document
 from models.srex.ranking import Sentence
 from models.srex.vicinity_graph import VicinityGraph
 from models.srex.vicinity_graph import VicinityNode

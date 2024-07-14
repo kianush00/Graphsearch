@@ -290,7 +290,7 @@ class GraphNode {
     public toObject(): { data: NodeData; position: Position } {
         return {
             data: {
-                id: this.id,
+                id: this.getId(),
                 label: this.label,
             },
             position: this.position,
@@ -504,10 +504,6 @@ class NeighbourTerm extends Term implements ViewManager {
 class QueryTerm extends Term implements ViewManager {
     protected node: CentralNode | undefined
     private neighbourTerms: NeighbourTerm[] = []
-
-    constructor(value: string) {
-        super(value)
-    }
 
     /**
      * Displays the views of the query term and its associated neighbour terms in the graph.
@@ -930,8 +926,6 @@ class ResultsList {
     private applyHighlighting(element: HTMLElement): void {
         const queryTerms = this.activeTermService?.getVisibleQueryTerm().getValue() as string
         const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
-        console.log("queryTerms: " + queryTerms)
-        console.log("queryTermsList: " + queryTermsList)
         const neighbourTermsList = this.activeTermService?.getVisibleQueryTerm().getNeighbourTermsValues() as string[]
         this.applyHighlightingToWords(element, queryTermsList, 'orange');
         this.applyHighlightingToWords(element, neighbourTermsList, 'yellow');
@@ -1038,8 +1032,6 @@ class QueryService {
         this.neighbourTermsTable = new NeighbourTermsTable()
         this.resultsList = new ResultsList()
         this.queryTermsList = new QueryTermsList(this)
-        new QueryComponent(this)
-        new RerankComponent(this)
     }
 
     /**
@@ -1244,7 +1236,11 @@ cy.on('drag', 'node', evt => {
     queryService.getActiveQueryTermService()?.nodeDragged(evt.target.id(), evt.target.position())
 })
 
+
 const queryService: QueryService = new QueryService()
+const queryComponent: QueryComponent = new QueryComponent(queryService)
+const rerankComponent: RerankComponent = new RerankComponent(queryService)
+
 
 cy.ready(() => {
     // queryService.queryTermServices[0].addNeighbourTerm('holaA')

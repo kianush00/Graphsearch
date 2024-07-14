@@ -12,9 +12,6 @@ stop_words_list = DataUtils.load_stopwords()
 
 
 class QueryService:
-    def __init__(self):
-        pass
-
     def process_query(self, query_text: str) -> PydanticRanking:
         nr_search_results        = 10
         ranking_weight_type      = 'linear' # it can be: 'none', 'linear' or 'inverse'

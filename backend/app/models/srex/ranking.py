@@ -45,7 +45,7 @@ class Sentence(QueryTreeHandler):
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__preprocessed_text: str = ""
-        self.__vicinity_matrix: dict[str, dict[str, list[float]]] = {}
+        self.__vicinity_matrix: dict[str, dict[str, list[int]]] = {}
 
 
     def get_raw_text(self) -> str:
@@ -114,30 +114,34 @@ class Sentence(QueryTreeHandler):
         'v_term_2': {'query_term_1': [0.0, 0.0, 0.9, 0.0], 'query_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
         """
         term_positions_dict = self.get_term_positions_dict(self.__preprocessed_text)
-        query_term_positions_dict = self.get_query_term_positions_dict(term_positions_dict, 
-                                                            self.get_query_tree().get_query_terms_str_list_with_underscores())
-        vicinity_matrix = {}  # Create the empty dictionary
+        query_terms = self.get_query_tree().get_query_terms_str_list_with_underscores()
+        query_term_positions_dict = self.get_query_term_positions_dict(term_positions_dict, query_terms)
+        vicinity_matrix = {}   # Create the empty dictionary
+        
+        limit_distance = self.get_graph().get_config().get_limit_distance()
+        include_query_terms = self.get_graph().get_config().get_include_query_terms()
 
         # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the query_terms
         # and return a list of these terms and their corresponding distances
         for term, term_positions in term_positions_dict.items():
             #Avoid comparing the query term with itself (if bool false)
-            if((term not in query_term_positions_dict.keys()) or (self.get_graph().get_config().get_include_query_terms())): 
-                # Calculate the distance between the query term and the rest of terms
-                first_one = True
-                # Iterate query terms that do not contain spaces
-                for query_term, query_positions in query_term_positions_dict.items():
-                    if query_term != term:
-                        limit_distance = self.get_graph().get_config().get_limit_distance()
-                        freq_neighborhood_positions = self.calculate_distances_between_term_positions(query_positions, 
-                                                                                                       term_positions,
-                                                                                                       limit_distance)
+            if term in query_term_positions_dict and not include_query_terms:
+                continue
 
-                        if (any(frq > 0 for frq in freq_neighborhood_positions)):
-                            if (first_one):
-                                vicinity_matrix[term] = {}
-                                first_one = False
-                            vicinity_matrix[term][query_term] = freq_neighborhood_positions
+            term_vicinity = {}
+            # Calculate the distance between the query term and the rest of terms
+            for query_term, query_positions in query_term_positions_dict.items():
+                if query_term == term:
+                    continue
+
+                freq_neighborhood_positions = self.calculate_distances_between_term_positions(
+                    query_positions, term_positions, limit_distance)
+
+                if any(freq > 0 for freq in freq_neighborhood_positions):
+                    term_vicinity[query_term] = freq_neighborhood_positions
+
+            if term_vicinity:
+                vicinity_matrix[term] = term_vicinity
 
         self.__vicinity_matrix = vicinity_matrix
     
@@ -532,7 +536,9 @@ class Document(QueryTreeHandler):
 
 
 class TextTransformationsConfig:
-    def __init__(self, stop_words: list[str] = [], lemmatization: bool = True, stemming: bool = False):
+    def __init__(self, stop_words: list[str] = None, lemmatization: bool = True, stemming: bool = False):
+        if stop_words is None:
+            stop_words = []
         self.__stop_words = stop_words
         self.__lemmatization = lemmatization
         self.__stemming = stemming

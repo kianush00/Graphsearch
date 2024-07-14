@@ -12,8 +12,8 @@ def run_tests():
     # Discover and execute all tests
     loader = unittest.TestLoader()
     tests = loader.discover(start_dir=os.path.join(app_path, 'tests'))
-    testRunner = unittest.TextTestRunner()
-    result = testRunner.run(tests)
+    test_runner = unittest.TextTestRunner()
+    result = test_runner.run(tests)
     
     # Return exit code
     if result.wasSuccessful():
