@@ -78,6 +78,16 @@ class VectorUtils:
     def get_sorted_positions(values: list[float]) -> list[int]:
         """
         Sort the given list of values in descending order and return a list of their indices.
+
+        Parameters:
+        ----------
+        values : list[float]
+            A list of float values to be sorted.
+
+        Returns:
+        -------
+        list[int]
+            A list of integers representing the sorted indices of the input list.
         """
         # Enumerate the original list to keep track of the original indices
         indexed_values = list(enumerate(values))

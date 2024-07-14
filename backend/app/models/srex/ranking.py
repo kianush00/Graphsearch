@@ -17,22 +17,55 @@ from utils.text_utils import TextUtils
 
 class QueryTreeHandler:
     def __init__(self, query_tree):
+        """
+        Initialize a new QueryTreeHandler object.
+
+        Parameters:
+        query_tree (BinaryExpressionTree): The query tree for the handler.
+        """
         self.__query_tree: BinaryExpressionTree = query_tree
 
 
     def get_query_tree(self) -> BinaryExpressionTree:
+        """
+        Retrieve the query tree associated with the handler.
+
+        Returns:
+        BinaryExpressionTree: The query tree associated with the handler.
+        """
         return self.__query_tree
-    
+
 
     def set_query_tree(self, query_tree) -> None:
+        """
+        Set a new query tree for the handler.
+
+        Parameters:
+        query_tree (BinaryExpressionTree): The new query tree to be associated with the handler.
+        """
         self.__query_tree = query_tree
 
 
     def get_graph(self) -> VicinityGraph | None:
+        """
+        Retrieve the graph associated with the query tree of the handler.
+
+        Returns:
+        VicinityGraph | None: The graph associated with the query tree, or None if the graph does not exist.
+        """
         return self.__query_tree.get_graph()
 
 
     def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
+        """
+        Retrieve the graph associated with a specific subquery within the query tree of the handler.
+
+        Parameters:
+        query (str): The subquery for which to retrieve the graph.
+
+        Returns:
+        VicinityGraph | None: The graph associated with the subquery, or None if the graph does not exist.
+        """
         return self.__query_tree.get_graph_by_subquery(query)
 
 
@@ -40,6 +73,15 @@ class QueryTreeHandler:
 class Sentence(QueryTreeHandler):
     
     def __init__(self, raw_text: str, query: BinaryExpressionTree, position_in_doc: int = 0, weight: float = 1.0):
+        """
+        Initialize a new Sentence object.
+
+        Parameters:
+        raw_text (str): The raw text of the sentence.
+        query (BinaryExpressionTree): The query tree associated with the sentence.
+        position_in_doc (int, optional): The position of the sentence in the document. Default is 0.
+        weight (float, optional): The weight of the sentence in the ranking. Default is 1.0.
+        """
         super().__init__(query_tree=query)
         self.__raw_text = raw_text
         self.__position_in_doc = position_in_doc
@@ -49,26 +91,66 @@ class Sentence(QueryTreeHandler):
 
 
     def get_raw_text(self) -> str:
+        """
+        Retrieve the raw text of the current sentence.
+
+        Returns:
+        str: The raw text of the sentence.
+        """
         return self.__raw_text
 
 
     def get_position_in_doc(self) -> int:
+        """
+        Retrieve the position of the sentence in the document.
+
+        Returns:
+        int: The position of the sentence in the document. The position index is 0-based.
+        """
         return self.__position_in_doc
     
 
     def get_weight(self) -> float:
+        """
+        Retrieve the weight of the current sentence, obtained by its document position in the ranking.
+
+        Returns:
+        float: The weight of the sentence.
+        """
         return self.__weight
 
 
     def get_preprocessed_text(self) -> str:
+        """
+        Retrieve the preprocessed text after applying text transformations.
+
+        Returns:
+        str: The preprocessed text after applying text transformations.
+        """
         return self.__preprocessed_text
     
 
     def set_preprocessed_text(self, value: str) -> None:
+        """
+        Set the preprocessed text for the current object.
+
+        Parameters:
+        value (str): The preprocessed text to be set. This text should be ready for further processing.
+        """
         self.__preprocessed_text = value
     
 
     def get_vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
+        """
+        Retrieve the vicinity matrix of the current Document object. The vicinity matrix is a dictionary 
+        where the keys are the terms and the values are dictionaries. Each inner dictionary contains 
+        the frequencies of the term by distance from the query term.
+
+        Returns:
+        dict[str, dict[str, list[float]]]: The vicinity matrix of the Document object. The outer dictionary 
+        has terms as keys, and the inner dictionaries have distances as keys and lists of frequencies 
+        as values.
+        """
         return self.__vicinity_matrix
 
 
@@ -160,7 +242,10 @@ class Sentence(QueryTreeHandler):
 
     def generate_nodes_in_all_leaf_graphs(self):
         """
-        Generate nodes to the graphs associated with the leaves from the query tree
+        Generate nodes to the graphs associated with the leaves from the query tree.\n
+        This function iterates over all the leaf nodes in the query tree and calls the 
+        `generate_nodes_in_leaf_graph` method for each leaf node. This method is responsible 
+        for generating nodes to the graph associated with the leaf node.
         """
         for leaf_node in self.get_query_tree().get_query_terms_as_leaves():
             self.generate_nodes_in_leaf_graph(leaf_node)
@@ -377,6 +462,17 @@ class Document(QueryTreeHandler):
     
     def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", 
                  doc_id: str = "1", weight: float = 1.0, ranking_position: int = 1):
+        """
+        Initialize a new Document object.
+
+        Parameters:
+        query (BinaryExpressionTree): The query tree for the document.
+        abstract (str, optional): The abstract of the document. Default is an empty string.
+        title (str, optional): The title of the document. Default is an empty string.
+        doc_id (str, optional): The unique identifier of the document. Default is "1".
+        weight (float, optional): The weight of the document in the ranking. Default is 1.0.
+        ranking_position (int, optional): The position of the document in the ranking. Default is 1.
+        """
         super().__init__(query_tree=query)
         self.__abstract = abstract
         self.__title = title
@@ -401,18 +497,48 @@ class Document(QueryTreeHandler):
     
 
     def get_sentences(self) -> list[Sentence]:
+        """
+        Retrieve a list of Sentence objects from the current Document object.
+
+        Returns:
+        list[Sentence]: A list of Sentence objects representing the sentences in the document.
+        """
         return self.__sentences
     
 
     def get_weight(self) -> float:
+        """
+        Retrieve the weight of the current document, obtained by its position in the ranking.
+
+        Returns:
+        float: The weight of the document.
+        """
         return self.__weight
-    
+
 
     def get_ranking_position(self) -> int:
+        """
+        Retrieve the ranking position of the current document.
+
+        Parameters:
+        None
+
+        Returns:
+        int: The ranking position of the document. The position index is 1-based.
+        """
         return self.__ranking_position
     
 
     def get_sentence_by_raw_text(self, text: str) -> Sentence | None:
+        """
+        Retrieve a Sentence object from the current Document object based on its raw text.
+
+        Parameters:
+        text (str): The raw text of the sentence to be retrieved.
+
+        Returns:
+        Sentence | None: The Sentence object with the specified raw text, or None if no such sentence is found.
+        """
         for sentence in self.__sentences:
             if sentence.get_raw_text() == text:
                 return sentence
@@ -421,6 +547,15 @@ class Document(QueryTreeHandler):
     
 
     def get_sentence_by_position_in_doc(self, position: int) -> Sentence | None:
+        """
+        Retrieve a Sentence object from the current Document object based on its position in the document.
+
+        Parameters:
+        position (int): The position of the sentence to be retrieved. The position index is 0-based.
+
+        Returns:
+        Sentence | None: The Sentence object at the specified position, or None if no such sentence is found.
+        """
         try:
             return self.__sentences[position]
         except IndexError:
@@ -430,7 +565,11 @@ class Document(QueryTreeHandler):
 
     def get_list_of_query_trees_from_sentences(self) -> list[BinaryExpressionTree]:
         """
-        Returns a list of query trees from the sentences of the current document.
+        Retrieves a list of query trees from the sentences of the current document.
+
+        Returns:
+        list[BinaryExpressionTree]: A list of BinaryExpressionTree objects representing 
+        the query trees of the sentences in the document.
         """
         list_of_query_trees = [sentence.get_query_tree() for sentence in self.__sentences]
         return list_of_query_trees
@@ -537,12 +676,26 @@ class Document(QueryTreeHandler):
 
 class TextTransformationsConfig:
     def __init__(self, stop_words: tuple[str] = (), lemmatization: bool = True, stemming: bool = False):
+        """
+        Initialize a new TextTransformationsConfig object.
+
+        Parameters:
+        stop_words (tuple[str], optional): A tuple of stop words to be excluded from the text transformations. Default is an empty tuple.
+        lemmatization (bool, optional): A boolean indicating whether lemmatization should be applied to the text transformations. Default is True.
+        stemming (bool, optional): A string indicating the type of stemming to be applied to the text transformations. Default is False.
+        """
         self.__stop_words = stop_words
         self.__lemmatization = lemmatization
         self.__stemming = stemming
     
 
     def get_transformations_params(self) -> tuple[tuple[str], bool, bool]:
+        """
+        Returns the stop words, lemmatization flag, and stemming flag used for text transformations.
+
+        Returns:
+        tuple[tuple[str], bool, bool]: A tuple containing the stop words, lemmatization flag, and stemming flag.
+        """
         return self.__stop_words, self.__lemmatization, self.__stemming
 
 
@@ -551,6 +704,17 @@ class Ranking(QueryTreeHandler):
     
     def __init__(self, query_text: str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
                  stop_words: tuple[str] = (), lemmatization: bool = True, stemming: str = False):
+        """
+        Initialize a new Ranking object.
+        
+        Parameters:
+        query_text (str): The query text for the ranking.
+        nr_search_results (int, optional): The number of search results to retrieve from the ranking. Default is 10.
+        ranking_weight_type (str, optional): The type of weighting to be applied to the ranking. It can be 'none', 'linear' or 'inverse'. Default is 'linear'.
+        stop_words (tuple[str], optional): A tuple of stop words to be excluded from the ranking. Default is an empty tuple.
+        lemmatization (bool, optional): A boolean indicating whether lemmatization should be applied to the ranking. Default is True.
+        stemming (str, optional): A string indicating the type of stemming to be applied to the ranking. Default is False.
+        """
         self.__validate_alnum_query_text_not_empty(query_text)
         self.__initialize_binary_expression_tree(query_text)
         self.__nr_search_results = nr_search_results
@@ -562,14 +726,35 @@ class Ranking(QueryTreeHandler):
 
 
     def get_documents(self) -> list[Document]:
+        """
+        Retrieve a list of documents from the ranking.
+
+        Returns:
+        list[Document]: A list of Document objects representing the documents in the ranking.
+        """
         return self.__documents 
     
 
     def get_text_transformations_config(self) -> TextTransformationsConfig:
+        """
+        Retrieve the text transformations configuration used in the ranking.
+
+        Returns:
+        TextTransformationsConfig: The text transformations configuration used in the ranking.
+        """
         return self.__text_transformations_config
     
 
     def get_document_by_title(self, title: str) -> Document | None:
+        """
+        Retrieve a document from the ranking based on its title.
+
+        Parameters:
+        title (str): The title of the document to be retrieved.
+
+        Returns:
+        Document | None: The document with the specified title, or None if the title is not found.
+        """
         for document in self.__documents:
             if document.get_title() == title:
                 return document
@@ -578,6 +763,15 @@ class Ranking(QueryTreeHandler):
     
 
     def get_document_by_id(self, id: str) -> Document | None:
+        """
+        Retrieve a document from the ranking based on its id.
+
+        Parameters:
+        id (str): The id of the document to be retrieved.
+
+        Returns:
+        Document | None: The document with the specified id, or None if the id is not found.
+        """
         for document in self.__documents:
             if document.get_doc_id() == id:
                 return document
@@ -586,6 +780,15 @@ class Ranking(QueryTreeHandler):
     
 
     def get_document_by_ranking_position(self, position: int) -> Document | None:
+        """
+        Retrieve a document from the ranking based on its ranking position.
+
+        Parameters:
+        position (int): The position of the document in the ranking.
+
+        Returns:
+        Document | None: The document at the specified ranking position, or None if the position is invalid.
+        """
         try:
             return self.__documents[position-1]
         except IndexError:
@@ -596,6 +799,10 @@ class Ranking(QueryTreeHandler):
     def get_list_of_query_trees_from_documents(self) -> list[BinaryExpressionTree]:
         """
         Returns a list of query trees from the documents of the current ranking.
+
+        Returns:
+        list[BinaryExpressionTree]: A list of BinaryExpressionTree objects representing 
+        the query trees of the documents in the ranking.
         """
         list_of_query_trees = [document.get_query_tree() for document in self.__documents]
         return list_of_query_trees
@@ -713,6 +920,13 @@ class Ranking(QueryTreeHandler):
         """
         Generate all the nodes associated with the graphs from both the ranking and all 
         the documents along with their sentences, based on the query terms.
+
+        Parameters:
+        nr_of_graph_terms (int, optional): Configured number of terms in the graph. Default is 5.
+        limit_distance (int, optional): Maximal distance of terms used to calculate the vicinity. Default is 4.
+        include_query_terms (bool, optional): If True, the query term is included in the vicinity. Default is True.
+        summarize (str, optional): Summarization type to operate distances in the vicinity matrix for each sentence. 
+                                    It can be 'mean' or 'median'. Default is 'mean'.
         """
         parameters_tuple = (nr_of_graph_terms, limit_distance, include_query_terms, summarize)
 
@@ -784,7 +998,8 @@ class Ranking(QueryTreeHandler):
         Returns
         -------
         results : list[dict]
-            A list of articles
+            A list of dictionaries, where each dictionary represents an article. Each dictionary 
+            contains the article's attributes such as 'title', 'abstract', and 'article_number'.
         """
         xplore_id = '6g7w4kfgteeqvy2jur3ak9mn'
         query = XPLORE(xplore_id)
@@ -837,7 +1052,7 @@ class Ranking(QueryTreeHandler):
         Parameters
         ----------
         article : dict
-            Article obtained by the ranking from IEEE Xplore API
+            Article dictionary with title, abstract and id.
         index : int
             Index (position) of the document in the ranking
         results_size : int
@@ -908,6 +1123,15 @@ class Ranking(QueryTreeHandler):
         ) -> None:
         """
         Validate that the alphanumeric version of the query text is not empty, otherwise raise an exception.
+
+        Parameters:
+        query_text (str): The input query text to be validated.
+
+        Returns:
+        None: This function does not return any value. It raises an exception if the query text is empty.
+
+        Raises:
+        ValueError: If the alphanumeric version of the query text is empty.
         """
         alnum_query_text = re.sub(r'\W+', '', query_text)
         if alnum_query_text == '':
@@ -918,7 +1142,13 @@ class Ranking(QueryTreeHandler):
         query_text: str
         ) -> None:
         """
-        Initialize the binary expression tree. If the query text has invalid syntax, raise an exception.
+        Initialize the binary expression tree.
+
+        Parameters:
+        query_text (str): The input query text to be used to create the binary expression tree.
+
+        Raises:
+        ValueError: If the query text has invalid syntax, a ValueError is raised with a descriptive message.
         """
         try:
             super().__init__(query_tree=BinaryExpressionTree(query_text))

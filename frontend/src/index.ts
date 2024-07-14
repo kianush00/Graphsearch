@@ -119,6 +119,17 @@ class TextUtils {
         return result
     }
 
+    /**
+     * Separates a boolean query into individual terms.
+     *
+     * @param query - The boolean query to be separated.
+     * @returns An array of strings representing the separated terms.
+     *
+     * @remarks
+     * This function uses a regular expression to match boolean operators, parentheses, colons, and terms.
+     * It then filters the matches, removing specified elements such as parentheses and boolean operators.
+     * If no matches are found, an empty array is returned.
+     */
     public static separateBooleanQuery(query: string): string[] {
         // Defines a regular expression to match boolean operators, parentheses, colons, and terms
         const pattern = /\bAND\b|\bOR\b|\bNOT\b|\(|\)|\w+|:/g;
@@ -143,10 +154,31 @@ class HopConversionUtils {
     // While max distance is always 200, then -> 200 / (user distance) = hopToDistanceRatio
     private static hopToDistanceRatio: number = 50;
 
+    /**
+     * Converts the given number of hops to a distance in the graph.
+     *
+     * @param hops - The number of hops to convert.
+     * @returns The distance in the graph corresponding to the given number of hops.
+     *
+     * @remarks
+     * The conversion is based on a predefined ratio (hopToDistanceRatio).
+     * The distance is calculated by multiplying the number of hops by the hopToDistanceRatio.
+     */
     public static convertHopsToDistance(hops: number): number {
         return hops * this.hopToDistanceRatio
     }
 
+    /**
+     * Converts the given distance in the graph to a number of hops.
+     *
+     * @param distance - The distance in the graph to convert.
+     * @returns The number of hops corresponding to the given distance.
+     *
+     * @remarks
+     * The conversion is based on a predefined ratio (hopToDistanceRatio).
+     * The number of hops is calculated by dividing the distance by the hopToDistanceRatio.
+     * The result is rounded to one decimal place.
+     */
     public static convertDistanceToHops(distance: number): number {
         return parseFloat((distance / this.hopToDistanceRatio).toFixed(1))
     }
@@ -203,6 +235,12 @@ class Edge {
     private targetNode: GraphNode
     private distance: number
 
+    /**
+     * Represents an edge in the graph, connecting two nodes.
+     * 
+     * @param sourceNode - The source node of the edge.
+     * @param targetNode - The target node of the edge.
+     */
     constructor(sourceNode: GraphNode, targetNode: GraphNode) {
         this.id = "e_" + targetNode.getId()
         this.sourceNode = sourceNode
@@ -211,12 +249,29 @@ class Edge {
         cy.add(this.toObject())
     }
 
+    /**
+     * Sets the distance for the edge between the source and target nodes.
+     * This method updates the distance value and the corresponding edge data in the graph.
+     *
+     * @remarks
+     * This method assumes that the source and target nodes are already associated with the edge.
+     * It also assumes that the graph is represented using the Cytoscape.js library.
+     */
     public setDistance(distance: number): void {
         this.distance = distance
         const cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
         cyEdge.data('distance', HopConversionUtils.convertDistanceToHops(this.distance))
     }
 
+    /**
+     * Updates the distance between the source and target nodes.
+     *
+     * This function calculates the distance between the source and target nodes using the `MathUtils.getDistanceBetweenNodes` method.
+     * It then sets the calculated distance as the distance between the nodes using the `this.setDistance` method.
+     *
+     * @remarks
+     * This function assumes that the source and target nodes are already defined and valid.
+     */
     public updateDistance(): void {
         this.setDistance(MathUtils.getDistanceBetweenNodes(this.sourceNode, this.targetNode))
     }
@@ -225,10 +280,27 @@ class Edge {
         return this.distance
     }
 
+    /**
+     * Removes the visual node from the graph interface.
+     * 
+     * This function removes the node with the given ID from the graph interface.
+     * It uses the Cytoscape.js library to select the node by its ID and remove it from the graph.
+     *
+     * @remarks
+     * This function should be called when the node is no longer needed in the graph interface.
+     * It ensures that the node is removed from the visual representation of the graph.
+     */
     public remove(): void {
         cy.remove(cy.getElementById(this.id))
     }
 
+    /**
+     * Converts the Edge instance into a serializable object.
+     * 
+     * @returns An object containing the data of the Edge.
+     * The object has properties: id, source, target, and distance.
+     * The distance is converted to hops using the HopConversionUtils.
+     */
     public toObject(): { data: EdgeData } {
         return {
             data: {
@@ -263,6 +335,14 @@ class GraphNode {
     protected position: Position
     protected type: NodeType
     
+    /**
+     * Represents a node in the graph.
+     * 
+     * @param id - The unique identifier of the node.
+     * @param label - The label of the node.
+     * @param position - The position of the node in the graph.
+     * @param type - The type of the node.
+     */
     constructor(id: string, label: string, position: Position, type: NodeType) {
         this.id = id
         this.label = label
@@ -278,15 +358,41 @@ class GraphNode {
         return this.position
     }
 
+    /**
+     * Sets the label of the node and updates the associated graph node.
+     *
+     * @param label - The new label for the node.
+     *
+     * @remarks
+     * This function updates the label of the node and also updates the label in the graph interface.
+     * It uses the Cytoscape.js library to select the node by its ID and update the label data.
+     */
     public setLabel(label: string): void {
         this.label = label
         cy.getElementById(this.id).data('label', label)
     }
 
+    /**
+     * Removes the visual node from the graph interface.
+     *
+     * @remarks
+     * This function removes the node with the given ID from the graph interface.
+     * It uses the Cytoscape.js library to select the node by its ID and remove it from the graph.
+     */
     public remove(): void {
         cy.remove(cy.getElementById(this.id))
     }
 
+    /**
+     * Converts the GraphNode instance into a serializable object.
+     *
+     * @returns An object containing the data of the GraphNode.
+     * The object has properties: id, label, and position.
+     *
+     * @remarks
+     * This function is responsible for converting the GraphNode instance into a serializable object.
+     * It returns an object containing the node's data and position.
+     */
     public toObject(): { data: NodeData; position: Position } {
         return {
             data: {
@@ -300,6 +406,14 @@ class GraphNode {
 
 
 class CentralNode extends GraphNode {
+    /**
+     * Represents a central node in the graph.
+     * It manages the associated views, such as the visual node in the graph interface.
+     * 
+     * @param id - The unique identifier of the central node.
+     * @param x - The x-coordinate of the central node's position in the graph.
+     * @param y - The y-coordinate of the central node's position in the graph.
+     */
     constructor(id: string, x: number, y: number) {
         let _id = id
         let _label = id
@@ -309,6 +423,15 @@ class CentralNode extends GraphNode {
         this.addVisualNodeToInterface()
     }
 
+    /**
+     * Adds a visual node to the graph interface.
+     * 
+     * This function creates a new node in the graph using the `toObject` method,
+     * which returns an object containing the node's data and position.
+     * The node is then added to the graph using the `cy.add` method.
+     * The node's class is set to the string representation of the node's type.
+     * The node is also locked and ungrabified to prevent user interaction.
+     */
     private addVisualNodeToInterface(): void {
         cy.add(this.toObject()).addClass(this.type.toString()).lock().ungrabify()
     }
@@ -316,6 +439,14 @@ class CentralNode extends GraphNode {
 
 
 class OuterNode extends GraphNode {
+    /**
+     * Represents an outer node in the graph.
+     * It manages the associated views, such as the visual node in the graph interface.
+     * 
+     * @param id - The unique identifier of the outer node.
+     * @param distance - The distance from the central node to the outer node.
+     *                    Default value is 0, which means the outer node will be positioned randomly.
+     */
     constructor(id: string, distance: number = 0) {
         let _id = id
         let _label = id
@@ -326,29 +457,78 @@ class OuterNode extends GraphNode {
         this.addVisualNodeToInterface()
     }
 
+    /**
+     * Sets the position of the OuterNode in the graph.
+     *
+     * @param position - The new position for the OuterNode.
+     *
+     * @remarks
+     * This function updates the position of the OuterNode and also updates the position in the graph interface.
+     */
     public setPosition(position: Position): void {
-        this.position = position
-        this.updateVisualPosition()
+        this.position = position;
+        this.updateVisualPosition();
     }
 
+    /**
+     * Sets the position of the OuterNode in the graph using an angle.
+     *
+     * @param angle - The angle from which to calculate the new position for the OuterNode.
+     *
+     * @remarks
+     * This function calculates the new position of the OuterNode using the provided angle and the current distance from the central node.
+     * It then updates the position of the OuterNode and the position in the graph interface.
+     */
     public setPositionFromAngle(angle: number): void {
-        this.position = MathUtils.getAngularPosition(angle, this.getDistance())
-        this.updateVisualPosition()
+        this.position = MathUtils.getAngularPosition(angle, this.getDistance());
+        this.updateVisualPosition();
     }
 
+    /**
+     * Sets the position of the OuterNode in the graph using a distance.
+     *
+     * @param distance - The distance from the central node to calculate the new position for the OuterNode.
+     *
+     * @remarks
+     * This function calculates the new position of the OuterNode using a random angle and the provided distance.
+     * It then updates the position of the OuterNode and the position in the graph interface.
+     */
     public setPositionFromDistance(distance: number): void {
-        this.position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance)
-        this.updateVisualPosition()
+        this.position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance);
+        this.updateVisualPosition();
     }
 
+    /**
+     * Calculates the distance from the central node to the OuterNode.
+     *
+     * @returns {number} - The distance from the central node to the OuterNode.
+     *
+     * @remarks
+     * This function calculates the distance from the central node to the OuterNode using the Euclidean distance formula.
+     */
     private getDistance(): number {
-        return MathUtils.calculateEuclideanDistance(this.position.x, this.position.y)
+        return MathUtils.calculateEuclideanDistance(this.position.x, this.position.y);
     }
 
+    /**
+     * Updates the visual position of the OuterNode in the graph interface.
+     *
+     * @remarks
+     * This function is responsible for updating the position of the OuterNode in the graph interface.
+     * It sets the position of the OuterNode to the current position of the OuterNode instance.
+     */
     private updateVisualPosition(): void {
         cy.getElementById(this.id).position(this.position)
     }
 
+    /**
+     * Adds a visual node to the graph interface.
+     * 
+     * This function creates a new node in the graph using the `toObject` method,
+     * which returns an object containing the node's data and position.
+     * The node is then added to the graph using the `cy.add` method.
+     * The node's class is set to the string representation of the node's type.
+     */
     private addVisualNodeToInterface(): void {
         cy.add(this.toObject()).addClass(this.type.toString())
     }
@@ -363,10 +543,19 @@ class Term {
     protected value: string
     protected node: GraphNode | undefined
 
+    /**
+     * Represents a term in a graph.
+     * It is associated with a graph node.
+     */
     constructor(value: string) {
         this.value = value
     }
 
+    /**
+     * Sets the label of the term and updates the associated graph node.
+     * 
+     * @param value - The new label for the term.
+     */
     public setLabel(value: string): void {
         this.value = value
         this.node?.setLabel(value)
@@ -393,10 +582,7 @@ interface NTermObject {
     distance: number;
 }
 
-/**
- * Represents a neighbour term in the graph.
- * It manages the associated views, such as the OuterNode and Edge.
- */
+
 class NeighbourTerm extends Term implements ViewManager {
     protected node: OuterNode | undefined
     private queryTerm: QueryTerm
@@ -405,6 +591,15 @@ class NeighbourTerm extends Term implements ViewManager {
     private edge: Edge | undefined
     private ponderation: number
 
+    /**
+     * Represents a neighbour term in the graph.
+     * It manages the associated views, such as the OuterNode and Edge.
+     * 
+     * @param queryTerm - The QueryTerm associated with this neighbour term.
+     * @param value - The value of the neighbour term.
+     * @param hops - The number of hops from the central node to this neighbour term.
+     * @param ponderation - The ponderation of this neighbour term.
+     */
     constructor(queryTerm: QueryTerm, value: string, hops: number, ponderation: number) {
         super(value)
         this.queryTerm = queryTerm
@@ -425,6 +620,12 @@ class NeighbourTerm extends Term implements ViewManager {
         this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node)
     }
 
+    /**
+     * Removes the views of the neighbour terms and the central node.
+     * 
+     * This function is responsible for removing the visual nodes (OuterNodes and CentralNode)
+     * and edges (connecting the CentralNode to the OuterNodes) from the graph interface.
+     */
     public removeViews(): void {
         this.node?.remove()
         this.edge?.remove()
@@ -438,6 +639,14 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.ponderation
     }
 
+    /**
+     * Converts the NeighbourTerm instance into an object containing term, ponderation, and distance.
+     * 
+     * @returns {NTermObject} - An object with properties term, ponderation, and distance.
+     * The term property contains the value of the NeighbourTerm instance.
+     * The ponderation property contains the ponderation of the NeighbourTerm instance.
+     * The distance property contains the number of hops from the central node to the NeighbourTerm instance.
+     */
     public toObject(): NTermObject {
         return {
             term: this.value,
@@ -450,8 +659,14 @@ class NeighbourTerm extends Term implements ViewManager {
      * Sets the position of the neighbour term node and updates the neighbour term's hops.
      *
      * @param position - The new position of the neighbour term node.
+     * The position object contains properties x and y representing the coordinates of the new position.
      *
-     * @returns {void}
+     * @remarks
+     * This function calculates the distance between the new position and the central node,
+     * validates the position to ensure it falls within the specified range, updates the number of hops,
+     * and updates the position of the neighbour term node.
+     *
+     * @returns {void} - This function does not return any value.
      */
     public setPosition(position: Position): void {
         const nodeDistance = this.edge?.getDistance() ?? 0
@@ -462,11 +677,18 @@ class NeighbourTerm extends Term implements ViewManager {
     }
 
     /**
-     * Sets the number of hops for the neighbour term node and updates the neighbour term's position.
+     * Initializes the number of hops and the position of the neighbour term node.
      *
-     * @param hops - The new number of hops for the neighbour term node.
+     * @param hops - The number of hops for the neighbour term node.
+     * This value is used to calculate the distance from the central node.
      *
-     * @returns {void}
+     * @remarks
+     * This function sets the number of hops for the neighbour term node,
+     * calculates the distance from the central node based on the number of hops,
+     * generates a random position for the neighbour term node within the specified range,
+     * and updates the position of the neighbour term node.
+     *
+     * @returns {void} - This function does not return any value.
      */
     private initializeHopsAndNodePosition(hops: number): void {
         this.hops = hops
@@ -475,6 +697,20 @@ class NeighbourTerm extends Term implements ViewManager {
         this.updateNodePosition()
     }
 
+    /**
+     * Validates the position of a neighbour term node within a specified range.
+     * If the position is outside the range, it adjusts the position to be within the range.
+     *
+     * @param position - The position of the neighbour term node to be validated.
+     * @param nodeDistance - The distance of the neighbour term node from the central node.
+     *
+     * @returns {Position} - The validated position of the neighbour term node.
+     *
+     * @remarks
+     * This function checks if the position of the neighbour term node is within the specified range (50.0 to 200.0 units from the central node).
+     * If the position is outside the range, it adjusts the position to be within the range by calculating the adjusted X and Y coordinates.
+     * The adjusted position is then returned.
+     */
     private validatePositionWithinRange(position: Position, nodeDistance: number): Position {
         let positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
 
@@ -490,6 +726,16 @@ class NeighbourTerm extends Term implements ViewManager {
         return position
     }
 
+    /**
+     * Updates the position of the neighbour term node and updates the neighbour term's hops.
+     *
+     * @remarks
+     * This function is responsible for updating the position of the neighbour term node and
+     * the number of hops for the neighbour term. It calls the `setPosition` method of the neighbour term node
+     * and the `updateDistance` method of the edge connecting the neighbour term node to the central node.
+     *
+     * 
+     */
     private updateNodePosition(): void {
         this.node?.setPosition(this.nodePosition)
         this.edge?.updateDistance()
@@ -570,6 +816,16 @@ class Document {
     private title: string
     private abstract: string
 
+    /**
+     * Represents a document associated with a query term.
+     * 
+     * @param queryTermValue - The value of the query term associated with the document.
+     * @param id - The unique identifier of the document.
+     * @param title - The title of the document.
+     * @param abstract - The abstract of the document.
+     * @param response_neighbour_terms - An array of objects containing neighbour term data retrieved from the response.
+     * Each object has properties: term, distance, and ponderation.
+     */
     constructor(queryTermValue: string, id: string, title: string, abstract: string, response_neighbour_terms: any[]){
         this.queryTerm = new QueryTerm(queryTermValue)
         this.id = id
@@ -603,6 +859,18 @@ class Document {
         }
     }
 
+    /**
+     * Initializes neighbour terms from the response data.
+     *
+     * @param response_neighbour_terms - An array of objects containing neighbour term data.
+     * Each object has properties: term, distance, and ponderation.
+     *
+     * 
+     *
+     * @remarks
+     * This function iterates over the response data, creates new NeighbourTerm instances for each term object,
+     * and adds them to the QueryTerm's neighbour terms list.
+     */
     private initializeNeighbourTermsFromResponse(response_neighbour_terms: any[]): void {
         const neighbourTerms = []
         for (const termObject of response_neighbour_terms) {
@@ -644,6 +912,21 @@ class Ranking {
         this.documents.push(document)
     }
 
+    /**
+     * Reorders the documents in the ranking based on the provided positions array.
+     * If the lengths of the positions array and the documents array do not match,
+     * logs an error message to the console and returns without modifying the documents.
+     *
+     * @param positions - An array of integers representing the new order of the documents.
+     * Each integer corresponds to the index of a document in the documents array.
+     *
+     * 
+     *
+     * @remarks
+     * This function iterates over the positions array and creates a new array of documents
+     * in the new order specified by the positions array.
+     * It then assigns the reorderedDocuments array back to the documents property of the Ranking instance.
+     */
     public reorderDocuments(positions: number[]): void {
         if (positions.length !== this.documents.length) {
             console.log('Positions array length must match documents array length.');
@@ -724,6 +1007,16 @@ class QueryTermService {
         this.getVisibleQueryTerm().removeViews()
     }
 
+    /**
+     * Removes a neighbour term from the visible query term.
+     * 
+     * This function retrieves the neighbour term associated with the provided id,
+     * and if found, removes it from the visible query term's neighbour terms list.
+     * It then updates the neighbour terms table in the query service.
+     * 
+     * @param id - The id of the neighbour term to be removed.
+     * 
+     */
     public removeNeighbourTerm(id: string): void {
         const neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermById(id)
         if (neighbourTerm === undefined) return
@@ -731,6 +1024,15 @@ class QueryTermService {
         this.queryService.updateNeighbourTermsTable()
     }
 
+    /**
+     * Centers the graph on the CentralNode.
+     * 
+     * This function is responsible for zooming in the graph and centering it on the CentralNode.
+     * It first zooms in the graph by a factor of 1.2, then checks if the visible query term has a node.
+     * If the node exists and is a CentralNode, it centers the graph on the node.
+     * 
+     * 
+     */
     private center(): void {
         cy.zoom(1.2)
         if (this.getVisibleQueryTerm().getNode() === undefined) return 
@@ -759,6 +1061,17 @@ class QueryTermService {
         }
     }
 
+    /**
+     * This function generates visible neighbour terms for the current query term.
+     * 
+     * @param result - The result object containing neighbour terms data.
+     * The result object is expected to have a property 'visible_neighbour_terms',
+     * which is an array of objects representing neighbour terms.
+     * Each object should have properties 'term', 'distance', and 'ponderation'.
+     * 
+     * It iterates over the neighbour terms in the result, creates new NeighbourTerm instances,
+     * and adds them to the QueryTerm's neighbour terms list.
+     */
     private generateVisibleNeighbourTerms(result: any) {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
@@ -770,6 +1083,17 @@ class QueryTermService {
         }
     }
 
+    /**
+     * Generates ranking documents for the current query term.
+     * 
+     * @param result - The result object containing ranking documents data.
+     * The result object is expected to have a property 'documents',
+     * which is an array of objects representing documents.
+     * Each object should have properties 'doc_id', 'title', 'abstract', and 'neighbour_terms'.
+     * 
+     * It iterates over the documents in the result, creates new Document instances,
+     * and adds them to the QueryTerm's ranking documents list.
+     */
     private generateRankingDocuments(result: any) {
         // Iterate over the documents in the result
         for (let documentObject of result['documents']) {
@@ -788,14 +1112,22 @@ class QueryTermService {
      * If the QueryTerm is currently visible, it displays the views of the neighbour term.
      *
      * @param neighbourTerm - The neighbour term to be added.
-     * @returns {void}
      */
     private addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         if (this.isVisible) this.display()
     }
-
+    
+    /**
+     * Adds a document to the ranking and updates the results list.
+     * 
+     * @param document - The document to be added to the ranking.
+     * 
+     * @remarks
+     * This function is responsible for adding a new document to the ranking and updating the results list.
+     * It calls the `addDocument` method of the ranking and the `updateResultsList` method of the query service.
+     */
     private addDocument(document: Document): void {
         this.getRanking().addDocument(document)
         this.queryService.updateResultsList()
@@ -823,8 +1155,6 @@ class NeighbourTermsTable {
      * 
      * @remarks
      * This function assumes that the table body element is already present in the HTML structure.
-     * 
-     * @returns {void}
      */
     public updateTable(): void {
         // Get the table body element
@@ -874,7 +1204,6 @@ class ResultsList {
      * It iterates over the documents in the ranking and creates list items for each one, including title and abstract elements.
      * Click event listeners and mouse event listeners are added to the title elements to handle user interactions.
      * 
-     * @returns {void}
      */
     public updateList(): void {
         // Clear existing list items
@@ -904,6 +1233,14 @@ class ResultsList {
         }
     }
 
+    /**
+     * Creates a title element for a document.
+     * 
+     * @param index - The index of the document in the list.
+     * @param doc - The document for which to create the title element.
+     * 
+     * @returns A new HTMLSpanElement representing the title of the document.
+     */
     private createTitleElement(index: number, doc: Document): HTMLSpanElement {
         const titleElement = document.createElement('span');
         titleElement.className = 'title';
@@ -913,6 +1250,13 @@ class ResultsList {
         return titleElement;
     }
 
+    /**
+     * Creates an abstract element for a document.
+     * 
+     * @param doc - The document for which to create the abstract element.
+     * 
+     * @returns A new HTMLParagraphElement representing the abstract of the document.
+     */
     private createAbstractElement(doc: Document): HTMLParagraphElement {
         const abstractElement = document.createElement('p');
         abstractElement.className = 'abstract';
@@ -923,6 +1267,11 @@ class ResultsList {
         return abstractElement;
     }
 
+    /**
+     * Applies highlighting to the words in an HTML element.
+     * 
+     * @param element - The HTML element to apply highlighting to.
+     */
     private applyHighlighting(element: HTMLElement): void {
         const queryTerms = this.activeTermService?.getVisibleQueryTerm().getValue() as string
         const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
@@ -930,13 +1279,30 @@ class ResultsList {
         this.applyHighlightingToWords(element, queryTermsList, 'orange');
         this.applyHighlightingToWords(element, neighbourTermsList, 'yellow');
     }
-    
+
+    /**
+     * Applies highlighting to specific words in an HTML element.
+     * 
+     * @param element - The HTML element to apply highlighting to.
+     * @param words - The words to highlight.
+     * @param color - The color to use for highlighting.
+     */
     private applyHighlightingToWords(element: HTMLElement, words: string[], color: string = 'orange'): void {
         const originalText = element.innerHTML;
         const highlightedText = this.highlightWords(originalText, words, color);
         element.innerHTML = highlightedText;
     }
 
+    /**
+     * Highlights specific words in a given text string.
+     * 
+     * @param text - The original text string.
+     * @param words - An array of words to highlight.
+     * @param color - The color to use for highlighting. Default is 'orange'.
+     * 
+     * @returns A new string with the specified words highlighted with the given color.
+     * Words are highlighted by wrapping them in a span element with the specified background color.
+     */
     private highlightWords(text: string, words: string[], color: string = 'orange'): string {
         // Create a regular expression to find words that contain any substring of 'words'
         const regex = new RegExp(words.join('|'), 'gi');
@@ -955,7 +1321,6 @@ class ResultsList {
     /**
      * This function adds a click event listener to the title element, which opens the original URL document webpage in a new tab when clicked.
      * It also adds mouseenter and mouseleave event listeners to change the title's color and cursor style.
-     * @returns {void}
     */
     private addEventListenersToTitleElement(titleElement: HTMLSpanElement, abstractElement: HTMLParagraphElement): void {
         titleElement.addEventListener('click', () => {

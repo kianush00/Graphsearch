@@ -13,6 +13,19 @@ stop_words_list = DataUtils.load_stopwords()
 
 class QueryService:
     def process_query(self, query_text: str) -> PydanticRanking:
+        """
+        Processes a query and generates a PydanticRanking object containing visible neighbour terms, complete neighbour terms,
+        and documents with their neighbour terms.
+
+        Parameters:
+        - query_text (str): The input query text.
+
+        Returns:
+        - PydanticRanking: An object containing the processed ranking information.
+
+        Raises:
+        - HTTPException: If the results are not found (status code 404).
+        """
         nr_search_results        = 10
         ranking_weight_type      = 'linear' # it can be: 'none', 'linear' or 'inverse'
         lema                     = True
@@ -68,6 +81,20 @@ class QueryService:
     
     
     def get_new_ranking_positions(self, ranking: PydanticRankingRequest) -> RerankNewPositions:
+        """
+        This function calculates the new ranking positions for a given PydanticRankingRequest object.
+        It creates a similarity ranking between the visible neighbour terms of the input ranking and the neighbour terms of each document.
+        The ranking positions are determined based on the similarity scores.
+
+        Parameters:
+        - ranking (PydanticRankingRequest): The input ranking object containing visible neighbour terms and documents.
+
+        Returns:
+        - RerankNewPositions: An object containing the new ranking positions for each document.
+
+        Raises:
+        - HTTPException: If there is a bad request (status code 400).
+        """
         try:
             nr_of_graph_terms = 10
             visible_graph = VicinityGraph(subquery="new", nr_of_graph_terms=nr_of_graph_terms)

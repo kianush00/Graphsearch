@@ -4,7 +4,7 @@
     "text3": "perro hierarchical SIMkNN dual-index driven, echeverria network patricio adopt hierarchical gato R-tree to galeas the topology of the road network abel gato hierarchical topology grid model temuco manage galeas moving objects abel non-uniform patricio perro",
     "text4": "ant hierarchical SIMkNN dual-index driven, echeverria network rain adopt hierarchical rain R-tree to galeas the topology of the road network abel gato hierarchical topology grid model rain manage galeas moving objects abel non-uniform patricio ant",
     "text4_terms_from_nodes": ["hierarchical", "rain", "topology", "simknn", "driven", "echeverria", "adopt", "galea", "road", "abel", "gato"],
-    "text4_terms_from_viewable_graph_copy": ["rain", "topology", "echeverria", "road", "simknn"],
+    "text4_terms_from_viewable_graph_copy": ["rain", "echeverria", "topology", "road", "simknn"],
     "text5": "The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most common words.Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators. To achieve this, it would be necessary to have uniform grammar, pronunciation and more common words. If several languages coalesce, the grammar of the resulting language is more simple and regular than that of the individual languages. The new common language will be more simple and regular than the existing European languages. It will be as simple as Occidental; in fact, it will be Occidental. To an English person, it will seem like simplified English, as a skeptical Cambridge friend of mine told me what Occidental is. The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most common words. Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators.",
     "text5_transformed_text_with_lema": "european language member family separate existence myth science music sport europe us vocabulary language differ grammar pronunciation common realizes new common language desirable one refuse pay expensive translator achieve necessary uniform grammar pronunciation common word several language coalesce grammar resulting language simple regular individual language new common language simple regular existing european language simple occidental fact occidental english person seem like simplified english skeptical cambridge friend mine told occidental european language member family separate existence myth science music sport europe us vocabulary language differ grammar pronunciation common word everyone realizes new common language desirable one refuse pay expensive translator",
     "text5_remove_special_characters": ["the", "european", "languages", "are", "members", "of", "the", "same", "family", "their", "separate", "existence", "is", "a", "myth", "for", "science", "music", "sport", "etc", "europe", "uses", "the", "same", "vocabulary", "the", "languages", "only", "differ", "in", "their", "grammar", "their", "pronunciation", "and", "their", "most", "common", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "one", "could", "refuse", "to", "pay", "expensive", "translators", "to", "achieve", "this", "it", "would", "be", "necessary", "to", "have", "uniform", "grammar", "pronunciation", "and", "more", "common", "words", "if", "several", "languages", "coalesce", "the", "grammar", "of", "the", "resulting", "language", "is", "more", "simple", "and", "regular", "than", "that", "of", "the", "individual", "languages", "the", "new", "common", "language", "will", "be", "more", "simple", "and", "regular", "than", "the", "existing", "european", "languages", "it", "will", "be", "as", "simple", "as", "occidental", "in", "fact", "it", "will", "be", "occidental", "to", "an", "english", "person", "it", "will", "seem", "like", "simplified", "english", "as", "a", "skeptical", "cambridge", "friend", "of", "mine", "told", "me", "what", "occidental", "is", "the", "european", "languages", "are", "members", "of", "the", "same", "family", "their", "separate", "existence", "is", "a", "myth", "for", "science", "music", "sport", "etc", "europe", "uses", "the", "same", "vocabulary", "the", "languages", "only", "differ", "in", "their", "grammar", "their", "pronunciation", "and", "their", "most", "common", "words", "everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "one", "could", "refuse", "to", "pay", "expensive", "translators"],
@@ -200,66 +200,215 @@
         "topology": {"ponderation": 1.0, "distance": 2.0}
     },
     "text6_subgraph1": {
-        "hierarchical": {"ponderation": 3.079181, "distance": 2.922525}, 
-        "driven": {"ponderation": 3.0, "distance": 2.453059}, 
-        "rtree": {"ponderation": 2.30103, "distance": 2.282706}, 
-        "topology": {"ponderation": 2.30103, "distance": 2.0}
-    },
+        "hierarchical": {
+          "ponderation": 1.778151,
+          "distance": 2.922525
+        },
+        "driven": {
+          "ponderation": 1.69897,
+          "distance": 2.453059
+        },
+        "rtree": {
+          "ponderation": 1.30103,
+          "distance": 2.282706
+        },
+        "topology": {
+          "ponderation": 1.30103,
+          "distance": 2.0
+        }
+      },
     "text6_subgraph2": {
-        "hierarchical": {"ponderation": 4.857332, "distance": 2.706836}, 
-        "simknn": {"ponderation": 1.30103, "distance": 2.5}, 
-        "dual": {"ponderation": 1.30103, "distance": 1.5}, 
-        "index": {"ponderation": 1.30103, "distance": 1.5}, 
-        "network": {"ponderation": 1.477121, "distance": 3.0}, 
-        "adopt": {"ponderation": 1.69897, "distance": 2.8}, 
-        "rtree": {"ponderation": 3.30103, "distance": 1.894128}, 
-        "store": {"ponderation": 1.30103, "distance": 2.0}, 
-        "topology": {"ponderation": 3.60206, "distance": 2.0}, 
-        "road": {"ponderation": 1.0, "distance": 2.0}, 
-        "driven": {"ponderation": 3.0, "distance": 2.453059}
-    },
+        "hierarchical": {
+          "ponderation": 1.778151,
+          "distance": 2.627929
+        },
+        "simknn": {
+          "ponderation": 1.30103,
+          "distance": 2.5
+        },
+        "dual": {
+          "ponderation": 1.30103,
+          "distance": 1.5
+        },
+        "index": {
+          "ponderation": 1.30103,
+          "distance": 1.5
+        },
+        "network": {
+          "ponderation": 1.477121,
+          "distance": 3.0
+        },
+        "adopt": {
+          "ponderation": 1.69897,
+          "distance": 2.8
+        },
+        "rtree": {
+          "ponderation": 1.30103,
+          "distance": 1.725257
+        },
+        "store": {
+          "ponderation": 1.30103,
+          "distance": 2.0
+        },
+        "topology": {
+          "ponderation": 1.30103,
+          "distance": 2.0
+        },
+        "road": {
+          "ponderation": 1.0,
+          "distance": 2.0
+        },
+        "driven": {
+          "ponderation": 1.69897,
+          "distance": 2.453059
+        }
+      },
     "text6_text2_united_graph_1": {
-        "hierarchical": {"ponderation": 2.778151, "distance": 2.213349}, 
-        "simknn": {"ponderation": 2.30103, "distance": 1.848118}, 
-        "dual": {"ponderation": 1.30103, "distance": 1.5}, 
-        "index": {"ponderation": 1.30103, "distance": 1.5}, 
-        "network": {"ponderation": 2.477121, "distance": 2.596306}, 
-        "adopt": {"ponderation": 2.69897, "distance": 3.244614}, 
-        "rtree": {"ponderation": 1.0, "distance": 1.0}, 
-        "store": {"ponderation": 1.30103, "distance": 2.0}, 
-        "topology": {"ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"ponderation": 1.0, "distance": 2.0}, 
-        "car": {"ponderation": 1.0, "distance": 3.0}, 
-        "perro": {"ponderation": 1.0, "distance": 3.0}, 
-        "house": {"ponderation": 1.0, "distance": 1.0}
-    }
-    ,
+        "hierarchical": {
+          "ponderation": 2.778151,
+          "distance": 2.213349
+        },
+        "simknn": {
+          "ponderation": 2.30103,
+          "distance": 1.848118
+        },
+        "dual": {
+          "ponderation": 1.30103,
+          "distance": 1.5
+        },
+        "index": {
+          "ponderation": 1.30103,
+          "distance": 1.5
+        },
+        "network": {
+          "ponderation": 2.477121,
+          "distance": 2.596306
+        },
+        "adopt": {
+          "ponderation": 2.69897,
+          "distance": 3.244614
+        },
+        "rtree": {
+          "ponderation": 1.0,
+          "distance": 1.0
+        },
+        "store": {
+          "ponderation": 1.30103,
+          "distance": 2.0
+        },
+        "topology": {
+          "ponderation": 1.30103,
+          "distance": 2.0
+        },
+        "road": {
+          "ponderation": 1.0,
+          "distance": 2.0
+        },
+        "perro": {
+          "ponderation": 1.0,
+          "distance": 3.0
+        },
+        "house": {
+          "ponderation": 1.0,
+          "distance": 1.0
+        },
+        "car": {
+          "ponderation": 1.0,
+          "distance": 3.0
+        }
+      },
     "text6_text2_united_graph_2": {
-        "hierarchical": {"ponderation": 5.079181, "distance": 2.362385}, 
-        "driven": {"ponderation": 3.0, "distance": 2.453059}, 
-        "rtree": {"ponderation": 2.30103, "distance": 2.282706}, 
-        "topology": {"ponderation": 4.30103, "distance": 2.232502}, 
-        "car": {"ponderation": 2.0, "distance": 2.5}, 
-        "gato": {"ponderation": 2.30103, "distance": 2.282706}, 
-        "network": {"ponderation": 2.0, "distance": 2.5}
-    },
+        "hierarchical": {
+          "ponderation": 2.778151,
+          "distance": 2.410485
+        },
+        "driven": {
+          "ponderation": 1.69897,
+          "distance": 2.453059
+        },
+        "rtree": {
+          "ponderation": 1.30103,
+          "distance": 2.282706
+        },
+        "topology": {
+          "ponderation": 2.30103,
+          "distance": 2.217294
+        },
+        "network": {
+          "ponderation": 1.0,
+          "distance": 2.5
+        },
+        "gato": {
+          "ponderation": 1.30103,
+          "distance": 2.282706
+        },
+        "car": {
+          "ponderation": 1.0,
+          "distance": 2.5
+        }
+      },
     "text6_text2_united_graph_3": {
-        "hierarchical": {"ponderation": 7.857332, "distance": 2.30969}, 
-        "simknn": {"ponderation": 2.30103, "distance": 1.848118}, 
-        "dual": {"ponderation": 1.30103, "distance": 1.5}, 
-        "index": {"ponderation": 1.30103, "distance": 1.5}, 
-        "network": {"ponderation": 4.477121, "distance": 2.553284}, 
-        "adopt": {"ponderation": 2.69897, "distance": 3.244614}, 
-        "rtree": {"ponderation": 3.30103, "distance": 1.894128}, 
-        "store": {"ponderation": 1.30103, "distance": 2.0}, 
-        "topology": {"ponderation": 5.60206, "distance": 2.178506}, 
-        "road": {"ponderation": 1.0, "distance": 2.0}, 
-        "driven": {"ponderation": 3.0, "distance": 2.453059}, 
-        "perro": {"ponderation": 1.0, "distance": 3.0}, 
-        "gato": {"ponderation": 2.30103, "distance": 2.282706}, 
-        "car": {"ponderation": 3.0, "distance": 2.666667}, 
-        "house": {"ponderation": 1.0, "distance": 1.0}
-    },
+        "hierarchical": {
+          "ponderation": 2.778151,
+          "distance": 2.311917
+        },
+        "simknn": {
+          "ponderation": 2.30103,
+          "distance": 1.848118
+        },
+        "dual": {
+          "ponderation": 1.30103,
+          "distance": 1.5
+        },
+        "index": {
+          "ponderation": 1.30103,
+          "distance": 1.5
+        },
+        "network": {
+          "ponderation": 2.477121,
+          "distance": 2.697229
+        },
+        "adopt": {
+          "ponderation": 2.69897,
+          "distance": 3.244614
+        },
+        "rtree": {
+          "ponderation": 1.30103,
+          "distance": 1.725257
+        },
+        "store": {
+          "ponderation": 1.30103,
+          "distance": 2.0
+        },
+        "topology": {
+          "ponderation": 2.30103,
+          "distance": 2.217294
+        },
+        "road": {
+          "ponderation": 1.0,
+          "distance": 2.0
+        },
+        "driven": {
+          "ponderation": 1.69897,
+          "distance": 2.453059
+        },
+        "perro": {
+          "ponderation": 1.0,
+          "distance": 3.0
+        },
+        "gato": {
+          "ponderation": 1.30103,
+          "distance": 2.282706
+        },
+        "house": {
+          "ponderation": 1.0,
+          "distance": 1.0
+        },
+        "car": {
+          "ponderation": 1.0,
+          "distance": 2.75
+        }
+      },
     "text_1_2_3_4_united_root_graph": {
         "hierarchical": {
             "ponderation": 4.357508,

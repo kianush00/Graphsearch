@@ -9,6 +9,15 @@ from utils.vector_utils import VectorUtils
 class VicinityGraphConfig:
     def __init__(self, nr_of_graph_terms: int = 5, limit_distance: int = 4, 
                  include_query_terms: bool = True, summarize: str = 'mean'):
+        """
+        Initialize a VicinityGraph object with the specified parameters.
+
+        Parameters:
+        nr_of_graph_terms (int): The maximum number of terms to include in the graph. Default is 5.
+        limit_distance (int): The maximum distance allowed for terms in the graph. Default is 4.
+        include_query_terms (bool): Whether to include terms from the query in the graph. Default is True.
+        summarize (str): The method to summarize ponderations when calculating cosine similarity. Default is 'mean'.
+        """
         self.__number_of_graph_terms = nr_of_graph_terms
         self.__limit_distance = limit_distance
         self.__include_query_terms = include_query_terms
@@ -16,22 +25,53 @@ class VicinityGraphConfig:
     
 
     def get_number_of_graph_terms(self) -> int:
+        """
+        Returns the number of graph terms to be displayed.
+
+        Returns:
+        int: The number of graph terms.
+        """
         return self.__number_of_graph_terms
 
 
     def get_limit_distance(self) -> int:
+        """
+        Returns the limit distance for the vicinity nodes.
+
+        Returns:
+        int: The limit distance.
+        """
         return self.__limit_distance
 
 
     def get_include_query_terms(self) -> bool:
+        """
+        Returns whether the query terms should be included in the graph.
+
+        Returns:
+        bool: True if query terms should be included, False otherwise.
+        """
         return self.__include_query_terms
-    
+
 
     def get_summarize(self) -> str:
+        """
+        Returns the method used to summarize the graph.
+
+        Returns:
+        str: The method used for summarizing the graph.
+        """
         return self.__summarize
-    
+
 
     def get_config_params(self) -> tuple[int, int, bool, str]:
+        """
+        Returns the configuration parameters of the graph.
+
+        Returns:
+        tuple: A tuple containing the number of graph terms, limit distance, 
+            include query terms, and summarization method.
+        """
         return self.__number_of_graph_terms, self.__limit_distance, self.__include_query_terms, self.__summarize
 
 
@@ -39,32 +79,76 @@ class VicinityGraphConfig:
 class VicinityNode:
     
     def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0):
+        """
+        Initialize a new instance of the VicinityNode class.
+
+        Parameters:
+        term (str): The term of the node.
+        ponderation (float, optional): The ponderation of the node. Default is 1.0.
+        distance (float, optional): The distance of the node. Default is 1.0.
+        """
         self.__term = term
         self.__ponderation = ponderation
         self.__distance = distance
     
 
     def get_term(self) -> str:
+        """
+        Returns the term of the current node.
+
+        Returns:
+        str: The term of the current node.
+        """
         return self.__term
-    
+
 
     def get_ponderation(self) -> float:
+        """
+        Returns the ponderation of the current node.
+
+        Returns:
+        float: The ponderation of the current node.
+        """
         return self.__ponderation
-    
+
 
     def set_ponderation(self, ponderation: float) -> None:
+        """
+        Sets the ponderation of the current node.
+
+        Parameters:
+        ponderation (float): The new ponderation value.
+        """
         self.__ponderation = ponderation
-    
+
 
     def get_distance(self) -> float:
+        """
+        Returns the distance of the current node.
+
+        Returns:
+        float: The distance of the current node.
+        """
         return self.__distance
-    
+
 
     def set_distance(self, distance: float) -> None:
+        """
+        Sets the distance of the current node.
+
+        Parameters:
+        distance (float): The new distance value.
+        """
         self.__distance = distance
 
-    
+
     def __str__(self) -> str:
+        """
+        Returns a string representation of the current node.
+
+        Returns:
+        str: A string representation of the current node.
+        """
         term = self.__term
         ponderation = round(self.__ponderation, 1)
         distance = round(self.__distance, 1)
@@ -77,6 +161,16 @@ class VicinityGraph:
         
     def __init__(self, subquery: str, nr_of_graph_terms: int = 5, limit_distance: int = 4, 
                  include_query_terms: bool = True, summarize: str = 'mean'):
+        """
+        Initialize a VicinityGraph object.
+
+        Parameters:
+        subquery (str): The subquery for which the graph is being created.
+        nr_of_graph_terms (int, optional): The maximum number of terms to include in the graph. Defaults to 5.
+        limit_distance (int, optional): The maximum distance for terms to be included in the graph. Defaults to 4.
+        include_query_terms (bool, optional): Whether to include terms from the subquery in the graph. Defaults to True.
+        summarize (str, optional): The method to summarize ponderations when calculating cosine similarity. Defaults to 'mean'.
+        """
         self.subquery = subquery
         self.__config: VicinityGraphConfig = VicinityGraphConfig(nr_of_graph_terms, limit_distance, 
                                                                  include_query_terms, summarize)
@@ -84,6 +178,12 @@ class VicinityGraph:
 
 
     def get_config(self) -> VicinityGraphConfig:
+        """
+        Returns the configuration object of the VicinityGraph.
+
+        Returns:
+        VicinityGraphConfig: The configuration object of the VicinityGraph.
+        """
         return self.__config
     
 
@@ -91,6 +191,13 @@ class VicinityGraph:
         """
         Return the list of nodes sorted by ponderation in descending order, and limit 
         the number of nodes in the list obtained.
+
+        Parameters:
+        limit (int): The maximum number of nodes to return. If not provided, all nodes are returned.
+
+        Returns:
+        list[VicinityNode]: A list of VicinityNode objects sorted by ponderation in descending order. 
+                            The length of the list is limited by the provided limit.
         """
         # Sort the nodes in descending order
         sorted_nodes = sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
@@ -100,6 +207,16 @@ class VicinityGraph:
     
 
     def get_node_by_term(self, term: str) -> VicinityNode | None:
+        """
+        Retrieve a node from the graph by its term.
+
+        Parameters:
+        term (str): The term of the node to be retrieved.
+
+        Returns:
+        VicinityNode | None: The node with the given term if found, otherwise None.
+        If a node with the given term is not found, it prints "No node with term".
+        """
         for node in self.__nodes:
             if node.get_term() == term:
                 return node
@@ -108,6 +225,12 @@ class VicinityGraph:
     
 
     def get_terms_from_nodes(self) -> list[str]:
+        """
+        Retrieves a list of terms from the nodes of the current graph.
+
+        Returns:
+        list[str]: A list of terms from the nodes of the current graph.
+        """
         node_terms = []
         for node in self.get_sorted_nodes_optionally_limited():
             node_terms.append(node.get_term())
@@ -119,6 +242,14 @@ class VicinityGraph:
 
 
     def delete_node_by_term(self, term: str) -> None:
+        """
+        Deletes a node from the graph based on the given term. \n
+        The function iterates through the nodes in the graph and removes the node with the given term.
+        If no node with the given term is found, it prints "No node with term".
+
+        Parameters:
+        term (str): The term of the node to be deleted.
+        """
         for node in self.__nodes:
             if node.get_term() == term:
                 self.__nodes.remove(node)
@@ -127,6 +258,15 @@ class VicinityGraph:
     
 
     def __str__(self) -> str:
+        """
+        Returns a string representation of the VicinityGraph object.
+
+        The string representation includes the subquery and the details of each node in the graph.
+        Each node is represented as a string in the format: "term ; ponderation ; distance"
+
+        Returns:
+        string (str): A string representation of the VicinityGraph object.
+        """
         string = "SUBQUERY: " + self.subquery
         for node in self.get_sorted_nodes_optionally_limited():
             string += "\n" + str(node)
@@ -139,6 +279,11 @@ class VicinityGraph:
 
         e.g.   {'v_term1': {'ponderation': 3.0, 'distance': 3.4}, 
                 'v_term2': {'ponderation': 2.0, 'distance': 1.6}, ...}
+
+        Returns:
+        dict[str, dict[str, float]]: A dictionary representing the graph. The keys 
+        are the terms, and the values are dictionaries containing the 'ponderation' 
+        and 'distance' of each term.
         """
         graph_dict = {n.get_term(): {'ponderation': n.get_ponderation(), 
                                      'distance': n.get_distance()} for n in self.__nodes}
@@ -150,6 +295,9 @@ class VicinityGraph:
         Returns a copy of the graph, with the vicinity terms with the highest ponderation 
         limited by the number of graph terms configured in the current graph, and 
         ignores the vicinity nodes that include the query terms.
+        
+        Returns:
+        graph_copy (VicinityGraph): A copy of the graph with the specified conditions applied.
         """
         graph_copy = VicinityGraph(self.subquery, *self.__config.get_config_params())
         for node in self.__get_sorted_nodes_to_visualize():
@@ -400,7 +548,14 @@ class VicinityGraph:
             graph_b: 'VicinityGraph'
             ) -> set[str]:
         """
-        Return the set of terms from the intersection between the current graph and an external graph
+        This function returns the set of terms that exist in both the current graph and an external graph.
+        It calculates the intersection of the terms from the nodes of both graphs.
+
+        Parameters:
+        graph_b (VicinityGraph): The external graph to find the intersection with the current graph.
+
+        Returns:
+        set[str]: A set containing the terms that exist in both the current graph and the external graph.
         """
         base_terms = set(self.get_terms_from_nodes()) & set(graph_b.get_terms_from_nodes())
         return base_terms
@@ -410,7 +565,14 @@ class VicinityGraph:
             graph_b: 'VicinityGraph'
             ) -> set[str]:
         """
-        Return the set of terms from the union between the current graph and an external graph
+        This function returns the set of terms that exist in the union of the current graph and an external graph.
+        It calculates the union of the terms from the nodes of both graphs.
+
+        Parameters:
+        graph_b (VicinityGraph): The external graph to find the union with the current graph.
+
+        Returns:
+        set[str]: A set containing the terms that exist in both the current graph and the external graph.
         """
         base_terms = set(self.get_terms_from_nodes()) | set(graph_b.get_terms_from_nodes())
         return base_terms
@@ -419,8 +581,15 @@ class VicinityGraph:
     def __get_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
         """
         Return the list of nodes sorted by ponderation in descending order, and limit 
-        its lenght by the number of graph terms, from the current graph configuration.
+        its length by the number of graph terms, from the current graph configuration.
         It also ignores the vicinity nodes that include the query terms.
+
+        Parameters:
+        self (VicinityGraph): The instance of the VicinityGraph class.
+
+        Returns:
+        list[VicinityNode]: A list of VicinityNode objects, sorted by ponderation in descending order, 
+        and limited by the number of graph terms, excluding nodes that contain the query terms.
         """
         sorted_nodes_to_visualize = self.get_sorted_nodes_optionally_limited()
         subquery = self.subquery

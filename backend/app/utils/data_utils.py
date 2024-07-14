@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Tuple
 import os
 import json
 
@@ -7,7 +7,16 @@ import json
 class DataUtils:
 
     @staticmethod
-    def load_stopwords() -> tuple[str]:
+    def load_stopwords() -> Tuple[str]:
+        """
+        Loads stopwords from a JSON file located in the data directory.
+        
+        Returns:
+            Tuple[str]: A tuple containing the stopwords.
+        
+        Raises:
+            FileNotFoundError: If the stopwords_data.json file does not exist.
+        """
         current_directory = os.path.dirname(__file__)
         data_file_path = os.path.join(current_directory, '..', 'data', 'stopwords_data.json')
         
@@ -23,6 +32,15 @@ class DataUtils:
     
     @staticmethod
     def load_test_data() -> Any:
+        """
+        Loads test data from a JSON file located in the data directory.
+        
+        Returns:
+            Any: The test data loaded from the file.
+        
+        Raises:
+            FileNotFoundError: If the test_data.json file does not exist.
+        """
         current_directory = os.path.dirname(__file__)
         data_file_path = os.path.join(current_directory, '..', 'data', 'test_data.json')
 
