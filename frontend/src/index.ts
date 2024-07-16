@@ -45,8 +45,8 @@ class MathUtils {
      * console.log(randomPosition); // Output: { x: 123.45, y: 67.89 }
      */
     public static getRandomAngularPosition(): Position {
-        const randomDistance = Math.random() * 200
-        const randomAngle = Math.random() * 2 * Math.PI
+        const randomDistance = this.getRandomFloat(0.0, 200.0)
+        const randomAngle = this.getRandomAngle()
         return this.getAngularPosition(randomAngle, randomDistance)
     }
 
@@ -56,7 +56,7 @@ class MathUtils {
      * @returns {number} A random angle between 0 (inclusive) and 2pi (exclusive).
      */
     public static getRandomAngle(): number {
-        return Math.random() * 2 * Math.PI
+        return this.getRandomFloat(0.0, 2 * Math.PI)
     }
 
     /**
@@ -91,8 +91,27 @@ class MathUtils {
      * console.log(randomPosition); // Output: { x: 70.71, y: 70.71 }
      */
     public static getRandomAngularPositionWithDistance(distance: number): Position {
-        const randomAngle = Math.random() * 2 * Math.PI
+        const randomAngle = this.getRandomAngle()
         return this.getAngularPosition(randomAngle, distance)
+    }
+
+    /**
+     * Generates a random floating-point number within a specified range.
+     *
+     * @param min - The minimum value (inclusive) of the range.
+     * @param max - The maximum value (exclusive) of the range.
+     *
+     * @returns A random floating-point number within the range [min, max).
+     *
+     * @remarks
+     * This function uses the `window.crypto.getRandomValues` method to generate a random number.
+     * It then scales the random number to fit within the specified range and returns the result.
+     */
+    public static getRandomFloat(min: number, max: number): number {
+        const randomBuffer = new Uint32Array(1);
+        window.crypto.getRandomValues(randomBuffer);
+        const randomNumber = randomBuffer[0] / (0xFFFFFFFF + 1); // 0xFFFFFFFF is the max value for Uint32
+        return randomNumber * (max - min) + min;
     }
 }
 
@@ -114,7 +133,7 @@ class TextUtils {
         const charsList = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         let result = ''
         for (let i = 0; i < chars; i++) {
-            result += charsList.charAt(Math.floor(Math.random() * charsList.length))
+            result += charsList.charAt(Math.floor(MathUtils.getRandomFloat(0.0, charsList.length)))
         }
         return result
     }
