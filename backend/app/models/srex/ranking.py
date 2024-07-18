@@ -485,14 +485,32 @@ class Document(QueryTreeHandler):
     
 
     def get_abstract(self) -> str:
+        """
+        Retrieve the abstract of the current Document object.
+
+        Returns:
+        str: The abstract of the document.
+        """
         return self.__abstract
     
 
     def get_title(self) -> str:
+        """
+        Retrieve the title of the current Document object.
+
+        Returns:
+        str: The title of the document.
+        """
         return self.__title
     
 
     def get_doc_id(self) -> str:
+        """
+        Retrieve the unique identifier of the current document.
+
+        Returns:
+        str: The unique identifier of the document.
+        """
         return self.__doc_id
     
 
@@ -682,7 +700,7 @@ class TextTransformationsConfig:
         Parameters:
         stop_words (tuple[str], optional): A tuple of stop words to be excluded from the text transformations. Default is an empty tuple.
         lemmatization (bool, optional): A boolean indicating whether lemmatization should be applied to the text transformations. Default is True.
-        stemming (bool, optional): A string indicating the type of stemming to be applied to the text transformations. Default is False.
+        stemming (bool, optional): A boolean indicating whether stemming should be applied to the text transformations. Default is False.
         """
         self.__stop_words = stop_words
         self.__lemmatization = lemmatization
@@ -703,7 +721,7 @@ class TextTransformationsConfig:
 class Ranking(QueryTreeHandler):
     
     def __init__(self, query_text: str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
-                 stop_words: tuple[str] = (), lemmatization: bool = True, stemming: str = False):
+                 stop_words: tuple[str] = (), lemmatization: bool = True, stemming: bool = False):
         """
         Initialize a new Ranking object.
         
@@ -713,12 +731,11 @@ class Ranking(QueryTreeHandler):
         ranking_weight_type (str, optional): The type of weighting to be applied to the ranking. It can be 'none', 'linear' or 'inverse'. Default is 'linear'.
         stop_words (tuple[str], optional): A tuple of stop words to be excluded from the ranking. Default is an empty tuple.
         lemmatization (bool, optional): A boolean indicating whether lemmatization should be applied to the ranking. Default is True.
-        stemming (str, optional): A string indicating the type of stemming to be applied to the ranking. Default is False.
+        stemming (bool, optional): A boolean indicating indicating whether stemming should be applied to the ranking. Default is False.
         """
-        self.__validate_alnum_query_text_not_empty(query_text)
         self.__initialize_binary_expression_tree(query_text)
         self.__nr_search_results = nr_search_results
-        self.__ranking_weight_type = ranking_weight_type  #Type of weighting to be applied (it can be: 'none', 'linear' or 'inverse')
+        self.__ranking_weight_type = ranking_weight_type
         self.__text_transformations_config = TextTransformationsConfig(stop_words, lemmatization, stemming)
         self.__documents: list[Document] = []
 
@@ -1118,6 +1135,25 @@ class Ranking(QueryTreeHandler):
         return factor
     
     
+    def __initialize_binary_expression_tree(self, 
+        query_text: str
+        ) -> None:
+        """
+        Validate the query text and initialize the binary expression tree.
+
+        Parameters:
+        query_text (str): The input query text to be used to create the binary expression tree.
+
+        Raises:
+        ValueError: If the query text has invalid syntax, a ValueError is raised with a descriptive message.
+        """
+        self.__validate_alnum_query_text_not_empty(query_text)
+        try:
+            super().__init__(query_tree=BinaryExpressionTree(query_text))
+        except Exception as e:
+            raise ValueError("Invalid query syntax: " + repr(e))
+    
+    
     def __validate_alnum_query_text_not_empty(self, 
         query_text: str
         ) -> None:
@@ -1136,21 +1172,3 @@ class Ranking(QueryTreeHandler):
         alnum_query_text = re.sub(r'\W+', '', query_text)
         if alnum_query_text == '':
             raise ValueError("Query text cannot be empty")
-    
-    
-    def __initialize_binary_expression_tree(self, 
-        query_text: str
-        ) -> None:
-        """
-        Initialize the binary expression tree.
-
-        Parameters:
-        query_text (str): The input query text to be used to create the binary expression tree.
-
-        Raises:
-        ValueError: If the query text has invalid syntax, a ValueError is raised with a descriptive message.
-        """
-        try:
-            super().__init__(query_tree=BinaryExpressionTree(query_text))
-        except Exception as e:
-            raise ValueError("Invalid query syntax: " + repr(e))

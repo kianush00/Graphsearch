@@ -309,6 +309,12 @@ class BinaryExpressionTree:
     
 
     def get_raw_query(self) -> str:
+        """
+        Retrieve the raw boolean query used to construct the BinaryExpressionTree.
+
+        Returns:
+        str: The raw boolean query used to construct the BinaryExpressionTree.
+        """
         return self.__raw_query
     
 
@@ -339,6 +345,14 @@ class BinaryExpressionTree:
     
 
     def get_graph(self) -> VicinityGraph | None:
+        """
+        Retrieve the graph associated with the root node of the binary expression tree.
+
+        Returns:
+        VicinityGraph | None:
+            The graph associated with the root node of the binary expression tree.
+            If no graph is associated with the root node, the function returns None.
+        """
         return self.root.graph
     
 

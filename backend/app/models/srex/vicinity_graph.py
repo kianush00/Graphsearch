@@ -220,7 +220,7 @@ class VicinityGraph:
         for node in self.__nodes:
             if node.get_term() == term:
                 return node
-        print("No node with term")
+        print(f"No node with term {term}")
         return None
     
 
@@ -238,6 +238,12 @@ class VicinityGraph:
 
 
     def add_node(self, node: VicinityNode) -> None:
+        """
+        Adds a node to the graph.
+
+        Parameters:
+        node (VicinityNode): The node to be added to the graph. This node should be an instance of the VicinityNode class.
+        """
         self.__nodes.append(node)
 
 
@@ -254,7 +260,7 @@ class VicinityGraph:
             if node.get_term() == term:
                 self.__nodes.remove(node)
                 return
-        print("No node with term")
+        print(f"No node with term {term}")
     
 
     def __str__(self) -> str:
