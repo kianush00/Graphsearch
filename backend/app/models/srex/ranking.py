@@ -267,11 +267,11 @@ class Sentence(QueryTreeHandler):
         term_positions_dict : defaultdict[str, list[int]]
             A dictionary with a list of positions for each term of the text
         """
-        vectorizer = CountVectorizer()
-        vector = vectorizer.build_tokenizer()(text)
         term_positions_dict = defaultdict(list)
-        for i in range(len(vector)):
-            term_positions_dict[vector[i]].append(i)
+        # Tokenize and normalize the text
+        terms = re.findall(r'\w+', text.lower())
+        for i, term in enumerate(terms):
+            term_positions_dict[term].append(i)
         return term_positions_dict
     
 
