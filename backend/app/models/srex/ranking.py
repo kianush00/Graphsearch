@@ -311,7 +311,7 @@ class Sentence(QueryTreeHandler):
             term1_positions: list[int], 
             term2_positions: list[int],
             limit_distance: int
-            ) -> list[float]:
+            ) -> list[int]:
         """
         Compare the positions vectors of two terms, and return the list of 
         frequencies per distance between query terms and vicinity terms
@@ -320,7 +320,7 @@ class Sentence(QueryTreeHandler):
         term1_positions = [0, 2, 4, 6]
         term2_positions = [1, 3, 5, 7]
         limit_distance = 7
-        result = [7.0, 0.0, 5.0, 0.0, 3.0, 0.0, 1.0]
+        result = [7, 0, 5, 0, 3, 0, 1]
 
         Parameters
         ----------
@@ -333,7 +333,7 @@ class Sentence(QueryTreeHandler):
 
         Returns
         -------
-        frequencies_per_distance : list[float]
+        frequencies_per_distance : list[int]
             List of frequencies per distance between query terms and vicinity terms
         """
         frequencies_per_distance = [0] * limit_distance

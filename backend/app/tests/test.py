@@ -192,7 +192,7 @@ class TestSREX(unittest.TestCase):
         result = s.calculate_distances_between_term_positions(tp1, tp2, limit_distance)
         
         # Define expected result
-        expected_result = [7.0, 0.0, 5.0, 0.0, 3.0, 0.0, 1.0]
+        expected_result = [7, 0, 5, 0, 3, 0, 1]
         
         # Assert the result matches the expected output
         self.assertCountEqual(result, expected_result)
