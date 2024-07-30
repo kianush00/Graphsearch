@@ -33,23 +33,39 @@ html, body {
     text-align: center;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #queryInput {
     outline: none;
     font-size: 16pt;
+    height: 36px; /* Adjust height as needed */
+    padding: 0 0.5rem; /* Add horizontal padding */
+    border: 1px solid #999; /* Add a border to the input */
+    border-radius: 4px 0 0 4px; /* Round the left corners of the input */
+    box-sizing: border-box; /* Include border at full width */
 }
 
 #searchIcon {
-    position: relative;
-    left: 8px;
-    transform: translateY(11%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px; /* Width of the icon box */
+    height: 36px; /* Height of the box, same as input */
+    border: 1px solid #999; /* Same border as input */
+    border-radius: 0 4px 4px 0; /* Round right corners */
+    background-color: #f9f9f9; /* Background color of the box */
     cursor: pointer;
     color: gray;
+    font-size: 24px;   /* Set this value to change the size */
+    box-sizing: border-box; /* Include border in overall size */
 }
 
 #searchIcon:hover {
     color: black;
+    background-color: #e0e0e0; /* Background color change on hover */
 }
 
 #cy {
