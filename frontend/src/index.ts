@@ -1504,25 +1504,35 @@ class QueryService {
 class QueryComponent {
     private queryService: QueryService
     private input: HTMLInputElement
+    private searchIcon: HTMLElement
 
     constructor(queryService: QueryService) {
         this.queryService = queryService
         this.input = document.getElementById('queryInput') as HTMLInputElement
+        this.searchIcon = document.getElementById('searchIcon') as HTMLElement
 
-        // Add event listener to the input element to handle "Enter" key presses
+        // Event listener for "Enter" key presses
         this.input.addEventListener("keyup", event => {
-            if(event.key !== "Enter") return // Only proceed if the "Enter" key is pressed
-            event.stopImmediatePropagation() // Prevent other handlers from being called
-            let queryValue = this.input.value.trim() // Get the trimmed input value
-            this.input.value = '' // Clear the input field
-            event.preventDefault() // Prevent the default action
-            const alphanumericRegex = /[a-zA-Z0-9]/
-            if (alphanumericRegex.test(queryValue)) {   // Check if the value contains at least one alphanumeric character
-                this.queryService.setQuery(queryValue) // Send the query to the query service
-            } else if (queryValue !== '') {
-                alert("Please enter a valid query.")    // Alert the user if the query is invalid
+            if(event.key === "Enter") {
+                this.processQuery()
             }
         })
+
+        // Event listener for clicking the search icon
+        this.searchIcon.addEventListener("click", () => {
+            this.processQuery()
+        })
+    }
+
+    private processQuery() {
+        let queryValue = this.input.value.trim() // Get the trimmed input value
+        this.input.value = '' // Clear the input field
+        const alphanumericRegex = /[a-zA-Z0-9]/
+        if (alphanumericRegex.test(queryValue)) {   // Check if the value contains at least one alphanumeric character
+            this.queryService.setQuery(queryValue) // Send the query to the query service
+        } else if (queryValue !== '') {
+            alert("Please enter a valid query.")    // Alert the user if the query is invalid
+        }
     }
 }
 

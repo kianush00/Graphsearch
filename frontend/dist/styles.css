@@ -16,16 +16,16 @@ html, body {
 #rightContainer {
     width: 100%;
     height: inherit;
-    margin-left: 0.3rem;
-    margin-right: 0.5rem;
+    margin-left: 0.8rem;
+    margin-right: 3rem;
 }
 
 #leftContainer {
     width: 37rem;
     display: block;
     height: inherit;
-    margin-left: 0.5rem;
-    margin-right: 0.3rem;
+    margin-left: 3rem;
+    margin-right: 0.8rem;
 }
 
 #queryBar {
@@ -38,6 +38,18 @@ html, body {
 #queryInput {
     outline: none;
     font-size: 16pt;
+}
+
+#searchIcon {
+    position: relative;
+    left: 8px;
+    transform: translateY(11%);
+    cursor: pointer;
+    color: gray;
+}
+
+#searchIcon:hover {
+    color: black;
 }
 
 #cy {
