@@ -623,8 +623,8 @@ class NeighbourTerm extends Term implements ViewManager {
         super(value)
         this.queryTerm = queryTerm
         this.ponderation = ponderation
+        this.hops = hops
         this.setLabel(value)
-        this.initializeHopsAndNodePosition(hops)
     }
 
     /**
@@ -696,23 +696,23 @@ class NeighbourTerm extends Term implements ViewManager {
     }
 
     /**
-     * Initializes the number of hops and the position of the neighbour term node.
+     * Updates the position of the neighbour term node and updates the neighbour term's hops.
      *
-     * @param hops - The number of hops for the neighbour term node.
-     * This value is used to calculate the distance from the central node.
-     *
-     * @remarks
-     * This function sets the number of hops for the neighbour term node,
-     * calculates the distance from the central node based on the number of hops,
-     * generates a random position for the neighbour term node within the specified range,
-     * and updates the position of the neighbour term node.
+     * @param neighbourTermsLength - The total number of neighbour terms associated with the query term.
+     * @param index - The index of the neighbour term in the neighbour terms list.
      *
      * @returns {void} - This function does not return any value.
+     * 
+     * @remarks
+     * This function calculates the new angle for the neighbour term node based on the index and the total number of neighbour terms.
+     * It then calculates the distance from the central node using the neighbour term's hops.
+     * The new position is obtained using the calculated angle and distance.
+     * Finally, it updates the position of the neighbour term node and calls the `updateNodePosition` method.
      */
-    private initializeHopsAndNodePosition(hops: number): void {
-        this.hops = hops
-        const nodeDistance = HopConversionUtils.convertHopsToDistance(hops)
-        this.nodePosition = MathUtils.getRandomAngularPositionWithDistance(nodeDistance)
+    public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
+        const newAngle = (index / neighbourTermsLength) * Math.PI * 2
+        const nodeDistance = HopConversionUtils.convertHopsToDistance(this.hops)
+        this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this.updateNodePosition()
     }
 
@@ -752,8 +752,6 @@ class NeighbourTerm extends Term implements ViewManager {
      * This function is responsible for updating the position of the neighbour term node and
      * the number of hops for the neighbour term. It calls the `setPosition` method of the neighbour term node
      * and the `updateDistance` method of the edge connecting the neighbour term node to the central node.
-     *
-     * 
      */
     private updateNodePosition(): void {
         this.node?.setPosition(this.nodePosition)
@@ -813,11 +811,19 @@ class QueryTerm extends Term implements ViewManager {
 
     public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.neighbourTerms.push(neighbourTerm)
+        this.updateOuterNodesAngles()
     }
 
     public removeNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.neighbourTerms = this.neighbourTerms.filter(term => term !== neighbourTerm)
         neighbourTerm.removeViews()
+        this.updateOuterNodesAngles()
+    }
+
+    private updateOuterNodesAngles(): void {
+        for (let i = 0; i < this.neighbourTerms.length; i++) {
+            this.neighbourTerms[i].updateSymmetricalAngularPosition(this.neighbourTerms.length, i)
+        }
     }
 }
 
@@ -884,8 +890,6 @@ class Document {
      * @param response_neighbour_terms - An array of objects containing neighbour term data.
      * Each object has properties: term, distance, and ponderation.
      *
-     * 
-     *
      * @remarks
      * This function iterates over the response data, creates new NeighbourTerm instances for each term object,
      * and adds them to the QueryTerm's neighbour terms list.
@@ -938,8 +942,6 @@ class Ranking {
      *
      * @param positions - An array of integers representing the new order of the documents.
      * Each integer corresponds to the index of a document in the documents array.
-     *
-     * 
      *
      * @remarks
      * This function iterates over the positions array and creates a new array of documents
@@ -1027,6 +1029,19 @@ class QueryTermService {
     }
 
     /**
+     * Adds a neighbour term to the QueryTerm's neighbour terms list.
+     * It also updates the neighbour terms table in the QueryService.
+     * If the QueryTerm is currently visible, it displays the views of the neighbour term.
+     *
+     * @param neighbourTerm - The neighbour term to be added.
+     */
+    public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+        this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
+        this.queryService.updateNeighbourTermsTable()
+        if (this.isVisible) this.display()
+    }
+
+    /**
      * Removes a neighbour term from the visible query term.
      * 
      * This function retrieves the neighbour term associated with the provided id,
@@ -1034,7 +1049,6 @@ class QueryTermService {
      * It then updates the neighbour terms table in the query service.
      * 
      * @param id - The id of the neighbour term to be removed.
-     * 
      */
     public removeNeighbourTerm(id: string): void {
         const neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermById(id)
@@ -1049,8 +1063,6 @@ class QueryTermService {
      * This function is responsible for zooming in the graph and centering it on the CentralNode.
      * It first zooms in the graph by a factor of 1.2, then checks if the visible query term has a node.
      * If the node exists and is a CentralNode, it centers the graph on the node.
-     * 
-     * 
      */
     private center(): void {
         cy.zoom(1.2)
@@ -1083,13 +1095,13 @@ class QueryTermService {
     /**
      * This function generates visible neighbour terms for the current query term.
      * 
+     * It iterates over the neighbour terms in the result, creates new NeighbourTerm instances,
+     * and adds them to the QueryTerm's neighbour terms list.
+     * 
      * @param result - The result object containing neighbour terms data.
      * The result object is expected to have a property 'visible_neighbour_terms',
      * which is an array of objects representing neighbour terms.
      * Each object should have properties 'term', 'distance', and 'ponderation'.
-     * 
-     * It iterates over the neighbour terms in the result, creates new NeighbourTerm instances,
-     * and adds them to the QueryTerm's neighbour terms list.
      */
     private generateVisibleNeighbourTerms(result: any) {
         // Iterate over the neighbour terms in the result
@@ -1105,13 +1117,13 @@ class QueryTermService {
     /**
      * Generates ranking documents for the current query term.
      * 
+     * It iterates over the documents in the result, creates new Document instances,
+     * and adds them to the QueryTerm's ranking documents list.
+     * 
      * @param result - The result object containing ranking documents data.
      * The result object is expected to have a property 'documents',
      * which is an array of objects representing documents.
      * Each object should have properties 'doc_id', 'title', 'abstract', and 'neighbour_terms'.
-     * 
-     * It iterates over the documents in the result, creates new Document instances,
-     * and adds them to the QueryTerm's ranking documents list.
      */
     private generateRankingDocuments(result: any) {
         // Iterate over the documents in the result
@@ -1123,19 +1135,6 @@ class QueryTermService {
             const document = new Document(this.ranking.getVisibleQueryTerm().getValue(), doc_id, title, abstract, response_neighbour_terms)
             this.addDocument(document)
         }
-    }
-
-    /**
-     * Adds a neighbour term to the QueryTerm's neighbour terms list.
-     * It also updates the neighbour terms table in the QueryService.
-     * If the QueryTerm is currently visible, it displays the views of the neighbour term.
-     *
-     * @param neighbourTerm - The neighbour term to be added.
-     */
-    private addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
-        this.queryService.updateNeighbourTermsTable()
-        if (this.isVisible) this.display()
     }
     
     /**
@@ -1222,7 +1221,6 @@ class ResultsList {
      * This function is responsible for populating the results list with the documents retrieved from the active query term.
      * It iterates over the documents in the ranking and creates list items for each one, including title and abstract elements.
      * Click event listeners and mouse event listeners are added to the title elements to handle user interactions.
-     * 
      */
     public updateList(): void {
         // Clear existing list items
@@ -1422,6 +1420,7 @@ class QueryService {
      * Sets the query for the service.
      * Deactivates the currently active QueryTermService, creates a new Query object,
      * and triggers the query generation process.
+     * 
      * @param query - The new query string.
      */
     public setQuery(queryValue: string): void {
@@ -1449,7 +1448,6 @@ class QueryService {
         if (queryTermService !== undefined) {
             this.activeQueryTermService = queryTermService
             this.activeQueryTermService.display()
-
             this.neighbourTermsTable.setActiveTermService(this.activeQueryTermService)
             this.resultsList.setActiveTermService(this.activeQueryTermService)
             this.updateNeighbourTermsTable()
@@ -1506,6 +1504,16 @@ class QueryComponent {
     private input: HTMLInputElement
     private searchIcon: HTMLElement
 
+    /**
+     * Constructs a new instance of QueryComponent.
+     * This class is responsible for handling query input interactions.
+     *
+     * @param queryService - The QueryService instance to be used for sending queries.
+     *
+     * @remarks
+     * The QueryComponent captures user input from an HTML input element,
+     * and sends the query to the QueryService when the Enter key is pressed or the search icon is clicked.
+     */
     constructor(queryService: QueryService) {
         this.queryService = queryService
         this.input = document.getElementById('queryInput') as HTMLInputElement
@@ -1524,6 +1532,13 @@ class QueryComponent {
         })
     }
 
+    /**
+     * Handles the query input and sends the query to the query service.
+     * 
+     * This function retrieves the trimmed input value from the query input field, clears the input field,
+     * and checks if the value contains at least one alphanumeric character. If it does, it sends the query to the query service.
+     * If the value is empty or does not contain any alphanumeric characters, it alerts the user to enter a valid query.
+     */
     private processQuery() {
         let queryValue = this.input.value.trim() // Get the trimmed input value
         this.input.value = '' // Clear the input field

@@ -17,14 +17,14 @@ html, body {
     width: 100%;
     height: inherit;
     margin-left: 0.8rem;
-    margin-right: 3rem;
+    margin-right: 5rem;
 }
 
 #leftContainer {
     width: 37rem;
     display: block;
     height: inherit;
-    margin-left: 3rem;
+    margin-left: 5rem;
     margin-right: 0.8rem;
 }
 
