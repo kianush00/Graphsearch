@@ -16,18 +16,15 @@
                 <input type="text" id="queryInput" size="36" placeholder="New query..." autofocus>
                 <i id="searchIcon" class="fas fa-search fa-2x"></i>
             </div>
-            <div id="searchParametersContainer">
-                <p id="searchParametersToggle">Search parameters</p>
-                <div id="searchParameters">
-                    <label for="searchResults">Search results:</label>
-                    <input type="number" id="searchResults" name="searchResults" min="5">
-                    <br>
-                    <label for="limitDistance">Limit distance:</label>
-                    <input type="number" id="limitDistance" name="limitDistance" min="2" max="10">
-                    <br>
-                    <label for="graphTerms">Number of graph terms:</label>
-                    <input type="number" id="graphTerms" name="graphTerms" min="1" max="20">
-                </div>
+            <div id="searchParameters">
+                <label for="searchResults">Search results:</label>
+                <input type="number" id="searchResults" name="searchResults" min="5">
+                <br>
+                <label for="limitDistance">Limit distance:</label>
+                <input type="number" id="limitDistance" name="limitDistance" min="2" max="10">
+                <br>
+                <label for="graphTerms">Number of graph terms:</label>
+                <input type="number" id="graphTerms" name="graphTerms" min="1" max="20">
             </div>
             <div id="cy"></div>
             <div id="rerank">

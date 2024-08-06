@@ -1532,8 +1532,6 @@ class QueryComponent {
     private searchResultsInput: HTMLInputElement
     private limitDistanceInput: HTMLInputElement
     private graphTermsInput: HTMLInputElement
-    private searchParametersToggle: HTMLElement
-    private searchParameters: HTMLElement
 
     /**
      * Constructs a new instance of QueryComponent.
@@ -1552,8 +1550,6 @@ class QueryComponent {
         this.searchResultsInput = document.getElementById('searchResults') as HTMLInputElement;
         this.limitDistanceInput = document.getElementById('limitDistance') as HTMLInputElement;
         this.graphTermsInput = document.getElementById('graphTerms') as HTMLInputElement;
-        this.searchParametersToggle = document.getElementById('searchParametersToggle') as HTMLElement;
-        this.searchParameters = document.getElementById('searchParameters') as HTMLElement;
 
         // Set default values for the inputs
         this.searchResultsInput.value = "10";
@@ -1584,15 +1580,6 @@ class QueryComponent {
         this.searchIcon.addEventListener("click", () => {
             this.processQuery()
         })
-
-        // Event listener for toggling search parameters visibility
-        this.searchParametersToggle.addEventListener("click", () => {
-            if (this.searchParameters.style.display === 'block') {
-                this.searchParameters.style.display = 'none';
-            } else {
-                this.searchParameters.style.display = 'block';
-            }
-        });
 
          // Add validation to ensure inputs stay within defined ranges
          // Validate search results input

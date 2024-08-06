@@ -68,19 +68,11 @@ html, body {
     background-color: #e0e0e0; /* Background color change on hover */
 }
 
-#searchParametersToggle {
-    cursor: pointer; 
-    color: blue; 
-    text-decoration: underline;
-    text-align: right;
-    padding: 0 2rem; /* Add horizontal padding */
-}
-
 #searchParameters {
-    display: none;
+    display: block;
     text-align: right;
-    padding: 0 2rem; /* Add horizontal padding */
-    margin-bottom: 0.5rem;
+    padding: 0.5rem 2rem; /* Add horizontal padding */
+    margin-top: 0.4rem;
 }
 
 #searchParameters input[type="number"] {
