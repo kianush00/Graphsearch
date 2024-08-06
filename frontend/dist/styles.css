@@ -84,7 +84,7 @@ html, body {
 }
 
 #searchParameters input[type="number"] {
-    width: 70px; /* Adjust the width as needed */
+    width: 60px; /* Adjust the width as needed */
 }
 
 #cy {

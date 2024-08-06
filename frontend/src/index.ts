@@ -832,6 +832,7 @@ interface DocumentObject {
     doc_id: string;
     title: string;
     abstract: string;
+    initial_ranking_position: number;
     neighbour_terms: NTermObject[];
 }
 
@@ -840,6 +841,7 @@ class Document {
     private id: string
     private title: string
     private abstract: string
+    private initialRankingPosition: number
 
     /**
      * Represents a document associated with a query term.
@@ -848,15 +850,18 @@ class Document {
      * @param id - The unique identifier of the document.
      * @param title - The title of the document.
      * @param abstract - The abstract of the document.
-     * @param response_neighbour_terms - An array of objects containing neighbour term data retrieved from the response.
+     * @param initialRankingPosition - The initial ranking position of the document.
+     * @param responseNeighbourTerms - An array of objects containing neighbour term data retrieved from the response.
      * Each object has properties: term, distance, and ponderation.
      */
-    constructor(queryTermValue: string, id: string, title: string, abstract: string, response_neighbour_terms: any[]){
+    constructor(queryTermValue: string, id: string, title: string, abstract: string, 
+                initialRankingPosition: number, responseNeighbourTerms: any[]){
         this.queryTerm = new QueryTerm(queryTermValue)
         this.id = id
         this.title = title
         this.abstract = abstract
-        this.initializeNeighbourTermsFromResponse(response_neighbour_terms)
+        this.initialRankingPosition = initialRankingPosition
+        this.initializeNeighbourTermsFromResponse(responseNeighbourTerms)
     }
 
     public getQueryTerm(): QueryTerm {
@@ -875,11 +880,16 @@ class Document {
         return this.abstract
     }
 
+    public getInitialRankingPosition(): number {
+        return this.initialRankingPosition
+    }
+
     public toObject(): DocumentObject {
         return {
             doc_id: this.id,
             title: this.title,
             abstract: this.abstract,
+            initial_ranking_position: this.initialRankingPosition,
             neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
         }
     }
@@ -887,16 +897,16 @@ class Document {
     /**
      * Initializes neighbour terms from the response data.
      *
-     * @param response_neighbour_terms - An array of objects containing neighbour term data.
+     * @param responseNeighbourTerms - An array of objects containing neighbour term data.
      * Each object has properties: term, distance, and ponderation.
      *
      * @remarks
      * This function iterates over the response data, creates new NeighbourTerm instances for each term object,
      * and adds them to the QueryTerm's neighbour terms list.
      */
-    private initializeNeighbourTermsFromResponse(response_neighbour_terms: any[]): void {
+    private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[]): void {
         const neighbourTerms = []
-        for (const termObject of response_neighbour_terms) {
+        for (const termObject of responseNeighbourTerms) {
             neighbourTerms.push(new NeighbourTerm(this.queryTerm, termObject.term, termObject.distance, termObject.ponderation))
         }
         this.queryTerm.setNeighbourTerms(neighbourTerms)
@@ -969,15 +979,18 @@ class Ranking {
 }
 
 
+/**
+ * A service class responsible for managing query terms and their associated data.
+ */
 class QueryTermService {
     private queryService: QueryService
     private ranking: Ranking
     private isVisible: boolean = false
 
-    constructor(queryService: QueryService, queryTermValue: string) {
+    constructor(queryService: QueryService, queryTermValue: string, searchResults: number, limitDistance: number, graphTerms: number) {
         this.queryService = queryService
         this.ranking = new Ranking(queryTermValue)
-        this.retrieveData()
+        this.retrieveData(searchResults, limitDistance, graphTerms)
     }
 
     public getVisibleQueryTerm(): QueryTerm {
@@ -1074,16 +1087,21 @@ class QueryTermService {
      * Retrieves data related to neighbour terms for the current query term.
      * The retrieved data is then used to create new NeighbourTerm instances,
      * which are added to the QueryTerm's neighbour terms list.
+     * 
+     * @param searchResults - The number of search results to retrieve.
+     * @param limitDistance - The maximum distance limit for neighbour terms.
+     * @param graphTerms - The number of neighbour terms to include in the graph.
      *
      * @returns {Promise<void>} - A promise that resolves when the data retrieval and processing are complete.
      */
-    private async retrieveData() {
+    private async retrieveData(searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
         // Define the endpoint for retrieving neighbour terms data
         const endpoint = 'get-ranking'
 
         // Send a POST request to the endpoint with the query term value
         let _query = this.getVisibleQueryTerm().getValue()
-        const result = await HTTPRequestUtils.postData(endpoint, { query: _query })
+        const data = {query: _query, search_results: searchResults, limit_distance: limitDistance, graph_terms: graphTerms}
+        const result = await HTTPRequestUtils.postData(endpoint, data)
 
         // Check if the result is not null
         if (result) {
@@ -1131,8 +1149,10 @@ class QueryTermService {
             const doc_id = documentObject['doc_id']
             const title = documentObject['title']
             const abstract = documentObject['abstract']
+            const initial_ranking_position = documentObject['initial_ranking_position']
             const response_neighbour_terms = documentObject['neighbour_terms']
-            const document = new Document(this.ranking.getVisibleQueryTerm().getValue(), doc_id, title, abstract, response_neighbour_terms)
+            const document = new Document(this.ranking.getVisibleQueryTerm().getValue(), doc_id, title, 
+                                        abstract, initial_ranking_position, response_neighbour_terms)
             this.addDocument(document)
         }
     }
@@ -1421,11 +1441,14 @@ class QueryService {
      * Deactivates the currently active QueryTermService, creates a new Query object,
      * and triggers the query generation process.
      * 
-     * @param query - The new query string.
+     * @param queryValue - The new query string.
+     * @param searchResults - The number of search results to retrieve.
+     * @param limitDistance - The maximum distance limit for neighbour terms.
+     * @param graphTerms - The number of neighbour terms to include in the graph.
      */
-    public setQuery(queryValue: string): void {
+    public setQuery(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
         this.activeQueryTermService?.deactivate()
-        this.generateNewQueryTermService(queryValue)
+        this.generateNewQueryTermService(queryValue, searchResults, limitDistance, graphTerms)
         if (this.queryTermServices.length > 0) {
             this.setActiveQueryTermService(queryValue)
         }
@@ -1470,10 +1493,13 @@ class QueryService {
      * and updates the query terms list.
      *
      * @param queryValue - The value of the query term for which to generate a new QueryTermService.
+     * @param searchResults - The number of search results to retrieve.
+     * @param limitDistance - The maximum distance limit for neighbour terms.
+     * @param graphTerms - The number of neighbour terms to include in the graph.
      */
-    private generateNewQueryTermService(queryValue: string): void {
+    private generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
         if (this.findQueryTermService(queryValue) === undefined) {
-            const queryTermService = new QueryTermService(this, queryValue)
+            const queryTermService = new QueryTermService(this, queryValue, searchResults, limitDistance, graphTerms)
             this.queryTermServices.push(queryTermService)
             this.updateQueryTermsList()
         }
@@ -1613,7 +1639,7 @@ class QueryComponent {
             const searchResults = parseInt(this.searchResultsInput.value, 10);
             const limitDistance = parseInt(this.limitDistanceInput.value, 10);
             const graphTerms = parseInt(this.graphTermsInput.value, 10);
-            this.queryService.setQuery(queryValue) // Send the query to the query service
+            this.queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms) // Send the query to the query service
         } else if (queryValue !== '') {
             alert("Please enter a valid query.")    // Alert the user if the query is invalid
         }
@@ -1678,10 +1704,11 @@ const cy = cytoscape({
         {
             selector: '.' + NodeType.central_node,
             style: {
-            "background-color": 'red',
+            "background-color": '#EB6030',
             'width': '20px',
             'height': '20px',
             'label': "data(id)",
+            "font-size": "16px"
             },
         },
         {
@@ -1698,10 +1725,11 @@ const cy = cytoscape({
         {
             selector: '.' + NodeType.outer_node,
             style: {
-              'background-color': 'blue',
+              'background-color': '#3060EB',
               'width': '15px',
               'height': '15px',
-              'label': 'data(label)'
+              'label': 'data(label)',
+              "font-size": "13px"
             }
         }
     ],

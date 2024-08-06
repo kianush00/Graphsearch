@@ -28,6 +28,9 @@ class VectorUtils:
         normalized_vector : list[float]
             The normalized vector
         """
+        if not vector:
+            return []
+        
         # Get the previous vector range
         old_min = min(vector)
         old_max = max(vector)
@@ -99,3 +102,44 @@ class VectorUtils:
         sorted_positions = [index for index, value in sorted_indexed_values]
         
         return sorted_positions
+    
+    
+    @staticmethod
+    def calculate_distances_between_term_positions(
+            term1_positions: list[int], 
+            term2_positions: list[int],
+            limit_distance: int
+            ) -> list[int]:
+        """
+        Compare the positions vectors of two terms, and return the list of 
+        frequencies per distance between query terms and vicinity terms
+        
+        E.g.\n
+        term1_positions = [0, 2, 4, 6]\n
+        term2_positions = [1, 3, 5, 7]\n
+        limit_distance = 7\n
+        result = [7, 0, 5, 0, 3, 0, 1]\n
+
+        Parameters
+        ----------
+        term1_positions : list[int]
+            List of positions of the first term
+        term2_positions : list[int]
+            List of positions of the second term
+        limit_distance : int
+            Limit distance to calculate between the two term positions lists
+
+        Returns
+        -------
+        frequencies_per_distance : list[int]
+            List of frequencies per distance between query terms and vicinity terms
+        """
+        frequencies_per_distance = [0] * limit_distance
+
+        for term1_pos in term1_positions:
+            for term2_pos in term2_positions:
+                absolute_distance = abs(term1_pos-term2_pos)
+                if (absolute_distance <= limit_distance):
+                    frequencies_per_distance[absolute_distance-1] += 1
+
+        return frequencies_per_distance

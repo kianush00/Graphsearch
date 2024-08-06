@@ -3,7 +3,10 @@ from typing import List
 
 
 class QueryTerm(BaseModel):
-    query: str 
+    query: str
+    search_results: int
+    limit_distance: int
+    graph_terms: int
 
 
 class PydanticNeighbourTermRequest(BaseModel):
@@ -16,6 +19,7 @@ class PydanticDocumentRequest(BaseModel):
     doc_id: str
     title: str
     abstract: str
+    initial_ranking_position: int
     neighbour_terms: List[PydanticNeighbourTermRequest]
 
 

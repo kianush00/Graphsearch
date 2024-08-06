@@ -178,9 +178,6 @@ class TestSREX(unittest.TestCase):
         
 
     def test_calculate_distances_between_term_positions(self):
-        # Create a Sentence object with an empty raw_text and a dummy query
-        s = Sentence(raw_text="", query=BinaryExpressionTree(raw_query="test"))
-        
         # Define term positions
         tp1 = [0, 2, 4, 6]
         tp2 = [1, 3, 5, 7]
@@ -189,7 +186,7 @@ class TestSREX(unittest.TestCase):
         limit_distance = 7
         
         # Calculate distances between term positions
-        result = s.calculate_distances_between_term_positions(tp1, tp2, limit_distance)
+        result = VectorUtils.calculate_distances_between_term_positions(tp1, tp2, limit_distance)
         
         # Define expected result
         expected_result = [7, 0, 5, 0, 3, 0, 1]

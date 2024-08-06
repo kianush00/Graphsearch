@@ -8,7 +8,7 @@ router = APIRouter()
 
 @router.post("/get-ranking")
 async def get_neighbour_terms(query_term: QueryTerm) -> PydanticRanking:
-    return queryService.process_query(query_term.query)
+    return queryService.process_query(query_term.query, query_term.search_results, query_term.limit_distance, query_term.graph_terms)
 
 
 @router.post("/rerank")

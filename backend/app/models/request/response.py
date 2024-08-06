@@ -15,6 +15,7 @@ class PydanticDocument(BaseModel):
     doc_id: str
     title: str
     abstract: str
+    initial_ranking_position: int
     neighbour_terms: List[PydanticNeighbourTerm]
 
 

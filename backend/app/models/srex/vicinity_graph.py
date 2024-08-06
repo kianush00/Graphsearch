@@ -231,9 +231,7 @@ class VicinityGraph:
         Returns:
         list[str]: A list of terms from the nodes of the current graph.
         """
-        node_terms = []
-        for node in self.get_sorted_nodes_optionally_limited():
-            node_terms.append(node.get_term())
+        node_terms = [node.get_term() for node in self.get_sorted_nodes_optionally_limited()]
         return node_terms
 
 

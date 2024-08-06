@@ -1,6 +1,5 @@
 import numpy as np
 from collections import defaultdict
-from sklearn.feature_extraction.text import CountVectorizer
 import copy
 import math
 import re
@@ -11,6 +10,8 @@ from models.srex.vicinity_graph import VicinityNode
 from models.srex.binary_expression_tree import BinaryExpressionTree
 from models.srex.binary_expression_tree import BinaryTreeNode
 from utils.text_utils import TextUtils
+from utils.math_utils import MathUtils
+from utils.vector_utils import VectorUtils
 
 
 
@@ -216,7 +217,7 @@ class Sentence(QueryTreeHandler):
                 if query_term == term:
                     continue
 
-                freq_neighborhood_positions = self.calculate_distances_between_term_positions(
+                freq_neighborhood_positions = VectorUtils.calculate_distances_between_term_positions(
                     query_positions, term_positions, limit_distance)
 
                 if any(freq > 0 for freq in freq_neighborhood_positions):
@@ -305,46 +306,6 @@ class Sentence(QueryTreeHandler):
                 query_term_positions_dict[query_term] = term_positions_dict[query_term]
         
         return query_term_positions_dict
-
-
-    def calculate_distances_between_term_positions(self,
-            term1_positions: list[int], 
-            term2_positions: list[int],
-            limit_distance: int
-            ) -> list[int]:
-        """
-        Compare the positions vectors of two terms, and return the list of 
-        frequencies per distance between query terms and vicinity terms
-        
-        E.g.
-        term1_positions = [0, 2, 4, 6]
-        term2_positions = [1, 3, 5, 7]
-        limit_distance = 7
-        result = [7, 0, 5, 0, 3, 0, 1]
-
-        Parameters
-        ----------
-        term1_positions : list[int]
-            List of positions of the first term
-        term2_positions : list[int]
-            List of positions of the second term
-        limit_distance : int
-            Limit distance to calculate between the two term positions lists
-
-        Returns
-        -------
-        frequencies_per_distance : list[int]
-            List of frequencies per distance between query terms and vicinity terms
-        """
-        frequencies_per_distance = [0] * limit_distance
-
-        for term1_pos in term1_positions:
-            for term2_pos in term2_positions:
-                absolute_distance = abs(term1_pos-term2_pos)
-                if (absolute_distance <= limit_distance):
-                    frequencies_per_distance[absolute_distance-1] += 1
-
-        return frequencies_per_distance
     
 
     def generate_nodes_in_leaf_graph(self, 
@@ -381,14 +342,14 @@ class Sentence(QueryTreeHandler):
                 _distance = np.mean(distance_calculation_list)
             
             # Calculate the ponderation of the term, by the formula:  p = (1 + log(tf)) * w
-            term_frequency = terms_freq_dict.get(neighbor_term)
-            _ponderation = (1 + math.log10(term_frequency)) * self.__weight
+            term_frequency: int = terms_freq_dict.get(neighbor_term)
+            _ponderation = MathUtils.calculate_term_ponderation(term_frequency, self.__weight)
 
             # Round the values to 6 decimal places for better readability
             _distance = round(_distance, 6)
             _ponderation = round(_ponderation, 6)
-                
-            # Calculate the mean distance for the term
+            
+            # Initialize the new vicinity node and add it to the leaf node graph
             new_node = VicinityNode(term=neighbor_term, ponderation=_ponderation, distance=_distance)
             leaf_node.graph.add_node(new_node)
 
@@ -396,7 +357,7 @@ class Sentence(QueryTreeHandler):
 
     def get_terms_frequency_dict(self, 
             query_term: str
-            ) -> dict[str, float]:
+            ) -> dict[str, int]:
         """
         This method calculates the frequency of terms from the vicinity matrix 
         of the sentence, by a specified query term
@@ -408,7 +369,7 @@ class Sentence(QueryTreeHandler):
 
         Returns
         -------
-        terms_freq_dict : dict[str, float]
+        terms_freq_dict : dict[str, int]
             A dictionary containing the frequency of terms. Each dictionary has keys corresponding 
             to terms, and values represent the frequency of the term within the sentence.
 
@@ -1094,45 +1055,12 @@ class Ranking(QueryTreeHandler):
             raise ValueError("Abstract and title cannot be both empty")
 
         _ranking_pos = index + 1
-        _weight = self.__calculate_weight(self.__ranking_weight_type, results_size, _ranking_pos)
+        _weight = MathUtils.calculate_document_weight(results_size, _ranking_pos, self.__ranking_weight_type)
         _query_copy = copy.deepcopy(self.get_query_tree())
         new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         
         return new_doc
-
-
-    def __calculate_weight(self,
-            weighted: str, 
-            results_size: int, 
-            ranking_position: int
-            ) -> float:
-        """
-        Calculate a weight factor depending on the argument value ('linear' or 'inverse'), and 
-        the position of the document in the ranking.
-
-        Parameters
-        ----------
-        weighted : str
-            The type of weighting to be applied. Can be 'linear', 'inverse', or any other value.
-        results_size : int
-            The total number of results/documents.
-        ranking_position : int
-            The position of the document in the ranking.
-
-        Returns
-        -------
-        factor : float
-            The calculated weight factor.
-        """
-        if (weighted=='linear'):
-            factor = float((results_size - ((ranking_position - 1) * 0.7)) / results_size)
-        elif (weighted=='inverse'):
-            factor = float(1 / (((ranking_position - 1) * 0.05) + 1))
-        else:
-            factor = 1.0
-
-        return factor
     
     
     def __initialize_binary_expression_tree(self, 
