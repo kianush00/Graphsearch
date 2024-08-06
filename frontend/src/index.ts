@@ -1503,6 +1503,11 @@ class QueryComponent {
     private queryService: QueryService
     private input: HTMLInputElement
     private searchIcon: HTMLElement
+    private searchResultsInput: HTMLInputElement
+    private limitDistanceInput: HTMLInputElement
+    private graphTermsInput: HTMLInputElement
+    private searchParametersToggle: HTMLElement
+    private searchParameters: HTMLElement
 
     /**
      * Constructs a new instance of QueryComponent.
@@ -1518,7 +1523,30 @@ class QueryComponent {
         this.queryService = queryService
         this.input = document.getElementById('queryInput') as HTMLInputElement
         this.searchIcon = document.getElementById('searchIcon') as HTMLElement
+        this.searchResultsInput = document.getElementById('searchResults') as HTMLInputElement;
+        this.limitDistanceInput = document.getElementById('limitDistance') as HTMLInputElement;
+        this.graphTermsInput = document.getElementById('graphTerms') as HTMLInputElement;
+        this.searchParametersToggle = document.getElementById('searchParametersToggle') as HTMLElement;
+        this.searchParameters = document.getElementById('searchParameters') as HTMLElement;
 
+        // Set default values for the inputs
+        this.searchResultsInput.value = "10";
+        this.limitDistanceInput.value = "4";
+        this.graphTermsInput.value = "10";
+
+        this.addEventListeners()
+    }
+
+    /**
+     * Handles the query input and adds event listeners to various elements.
+     * 
+     * This function adds event listeners for:
+     * - "Enter" key presses in the query input field.
+     * - Clicking the search icon.
+     * - Toggling the visibility of search parameters.
+     * - Validating and ensuring inputs stay within defined ranges.
+     */
+    private addEventListeners(): void {
         // Event listener for "Enter" key presses
         this.input.addEventListener("keyup", event => {
             if(event.key === "Enter") {
@@ -1530,6 +1558,44 @@ class QueryComponent {
         this.searchIcon.addEventListener("click", () => {
             this.processQuery()
         })
+
+        // Event listener for toggling search parameters visibility
+        this.searchParametersToggle.addEventListener("click", () => {
+            if (this.searchParameters.style.display === 'block') {
+                this.searchParameters.style.display = 'none';
+            } else {
+                this.searchParameters.style.display = 'block';
+            }
+        });
+
+         // Add validation to ensure inputs stay within defined ranges
+         // Validate search results input
+         this.searchResultsInput.addEventListener("change", () => {
+            let value = parseInt(this.searchResultsInput.value, 10);
+            if (isNaN(value) || value < 5) {
+                this.searchResultsInput.value = "5";
+            }
+        });
+
+        // Validate limit distance input
+        this.limitDistanceInput.addEventListener("change", () => {
+            let value = parseInt(this.limitDistanceInput.value, 10);
+            if (isNaN(value) || value < 2) {
+                this.limitDistanceInput.value = "2";
+            } else if (value > 10) {
+                this.limitDistanceInput.value = "10";
+            }
+        });
+
+        // Validate number of graph terms input
+        this.graphTermsInput.addEventListener("change", () => {
+            let value = parseInt(this.graphTermsInput.value, 10);
+            if (isNaN(value) || value < 1) {
+                this.graphTermsInput.value = "1";
+            } else if (value > 20) {
+                this.graphTermsInput.value = "20";
+            }
+        });
     }
 
     /**
@@ -1544,6 +1610,9 @@ class QueryComponent {
         this.input.value = '' // Clear the input field
         const alphanumericRegex = /[a-zA-Z0-9]/
         if (alphanumericRegex.test(queryValue)) {   // Check if the value contains at least one alphanumeric character
+            const searchResults = parseInt(this.searchResultsInput.value, 10);
+            const limitDistance = parseInt(this.limitDistanceInput.value, 10);
+            const graphTerms = parseInt(this.graphTermsInput.value, 10);
             this.queryService.setQuery(queryValue) // Send the query to the query service
         } else if (queryValue !== '') {
             alert("Please enter a valid query.")    // Alert the user if the query is invalid

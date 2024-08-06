@@ -31,8 +31,8 @@ html, body {
 #queryBar {
     width: 100%;
     text-align: center;
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
+    margin-top: 0.6rem;
+    margin-bottom: -0.4rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -66,6 +66,25 @@ html, body {
 #searchIcon:hover {
     color: black;
     background-color: #e0e0e0; /* Background color change on hover */
+}
+
+#searchParametersToggle {
+    cursor: pointer; 
+    color: blue; 
+    text-decoration: underline;
+    text-align: right;
+    padding: 0 2rem; /* Add horizontal padding */
+}
+
+#searchParameters {
+    display: none;
+    text-align: right;
+    padding: 0 2rem; /* Add horizontal padding */
+    margin-bottom: 0.5rem;
+}
+
+#searchParameters input[type="number"] {
+    width: 70px; /* Adjust the width as needed */
 }
 
 #cy {
