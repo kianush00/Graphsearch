@@ -170,36 +170,59 @@ class TextUtils {
 
 
 class HopConversionUtils {
-    // While max distance is always 200, then -> 200 / (user distance) = hopToDistanceRatio
-    private static hopToDistanceRatio: number = 50;
 
     /**
-     * Converts the given number of hops to a distance in the graph.
-     *
-     * @param hops - The number of hops to convert.
-     * @returns The distance in the graph corresponding to the given number of hops.
-     *
+     * Converts the number of hops to the corresponding distance in the graph.
+     * 
+     * @param hops - The number of hops from the central node to the neighbour term.
+     * @param hopToDistanceRatio - The ratio used to convert hops to distance.
+     * 
+     * @returns {number} - The distance from the central node to the neighbour term.
+     * 
      * @remarks
-     * The conversion is based on a predefined ratio (hopToDistanceRatio).
-     * The distance is calculated by multiplying the number of hops by the hopToDistanceRatio.
+     * This function calculates the distance by multiplying the number of hops with the hopToDistanceRatio.
      */
-    public static convertHopsToDistance(hops: number): number {
-        return hops * this.hopToDistanceRatio
+    public static convertHopsToDistance(hops: number, hopToDistanceRatio: number): number {
+        return hops * hopToDistanceRatio
     }
 
     /**
-     * Converts the given distance in the graph to a number of hops.
+     * Converts the distance from the central node to the neighbour term into hops.
+     * 
+     * @param distance - The distance from the central node to the neighbour term.
+     * @param hopToDistanceRatio - The ratio of distance to hops.
+     * 
+     * @returns {number} - The number of hops from the central node to the neighbour term.
+     * The distance is divided by the hopToDistanceRatio to calculate the number of hops.
+     * The result is rounded to one decimal place using the `toFixed` method.
+     * The result is then parsed as a floating-point number using the `parseFloat` method.
+     */
+    public static convertDistanceToHops(distance: number, hopToDistanceRatio: number): number {
+        return parseFloat((distance / hopToDistanceRatio).toFixed(1))
+    }
+
+
+    /**
+     * Calculates the ratio between the number of hops and the distance from the central node.
+     * This ratio is used to convert between hops and distance in the graph.
      *
-     * @param distance - The distance in the graph to convert.
-     * @returns The number of hops corresponding to the given distance.
+     * @param limitDistance - The maximum distance from the central node that is allowed in the graph.
+     *                         This value is used to calculate the hopToDistanceRatio.
+     *
+     * @returns {number} - The calculated hopToDistanceRatio.
+     *                     The hopToDistanceRatio is calculated as 200 divided by the limitDistance.
+     *                     If the limitDistance is 0 or less, the function returns 1.0.
      *
      * @remarks
-     * The conversion is based on a predefined ratio (hopToDistanceRatio).
-     * The number of hops is calculated by dividing the distance by the hopToDistanceRatio.
-     * The result is rounded to one decimal place.
+     * This function is used to ensure that the distance between nodes in the graph remains consistent
+     * when the number of hops between nodes is changed.
      */
-    public static convertDistanceToHops(distance: number): number {
-        return parseFloat((distance / this.hopToDistanceRatio).toFixed(1))
+    public static calculateHopToDistanceRatio(limitDistance: number): number {
+        if (limitDistance > 0) {
+            return 200.0 / limitDistance
+        } else {
+            return 1.0
+        }
     }
 }
 
@@ -253,18 +276,21 @@ class Edge {
     private sourceNode: GraphNode
     private targetNode: GraphNode
     private distance: number
+    private hopToDistanceRatio: number
 
     /**
      * Represents an edge in the graph, connecting two nodes.
      * 
      * @param sourceNode - The source node of the edge.
      * @param targetNode - The target node of the edge.
+     * @param hopToDistanceRatio - The ratio used to convert hops to distance.
      */
-    constructor(sourceNode: GraphNode, targetNode: GraphNode) {
+    constructor(sourceNode: GraphNode, targetNode: GraphNode, hopToDistanceRatio: number) {
         this.id = "e_" + targetNode.getId()
         this.sourceNode = sourceNode
         this.targetNode = targetNode
         this.distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
+        this.hopToDistanceRatio = hopToDistanceRatio
         cy.add(this.toObject())
     }
 
@@ -278,8 +304,9 @@ class Edge {
      */
     public setDistance(distance: number): void {
         this.distance = distance
-        const cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
-        cyEdge.data('distance', HopConversionUtils.convertDistanceToHops(this.distance))
+        let cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
+        let hops = HopConversionUtils.convertDistanceToHops(this.distance, this.hopToDistanceRatio)
+        cyEdge.data('distance', hops)
     }
 
     /**
@@ -326,7 +353,7 @@ class Edge {
                 id: this.id,
                 source: this.sourceNode.getId(),
                 target: this.targetNode.getId(),
-                distance: HopConversionUtils.convertDistanceToHops(this.distance)
+                distance: HopConversionUtils.convertDistanceToHops(this.distance, this.hopToDistanceRatio)
             },
         }
     }
@@ -605,10 +632,11 @@ interface NTermObject {
 class NeighbourTerm extends Term implements ViewManager {
     protected node: OuterNode | undefined
     private queryTerm: QueryTerm
-    private hops: number = 0
+    private hops: number
     private nodePosition: Position = { x: 0, y: 0 }
     private edge: Edge | undefined
     private ponderation: number
+    private hopToDistanceRatio: number
 
     /**
      * Represents a neighbour term in the graph.
@@ -618,12 +646,14 @@ class NeighbourTerm extends Term implements ViewManager {
      * @param value - The value of the neighbour term.
      * @param hops - The number of hops from the central node to this neighbour term.
      * @param ponderation - The ponderation of this neighbour term.
+     * @param hopToDistanceRatio - The ratio used to convert hops to distance.
      */
-    constructor(queryTerm: QueryTerm, value: string, hops: number, ponderation: number) {
+    constructor(queryTerm: QueryTerm, value: string, hops: number, ponderation: number, hopToDistanceRatio: number) {
         super(value)
         this.queryTerm = queryTerm
         this.ponderation = ponderation
         this.hops = hops
+        this.hopToDistanceRatio = hopToDistanceRatio
         this.setLabel(value)
     }
 
@@ -636,7 +666,7 @@ class NeighbourTerm extends Term implements ViewManager {
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
         if (this.queryTerm.getNode() === undefined) return 
-        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node)
+        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node, this.hopToDistanceRatio)
     }
 
     /**
@@ -691,7 +721,7 @@ class NeighbourTerm extends Term implements ViewManager {
         const nodeDistance = this.edge?.getDistance() ?? 0
         this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
         const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
-        this.hops = HopConversionUtils.convertDistanceToHops(distance)
+        this.hops = HopConversionUtils.convertDistanceToHops(distance, this.hopToDistanceRatio)
         this.updateNodePosition()
     }
 
@@ -711,7 +741,7 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2
-        const nodeDistance = HopConversionUtils.convertHopsToDistance(this.hops)
+        const nodeDistance = HopConversionUtils.convertHopsToDistance(this.hops, this.hopToDistanceRatio)
         this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this.updateNodePosition()
     }
@@ -734,7 +764,7 @@ class NeighbourTerm extends Term implements ViewManager {
         let positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
 
         if (this.edge !== undefined && this.node !== undefined ) {
-            if (positionDistance < 50.0 || positionDistance > 200.0) {
+            if (positionDistance < this.hopToDistanceRatio || positionDistance > 200.0) {
                 let angle = Math.atan2(position.y, position.x)
                 let adjustedX = Math.cos(angle) * nodeDistance
                 let adjustedY = Math.sin(angle) * nodeDistance
@@ -845,6 +875,7 @@ class Document {
 
     /**
      * Represents a document associated with a query term.
+     * Each object has properties: term, distance, and ponderation.
      * 
      * @param queryTermValue - The value of the query term associated with the document.
      * @param id - The unique identifier of the document.
@@ -852,16 +883,16 @@ class Document {
      * @param abstract - The abstract of the document.
      * @param initialRankingPosition - The initial ranking position of the document.
      * @param responseNeighbourTerms - An array of objects containing neighbour term data retrieved from the response.
-     * Each object has properties: term, distance, and ponderation.
+     * @param hopToDistanceRatio - The ratio used to convert hops to distance of the neighbour terms in the document.
      */
     constructor(queryTermValue: string, id: string, title: string, abstract: string, 
-                initialRankingPosition: number, responseNeighbourTerms: any[]){
+                initialRankingPosition: number, responseNeighbourTerms: any[], hopToDistanceRatio: number){
         this.queryTerm = new QueryTerm(queryTermValue)
         this.id = id
         this.title = title
         this.abstract = abstract
         this.initialRankingPosition = initialRankingPosition
-        this.initializeNeighbourTermsFromResponse(responseNeighbourTerms)
+        this.initializeNeighbourTermsFromResponse(responseNeighbourTerms, hopToDistanceRatio)
     }
 
     public getQueryTerm(): QueryTerm {
@@ -896,18 +927,20 @@ class Document {
 
     /**
      * Initializes neighbour terms from the response data.
-     *
-     * @param responseNeighbourTerms - An array of objects containing neighbour term data.
+     * 
+     * @param responseNeighbourTerms - An array of objects containing neighbour term data retrieved from the response.
      * Each object has properties: term, distance, and ponderation.
-     *
-     * @remarks
-     * This function iterates over the response data, creates new NeighbourTerm instances for each term object,
-     * and adds them to the QueryTerm's neighbour terms list.
+     * 
+     * @param hopToDistanceRatio - The ratio used to convert hops to distance of the neighbour terms in the document.
+     * 
+     * @returns {void} - This function does not return any value.
      */
-    private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[]): void {
+    private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[], hopToDistanceRatio: number): void {
         const neighbourTerms = []
         for (const termObject of responseNeighbourTerms) {
-            neighbourTerms.push(new NeighbourTerm(this.queryTerm, termObject.term, termObject.distance, termObject.ponderation))
+            let neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, 
+                termObject.distance, termObject.ponderation, hopToDistanceRatio)
+            neighbourTerms.push(neighbourTerm)
         }
         this.queryTerm.setNeighbourTerms(neighbourTerms)
     }
@@ -1008,7 +1041,7 @@ class QueryTermService {
      * @param position - The new position of the neighbour term node.
      */
     public nodeDragged(id: string, position: Position): void {
-        const term: NeighbourTerm | undefined = this.getVisibleQueryTerm().getNeighbourTermById(id)
+        let term: NeighbourTerm | undefined = this.getVisibleQueryTerm().getNeighbourTermById(id)
         if (term === undefined) return
         term.setPosition(position)
 
@@ -1064,7 +1097,7 @@ class QueryTermService {
      * @param id - The id of the neighbour term to be removed.
      */
     public removeNeighbourTerm(id: string): void {
-        const neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermById(id)
+        let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermById(id)
         if (neighbourTerm === undefined) return
         this.getVisibleQueryTerm().removeNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
@@ -1105,27 +1138,30 @@ class QueryTermService {
 
         // Check if the result is not null
         if (result) {
-            this.generateVisibleNeighbourTerms(result)
-            this.generateRankingDocuments(result)
+            const hopToDistanceRatio = HopConversionUtils.calculateHopToDistanceRatio(limitDistance)
+            this.generateVisibleNeighbourTerms(result, hopToDistanceRatio)
+            this.generateRankingDocuments(result, hopToDistanceRatio)
         }
     }
 
     /**
-     * This function generates visible neighbour terms for the current query term.
-     * 
-     * It iterates over the neighbour terms in the result, creates new NeighbourTerm instances,
-     * and adds them to the QueryTerm's neighbour terms list.
+     * Generates visible neighbour terms for the current query term.
      * 
      * @param result - The result object containing neighbour terms data.
      * The result object is expected to have a property 'visible_neighbour_terms',
      * which is an array of objects representing neighbour terms.
      * Each object should have properties 'term', 'distance', and 'ponderation'.
+     * 
+     * @param hopToDistanceRatio - The ratio to convert hops to distance.
+     * 
+     * @returns {void} - This function does not return any value.
      */
-    private generateVisibleNeighbourTerms(result: any) {
+    private generateVisibleNeighbourTerms(result: any, hopToDistanceRatio: number) {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            const neighbourTerm = new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, termObject.distance, termObject.ponderation)
+            let neighbourTerm = new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, 
+                    termObject.distance, termObject.ponderation, hopToDistanceRatio)
 
             // Add the neighbour term to the QueryTerm's neighbour terms list
             this.addNeighbourTerm(neighbourTerm)
@@ -1135,15 +1171,16 @@ class QueryTermService {
     /**
      * Generates ranking documents for the current query term.
      * 
-     * It iterates over the documents in the result, creates new Document instances,
-     * and adds them to the QueryTerm's ranking documents list.
-     * 
      * @param result - The result object containing ranking documents data.
      * The result object is expected to have a property 'documents',
      * which is an array of objects representing documents.
      * Each object should have properties 'doc_id', 'title', 'abstract', and 'neighbour_terms'.
+     * 
+     * @param hopToDistanceRatio - The ratio to convert hops to distance.
+     * 
+     * @returns {void} - This function does not return any value.
      */
-    private generateRankingDocuments(result: any) {
+    private generateRankingDocuments(result: any, hopToDistanceRatio: number) {
         // Iterate over the documents in the result
         for (let documentObject of result['documents']) {
             const doc_id = documentObject['doc_id']
@@ -1151,8 +1188,8 @@ class QueryTermService {
             const abstract = documentObject['abstract']
             const initial_ranking_position = documentObject['initial_ranking_position']
             const response_neighbour_terms = documentObject['neighbour_terms']
-            const document = new Document(this.ranking.getVisibleQueryTerm().getValue(), doc_id, title, 
-                                        abstract, initial_ranking_position, response_neighbour_terms)
+            let document = new Document(this.ranking.getVisibleQueryTerm().getValue(), doc_id, title, 
+                            abstract, initial_ranking_position, response_neighbour_terms, hopToDistanceRatio)
             this.addDocument(document)
         }
     }
@@ -1499,7 +1536,7 @@ class QueryService {
      */
     private generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
         if (this.findQueryTermService(queryValue) === undefined) {
-            const queryTermService = new QueryTermService(this, queryValue, searchResults, limitDistance, graphTerms)
+            let queryTermService = new QueryTermService(this, queryValue, searchResults, limitDistance, graphTerms)
             this.queryTermServices.push(queryTermService)
             this.updateQueryTermsList()
         }
