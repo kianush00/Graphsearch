@@ -118,8 +118,42 @@ th {
     background-color: #f2f2f2;
 }
 
-#neighboursTermsTable th:nth-child(1), #neighboursTermsTable td:nth-child(1) { width: 72%; }
-#neighboursTermsTable th:nth-child(2), #neighboursTermsTable td:nth-child(2) { width: 28%; }
+#neighbourTermsTableContainer, #addTermsContainer {
+    display: inline-block;
+    vertical-align: top;
+}
+
+#neighbourTermsTableContainer {
+    width: 50%; /* Adjust the width as needed */
+}
+
+
+
+#addTermsContainer {
+    margin-left: 30px;
+    width: 40%; /* Adjust the width as needed */
+}
+
+#addTermsTable {
+    border-collapse: collapse;
+}
+
+#addTermsTable th, #addTermsTable td {
+    border: none;
+}
+
+#addTermsTable td:nth-child(1) {
+    text-align: left;
+    width: 76%; 
+}
+
+#addTermsTable td:nth-child(2) {
+    text-align: center;
+    width: 24%;
+}
+
+
+
 
 #queryListContainer {
     width: 100%;

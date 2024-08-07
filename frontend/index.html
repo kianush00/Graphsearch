@@ -30,17 +30,45 @@
             <div id="rerank">
                 <button id="rerankButton">Rerank</button>
             </div>
-            <table id="neighboursTermsTable" class="termsTable">
-                <thead>
-                    <tr>
-                        <th>Neighbour Term</th>
-                        <th>Distance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be added here dynamically -->
-                </tbody>
-            </table>
+            <div id="neighbourTermsTableContainer">
+                <h3>Neighbour Terms Table</h3>
+                <table id="neighboursTermsTable" class="termsTable">
+                    <thead>
+                        <tr>
+                            <th>Neighbour Term</th>
+                            <th>Distance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="addTermsContainer">
+                <h3>Add Terms</h3>
+                <table id="addTermsTable" class="termsTable">
+                    <thead>
+                        <tr>
+                            <th>Term</th>
+                            <th style="text-align: center;">Add</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>iot</td>
+                            <td><i class="fas fa-plus-circle" style="cursor: pointer;"></i></td>
+                        </tr>
+                        <tr>
+                            <td>thing</td>
+                            <td><i class="fas fa-plus-circle" style="cursor: pointer;"></i></td>
+                        </tr>
+                        <tr>
+                            <td>ai</td>
+                            <td><i class="fas fa-plus-circle" style="cursor: pointer;"></i></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
         <div id="rightContainer">
             <h3 style="text-align: center;">Query history</h3>

@@ -1068,6 +1068,10 @@ class QueryTermService {
         return this.ranking.getVisibleQueryTerm()
     }
 
+    public getCompleteQueryTerm(): QueryTerm {
+        return this.ranking.getCompleteQueryTerm()
+    }
+
     public getRanking(): Ranking {
         return this.ranking
     }
@@ -1119,7 +1123,7 @@ class QueryTermService {
      *
      * @param neighbourTerm - The neighbour term to be added.
      */
-    public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+    public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         if (this.isVisible) this.display()
@@ -1134,7 +1138,7 @@ class QueryTermService {
      * 
      * @param id - The id of the neighbour term to be removed.
      */
-    public removeNeighbourTerm(id: string): void {
+    public removeVisibleNeighbourTerm(id: string): void {
         let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermById(id)
         if (neighbourTerm === undefined) return
         this.getVisibleQueryTerm().removeNeighbourTerm(neighbourTerm)
@@ -1177,6 +1181,7 @@ class QueryTermService {
         // Check if the result is not null
         if (result) {
             this.generateVisibleNeighbourTerms(result, limitDistance)
+            this.generateCompleteNeighbourTerms(result, limitDistance)
             this.generateRankingDocuments(result, limitDistance)
         }
     }
@@ -1197,12 +1202,27 @@ class QueryTermService {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, 
-                    termObject.distance, termObject.ponderation, hopLimit)
+            let neighbourTerm = this.initializeNewNeighbourTerm(termObject, hopLimit)
 
-            // Add the neighbour term to the QueryTerm's neighbour terms list
-            this.addNeighbourTerm(neighbourTerm)
+            // Add the neighbour term to the visible QueryTerm's neighbour terms list
+            this.addVisibleNeighbourTerm(neighbourTerm)
         }
+    }
+
+    private generateCompleteNeighbourTerms(result: any, hopLimit: number): void {
+        // Iterate over the neighbour terms in the result
+        for (let termObject of result['complete_neighbour_terms']) {
+            // Create a new NeighbourTerm instance for each term object
+            let neighbourTerm = this.initializeNewNeighbourTerm(termObject, hopLimit)
+
+            // Add the neighbour term to the complete QueryTerm's neighbour terms list
+            this.getCompleteQueryTerm().addNeighbourTerm(neighbourTerm)
+        }
+    }
+
+    private initializeNewNeighbourTerm(termObject: any, hopLimit: number): NeighbourTerm {
+        return new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, 
+                    termObject.distance, termObject.ponderation, hopLimit)
     }
 
     /**
