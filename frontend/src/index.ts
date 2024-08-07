@@ -169,61 +169,95 @@ class TextUtils {
 }
 
 
-class HopConversionUtils {
+class ConversionUtils {
+    private static minDistance: number = 50.0
+    private static maxDistance: number = 150.0
+    private static hopMinValue: number = 1.0
 
     /**
      * Converts the number of hops to the corresponding distance in the graph.
-     * 
+     *
      * @param hops - The number of hops from the central node to the neighbour term.
-     * @param hopToDistanceRatio - The ratio used to convert hops to distance.
-     * 
+     * @param hopMaxValue - The maximum number of hops allowed in the graph.
+     *
      * @returns {number} - The distance from the central node to the neighbour term.
-     * 
+     * The distance is calculated based on the normalized value of the hops,
+     * using a linear transformation between the minimum and maximum distances.
+     *
      * @remarks
-     * This function calculates the distance by multiplying the number of hops with the hopToDistanceRatio.
+     * This function assumes that the minimum and maximum distances are defined.
+     * It also assumes that the hopMinValue is 0.
+     * If the hopMaxValue is less than 2, the function returns 1.0.
      */
-    public static convertHopsToDistance(hops: number, hopToDistanceRatio: number): number {
-        return hops * hopToDistanceRatio
+    public static convertHopsToDistance(hops: number, hopMaxValue: number): number {
+        if (hopMaxValue < 2) return 1.0
+        const normalizedValue = this.normalize(hops, this.hopMinValue, hopMaxValue, this.minDistance, this.maxDistance)
+        return normalizedValue
     }
 
     /**
-     * Converts the distance from the central node to the neighbour term into hops.
-     * 
-     * @param distance - The distance from the central node to the neighbour term.
-     * @param hopToDistanceRatio - The ratio of distance to hops.
-     * 
-     * @returns {number} - The number of hops from the central node to the neighbour term.
-     * The distance is divided by the hopToDistanceRatio to calculate the number of hops.
-     * The result is rounded to one decimal place using the `toFixed` method.
-     * The result is then parsed as a floating-point number using the `parseFloat` method.
-     */
-    public static convertDistanceToHops(distance: number, hopToDistanceRatio: number): number {
-        return parseFloat((distance / hopToDistanceRatio).toFixed(1))
-    }
-
-
-    /**
-     * Calculates the ratio between the number of hops and the distance from the central node.
-     * This ratio is used to convert between hops and distance in the graph.
+     * Converts a given distance to hops, based on a normalized value within a specified range.
      *
-     * @param limitDistance - The maximum distance from the central node that is allowed in the graph.
-     *                         This value is used to calculate the hopToDistanceRatio.
+     * @param distance - The distance to be converted to hops.
+     * @param hopMaxValue - The maximum number of hops that can be achieved.
      *
-     * @returns {number} - The calculated hopToDistanceRatio.
-     *                     The hopToDistanceRatio is calculated as 200 divided by the limitDistance.
-     *                     If the limitDistance is 0 or less, the function returns 1.0.
+     * @returns {number} - The number of hops corresponding to the given distance, normalized within the specified range.
      *
      * @remarks
-     * This function is used to ensure that the distance between nodes in the graph remains consistent
-     * when the number of hops between nodes is changed.
+     * This function normalizes the given distance within the range of minimum and maximum distances,
+     * and then maps the normalized value to the range of minimum and maximum hops.
+     * If the hopMaxValue is less than 2, the function returns 1.0.
+     * The returned value is rounded to one decimal place.
      */
-    public static calculateHopToDistanceRatio(limitDistance: number): number {
-        if (limitDistance > 0) {
-            return 200.0 / limitDistance
-        } else {
-            return 1.0
+    public static convertDistanceToHops(distance: number, hopMaxValue: number): number {
+        if (hopMaxValue < 2) return 1.0
+        const normalizedValue = this.normalize(distance, this.minDistance, this.maxDistance, this.hopMinValue, hopMaxValue)
+        return parseFloat(normalizedValue.toFixed(1))
+    }
+
+    /**
+     * Validates if the provided distance is out of the specified range.
+     *
+     * @param distance - The distance to be validated.
+     *
+     * @returns {boolean} - Returns `true` if the distance is out of range, `false` otherwise.
+     *
+     * @remarks
+     * This function checks if the provided distance is less than the minimum distance or greater than the maximum distance.
+     * If either condition is met, the function returns `true`, indicating that the distance is out of range.
+     * Otherwise, it returns `false`, indicating that the distance is within the specified range.
+     */
+    public static validateDistanceOutOfRange(distance: number) : boolean {
+        return distance < this.minDistance || distance > this.maxDistance
+    }
+
+    /**
+     * Normalizes a given value within a specified range.
+     *
+     * @param value - The value to be normalized.
+     * @param oldMin - The minimum value of the original range.
+     * @param oldMax - The maximum value of the original range.
+     * @param newMin - The minimum value of the new range.
+     * @param newMax - The maximum value of the new range.
+     *
+     * @returns The normalized value within the new range.
+     * If the input value is less than oldMin or greater than oldMax, the function returns 1.0.
+     *
+     * @remarks
+     * This function normalizes a given value by scaling it from the original range to the new range.
+     * It uses a linear transformation formula to calculate the normalized value.
+     */
+    private static normalize(value: number, oldMin: number, oldMax: number, newMin: number, newMax: number): number {
+        if (value < oldMin) {
+            return newMin
+        } else if (value > oldMax) {
+            return newMax
         }
+
+        const normalizedValue = newMin + ((value - oldMin) * (newMax - newMin)) / (oldMax - oldMin);
+        return normalizedValue;
     }
+
 }
 
 
@@ -276,21 +310,21 @@ class Edge {
     private sourceNode: GraphNode
     private targetNode: GraphNode
     private distance: number
-    private hopToDistanceRatio: number
+    private hopLimit: number
 
     /**
      * Represents an edge in the graph, connecting two nodes.
      * 
      * @param sourceNode - The source node of the edge.
      * @param targetNode - The target node of the edge.
-     * @param hopToDistanceRatio - The ratio used to convert hops to distance.
+     * @param hopLimit - The maximum number of hops allowed for the edge.
      */
-    constructor(sourceNode: GraphNode, targetNode: GraphNode, hopToDistanceRatio: number) {
+    constructor(sourceNode: GraphNode, targetNode: GraphNode, hopLimit: number) {
         this.id = "e_" + targetNode.getId()
         this.sourceNode = sourceNode
         this.targetNode = targetNode
         this.distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
-        this.hopToDistanceRatio = hopToDistanceRatio
+        this.hopLimit = hopLimit
         cy.add(this.toObject())
     }
 
@@ -298,14 +332,18 @@ class Edge {
      * Sets the distance for the edge between the source and target nodes.
      * This method updates the distance value and the corresponding edge data in the graph.
      *
+     * @param distance - The new distance for the edge.
+     *
      * @remarks
      * This method assumes that the source and target nodes are already associated with the edge.
      * It also assumes that the graph is represented using the Cytoscape.js library.
+     *
+     * @returns {void} - This function does not return any value.
      */
     public setDistance(distance: number): void {
         this.distance = distance
         let cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
-        let hops = HopConversionUtils.convertDistanceToHops(this.distance, this.hopToDistanceRatio)
+        let hops = ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit)
         cyEdge.data('distance', hops)
     }
 
@@ -345,7 +383,7 @@ class Edge {
      * 
      * @returns An object containing the data of the Edge.
      * The object has properties: id, source, target, and distance.
-     * The distance is converted to hops using the HopConversionUtils.
+     * The distance is converted to hops using the ConversionUtils.
      */
     public toObject(): { data: EdgeData } {
         return {
@@ -353,7 +391,7 @@ class Edge {
                 id: this.id,
                 source: this.sourceNode.getId(),
                 target: this.targetNode.getId(),
-                distance: HopConversionUtils.convertDistanceToHops(this.distance, this.hopToDistanceRatio)
+                distance: ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit)
             },
         }
     }
@@ -636,7 +674,7 @@ class NeighbourTerm extends Term implements ViewManager {
     private nodePosition: Position = { x: 0, y: 0 }
     private edge: Edge | undefined
     private ponderation: number
-    private hopToDistanceRatio: number
+    private hopLimit: number
 
     /**
      * Represents a neighbour term in the graph.
@@ -646,14 +684,14 @@ class NeighbourTerm extends Term implements ViewManager {
      * @param value - The value of the neighbour term.
      * @param hops - The number of hops from the central node to this neighbour term.
      * @param ponderation - The ponderation of this neighbour term.
-     * @param hopToDistanceRatio - The ratio used to convert hops to distance.
+     * @param hopLimit - The maximum number of hops allowed for the neighbour term.
      */
-    constructor(queryTerm: QueryTerm, value: string, hops: number, ponderation: number, hopToDistanceRatio: number) {
+    constructor(queryTerm: QueryTerm, value: string, hops: number, ponderation: number, hopLimit: number) {
         super(value)
         this.queryTerm = queryTerm
         this.ponderation = ponderation
         this.hops = hops
-        this.hopToDistanceRatio = hopToDistanceRatio
+        this.hopLimit = hopLimit
         this.setLabel(value)
     }
 
@@ -666,7 +704,7 @@ class NeighbourTerm extends Term implements ViewManager {
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
         if (this.queryTerm.getNode() === undefined) return 
-        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node, this.hopToDistanceRatio)
+        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node, this.hopLimit)
     }
 
     /**
@@ -721,7 +759,7 @@ class NeighbourTerm extends Term implements ViewManager {
         const nodeDistance = this.edge?.getDistance() ?? 0
         this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
         const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
-        this.hops = HopConversionUtils.convertDistanceToHops(distance, this.hopToDistanceRatio)
+        this.hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit)
         this.updateNodePosition()
     }
 
@@ -741,7 +779,7 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2
-        const nodeDistance = HopConversionUtils.convertHopsToDistance(this.hops, this.hopToDistanceRatio)
+        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.hopLimit)
         this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this.updateNodePosition()
     }
@@ -764,7 +802,7 @@ class NeighbourTerm extends Term implements ViewManager {
         let positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
 
         if (this.edge !== undefined && this.node !== undefined ) {
-            if (positionDistance < this.hopToDistanceRatio || positionDistance > 200.0) {
+            if (ConversionUtils.validateDistanceOutOfRange(positionDistance)) {
                 let angle = Math.atan2(position.y, position.x)
                 let adjustedX = Math.cos(angle) * nodeDistance
                 let adjustedY = Math.sin(angle) * nodeDistance
@@ -883,16 +921,16 @@ class Document {
      * @param abstract - The abstract of the document.
      * @param initialRankingPosition - The initial ranking position of the document.
      * @param responseNeighbourTerms - An array of objects containing neighbour term data retrieved from the response.
-     * @param hopToDistanceRatio - The ratio used to convert hops to distance of the neighbour terms in the document.
+     * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
      */
     constructor(queryTermValue: string, id: string, title: string, abstract: string, 
-                initialRankingPosition: number, responseNeighbourTerms: any[], hopToDistanceRatio: number){
+                initialRankingPosition: number, responseNeighbourTerms: any[], hopLimit: number){
         this.queryTerm = new QueryTerm(queryTermValue)
         this.id = id
         this.title = title
         this.abstract = abstract
         this.initialRankingPosition = initialRankingPosition
-        this.initializeNeighbourTermsFromResponse(responseNeighbourTerms, hopToDistanceRatio)
+        this.initializeNeighbourTermsFromResponse(responseNeighbourTerms, hopLimit)
     }
 
     public getQueryTerm(): QueryTerm {
@@ -931,15 +969,15 @@ class Document {
      * @param responseNeighbourTerms - An array of objects containing neighbour term data retrieved from the response.
      * Each object has properties: term, distance, and ponderation.
      * 
-     * @param hopToDistanceRatio - The ratio used to convert hops to distance of the neighbour terms in the document.
+     * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
      * 
      * @returns {void} - This function does not return any value.
      */
-    private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[], hopToDistanceRatio: number): void {
+    private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[], hopLimit: number): void {
         const neighbourTerms = []
         for (const termObject of responseNeighbourTerms) {
             let neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, 
-                termObject.distance, termObject.ponderation, hopToDistanceRatio)
+                termObject.distance, termObject.ponderation, hopLimit)
             neighbourTerms.push(neighbourTerm)
         }
         this.queryTerm.setNeighbourTerms(neighbourTerms)
@@ -1138,9 +1176,8 @@ class QueryTermService {
 
         // Check if the result is not null
         if (result) {
-            const hopToDistanceRatio = HopConversionUtils.calculateHopToDistanceRatio(limitDistance)
-            this.generateVisibleNeighbourTerms(result, hopToDistanceRatio)
-            this.generateRankingDocuments(result, hopToDistanceRatio)
+            this.generateVisibleNeighbourTerms(result, limitDistance)
+            this.generateRankingDocuments(result, limitDistance)
         }
     }
 
@@ -1152,16 +1189,16 @@ class QueryTermService {
      * which is an array of objects representing neighbour terms.
      * Each object should have properties 'term', 'distance', and 'ponderation'.
      * 
-     * @param hopToDistanceRatio - The ratio to convert hops to distance.
+     * @param hopLimit - The maximum number of hops allowed for the neighbour terms.
      * 
      * @returns {void} - This function does not return any value.
      */
-    private generateVisibleNeighbourTerms(result: any, hopToDistanceRatio: number) {
+    private generateVisibleNeighbourTerms(result: any, hopLimit: number): void {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
             let neighbourTerm = new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, 
-                    termObject.distance, termObject.ponderation, hopToDistanceRatio)
+                    termObject.distance, termObject.ponderation, hopLimit)
 
             // Add the neighbour term to the QueryTerm's neighbour terms list
             this.addNeighbourTerm(neighbourTerm)
@@ -1176,11 +1213,11 @@ class QueryTermService {
      * which is an array of objects representing documents.
      * Each object should have properties 'doc_id', 'title', 'abstract', and 'neighbour_terms'.
      * 
-     * @param hopToDistanceRatio - The ratio to convert hops to distance.
+     * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the documents.
      * 
      * @returns {void} - This function does not return any value.
      */
-    private generateRankingDocuments(result: any, hopToDistanceRatio: number) {
+    private generateRankingDocuments(result: any, hopLimit: number): void {
         // Iterate over the documents in the result
         for (let documentObject of result['documents']) {
             const doc_id = documentObject['doc_id']
@@ -1189,7 +1226,7 @@ class QueryTermService {
             const initial_ranking_position = documentObject['initial_ranking_position']
             const response_neighbour_terms = documentObject['neighbour_terms']
             let document = new Document(this.ranking.getVisibleQueryTerm().getValue(), doc_id, title, 
-                            abstract, initial_ranking_position, response_neighbour_terms, hopToDistanceRatio)
+                            abstract, initial_ranking_position, response_neighbour_terms, hopLimit)
             this.addDocument(document)
         }
     }
@@ -1732,7 +1769,7 @@ const cy = cytoscape({
             'width': '20px',
             'height': '20px',
             'label': "data(id)",
-            "font-size": "16px"
+            "font-size": "15px"
             },
         },
         {
