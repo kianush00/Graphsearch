@@ -208,15 +208,35 @@
           "ponderation": 1.69897,
           "distance": 2.453059
         },
+        "index": {
+          "ponderation": 1.0,
+          "distance": 4.0
+        },
+        "network": {
+          "ponderation": 1.477121,
+          "distance": 1.0
+        },
         "rtree": {
           "ponderation": 1.30103,
           "distance": 2.282706
         },
+        "store": {
+          "ponderation": 1.30103,
+          "distance": 2.5
+        },
         "topology": {
           "ponderation": 1.30103,
           "distance": 2.0
+        },
+        "road": {
+          "ponderation": 1.30103,
+          "distance": 3.0
+        },
+        "adopt": {
+          "ponderation": 1.30103,
+          "distance": 2.5
         }
-      },
+    },
     "text6_subgraph2": {
         "hierarchical": {
           "ponderation": 1.778151,
@@ -232,15 +252,15 @@
         },
         "index": {
           "ponderation": 1.30103,
-          "distance": 1.5
+          "distance": 2.58647
         },
         "network": {
           "ponderation": 1.477121,
-          "distance": 3.0
+          "distance": 2.0
         },
         "adopt": {
           "ponderation": 1.69897,
-          "distance": 2.8
+          "distance": 2.669897
         },
         "rtree": {
           "ponderation": 1.30103,
@@ -248,15 +268,15 @@
         },
         "store": {
           "ponderation": 1.30103,
-          "distance": 2.0
+          "distance": 2.25
         },
         "topology": {
           "ponderation": 1.30103,
           "distance": 2.0
         },
         "road": {
-          "ponderation": 1.0,
-          "distance": 2.0
+          "ponderation": 1.30103,
+          "distance": 2.565412
         },
         "driven": {
           "ponderation": 1.69897,
@@ -323,24 +343,44 @@
           "distance": 2.410485
         },
         "driven": {
-          "ponderation": 1.69897,
-          "distance": 2.453059
+          "ponderation": 2.69897,
+          "distance": 3.026219
+        },
+        "index": {
+          "ponderation": 1.0,
+          "distance": 4.0
+        },
+        "network": {
+          "ponderation": 2.477121,
+          "distance": 1.605542
         },
         "rtree": {
           "ponderation": 1.30103,
           "distance": 2.282706
         },
+        "store": {
+          "ponderation": 2.30103,
+          "distance": 2.717294
+        },
         "topology": {
           "ponderation": 2.30103,
           "distance": 2.217294
         },
-        "network": {
-          "ponderation": 1.0,
-          "distance": 2.5
+        "road": {
+          "ponderation": 2.30103,
+          "distance": 2.565412
+        },
+        "adopt": {
+          "ponderation": 2.30103,
+          "distance": 2.717294
         },
         "gato": {
           "ponderation": 1.30103,
           "distance": 2.282706
+        },
+        "house": {
+          "ponderation": 1.0,
+          "distance": 3.0
         },
         "car": {
           "ponderation": 1.0,
@@ -362,47 +402,47 @@
         },
         "index": {
           "ponderation": 1.30103,
-          "distance": 1.5
+          "distance": 2.58647
         },
         "network": {
           "ponderation": 2.477121,
-          "distance": 2.697229
+          "distance": 2.100924
         },
         "adopt": {
           "ponderation": 2.69897,
-          "distance": 3.244614
+          "distance": 2.97746
         },
         "rtree": {
           "ponderation": 1.30103,
           "distance": 1.725257
         },
         "store": {
-          "ponderation": 1.30103,
-          "distance": 2.0
+          "ponderation": 2.30103,
+          "distance": 2.575941
         },
         "topology": {
           "ponderation": 2.30103,
           "distance": 2.217294
         },
         "road": {
-          "ponderation": 1.0,
-          "distance": 2.0
+          "ponderation": 2.30103,
+          "distance": 2.319691
         },
         "driven": {
-          "ponderation": 1.69897,
-          "distance": 2.453059
-        },
-        "perro": {
-          "ponderation": 1.0,
-          "distance": 3.0
+          "ponderation": 2.69897,
+          "distance": 3.026219
         },
         "gato": {
           "ponderation": 1.30103,
           "distance": 2.282706
         },
+        "perro": {
+          "ponderation": 1.0,
+          "distance": 3.0
+        },
         "house": {
           "ponderation": 1.0,
-          "distance": 1.0
+          "distance": 2.0
         },
         "car": {
           "ponderation": 1.0,

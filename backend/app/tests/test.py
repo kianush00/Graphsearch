@@ -7,6 +7,7 @@ from models.srex.vicinity_graph import VicinityNode
 from utils.text_utils import TextUtils
 from utils.vector_utils import VectorUtils
 from utils.data_utils import DataUtils
+import json
 
 import nltk
 import numpy as np

@@ -192,11 +192,8 @@ class BinaryTreeNode:
         # If the left and right subtrees have the same subquery, the function returns the left graph.
         if left_graph.subquery == right_graph.subquery:
             graph = left_graph
-        # If the boolean operator is 'AND', it returns the intersection of the left and right graphs.
-        elif self.value == 'AND':
-            graph = left_graph.get_intersection_to_graph(right_graph, False)
-        # If the boolean operator is 'OR', it returns the union of the left and right graphs.
-        elif self.value == 'OR':
+        # If the boolean operator is 'AND' or 'OR', it returns the union of the left and right graphs.
+        elif self.value in ['AND', 'OR']:
             graph = left_graph.get_union_to_graph(right_graph, False)
         # If the boolean operator is neither 'AND' nor 'OR', it raises a ValueError.
         else:
