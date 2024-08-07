@@ -17,7 +17,7 @@ html, body {
     width: 100%;
     height: inherit;
     margin-left: 0.8rem;
-    margin-right: 5rem;
+    margin-right: 7.5rem;
 }
 
 #leftContainer {
@@ -42,7 +42,7 @@ html, body {
     outline: none;
     font-size: 14pt;
     height: 36px; /* Adjust height as needed */
-    padding: 0 0.5rem; /* Add horizontal padding */
+    padding: 0 0.6rem; /* Add horizontal padding */
     margin-left: -1rem;
     border: 1px solid #999; /* Add a border to the input */
     border-radius: 4px 0 0 4px; /* Round the left corners of the input */
@@ -54,7 +54,7 @@ html, body {
     align-items: center;
     justify-content: center;
     margin-right: -1rem;
-    width: 66px; /* Width of the icon box */
+    width: 60px; /* Width of the icon box */
     height: 36px; /* Height of the box, same as input */
     border: 1px solid #999; /* Same border as input */
     border-radius: 0 4px 4px 0; /* Round right corners */
@@ -73,7 +73,7 @@ html, body {
 #searchParameters {
     display: block;
     text-align: right;
-    padding: 0.5rem 2rem; /* Add horizontal padding */
+    padding: 0.5rem 1rem; /* Add horizontal padding */
     margin-top: 0.4rem;
 }
 
@@ -103,7 +103,7 @@ html, body {
 }
 
 #neighboursTermsTable table {
-    width: 100%;
+    padding: 0 2rem; /* Add horizontal padding */
     border-collapse: collapse;
 }
 
@@ -118,8 +118,8 @@ th {
     background-color: #f2f2f2;
 }
 
-#neighboursTermsTable th:nth-child(1), #neighboursTermsTable td:nth-child(1) { width: 75%; }
-#neighboursTermsTable th:nth-child(2), #neighboursTermsTable td:nth-child(2) { width: 25%; }
+#neighboursTermsTable th:nth-child(1), #neighboursTermsTable td:nth-child(1) { width: 72%; }
+#neighboursTermsTable th:nth-child(2), #neighboursTermsTable td:nth-child(2) { width: 28%; }
 
 #queryListContainer {
     width: 100%;
@@ -149,6 +149,7 @@ th {
 
 #rankingContainer {
     width: 100%;
+    margin-left: 3rem;
     scroll-behavior: smooth;
     overflow-y: scroll;
 }

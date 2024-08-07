@@ -16,7 +16,7 @@ class MathUtils {
         const dx = pos1.x - pos2.x
         const dy = pos1.y - pos2.y
 
-        return Math.round(this.calculateEuclideanDistance(dx, dy))
+        return parseFloat(this.calculateEuclideanDistance(dx, dy).toFixed(0))
     }
 
 
@@ -343,7 +343,7 @@ class Edge {
     public setDistance(distance: number): void {
         this.distance = distance
         let cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
-        let hops = ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit)
+        const hops = ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit)
         cyEdge.data('distance', hops)
     }
 
@@ -760,7 +760,7 @@ class NeighbourTerm extends Term implements ViewManager {
         this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
         const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
         this.hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit)
-        this.updateNodePosition()
+        this.updateNodePosition(distance)
     }
 
     /**
@@ -781,7 +781,7 @@ class NeighbourTerm extends Term implements ViewManager {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2
         const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.hopLimit)
         this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
-        this.updateNodePosition()
+        this.updateNodePosition(nodeDistance)
     }
 
     /**
@@ -814,16 +814,16 @@ class NeighbourTerm extends Term implements ViewManager {
     }
 
     /**
-     * Updates the position of the neighbour term node and updates the neighbour term's hops.
+     * Updates the position of the neighbour term node and the neighbour term's hops.
      *
-     * @remarks
-     * This function is responsible for updating the position of the neighbour term node and
-     * the number of hops for the neighbour term. It calls the `setPosition` method of the neighbour term node
-     * and the `updateDistance` method of the edge connecting the neighbour term node to the central node.
+     * @param distance - The distance from the central node to the neighbour term node.
+     * This distance is used to update the neighbour term's hops and the position of the neighbour term node.
+     *
+     * @returns {void} - This function does not return any value.
      */
-    private updateNodePosition(): void {
+    private updateNodePosition(distance: number): void {
         this.node?.setPosition(this.nodePosition)
-        this.edge?.updateDistance()
+        this.edge?.setDistance(distance)
     }
 }
 
