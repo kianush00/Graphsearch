@@ -290,7 +290,7 @@ class VicinityGraph:
         and 'distance' of each term.
         """
         graph_dict = {n.get_term(): {'ponderation': n.get_ponderation(), 
-                                     'distance': n.get_distance()} for n in self.__nodes}
+                                     'distance': n.get_distance()} for n in self.get_sorted_nodes_optionally_limited()}
         return graph_dict
 
     

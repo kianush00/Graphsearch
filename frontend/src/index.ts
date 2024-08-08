@@ -1146,6 +1146,21 @@ class QueryTermService {
     }
 
     /**
+     * Adds a neighbour term to the complete query term.
+     * 
+     * This function takes a NeighbourTerm instance as a parameter and adds it to the complete query term's neighbour terms list.
+     * It also updates the add terms table in the QueryService.
+     * 
+     * @param neighbourTerm - The neighbour term to be added.
+     * 
+     * @returns {void} - This function does not return any value.
+     */
+    public addCompleteNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+        this.getCompleteQueryTerm().addNeighbourTerm(neighbourTerm)
+        this.queryService.updateAddTermsTable()
+    }
+
+    /**
      * Centers the graph on the CentralNode.
      * 
      * This function is responsible for zooming in the graph and centering it on the CentralNode.
@@ -1209,6 +1224,20 @@ class QueryTermService {
         }
     }
 
+    /**
+     * Generates complete neighbour terms for the current query term.
+     * 
+     * @param result - The result object containing neighbour terms data.
+     * The result object is expected to have a property 'complete_neighbour_terms',
+     * which is an array of objects representing neighbour terms.
+     * Each object should have properties 'term', 'distance', and 'ponderation'.
+     * 
+     * @param hopLimit - The maximum number of hops allowed for the neighbour terms.
+     * 
+     * @returns {void} - This function does not return any value.
+     * It iterates over the neighbour terms in the result, creates a new NeighbourTerm instance for each term object,
+     * and adds the neighbour term to the complete QueryTerm's neighbour terms list.
+     */
     private generateCompleteNeighbourTerms(result: any, hopLimit: number): void {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['complete_neighbour_terms']) {
@@ -1216,10 +1245,18 @@ class QueryTermService {
             let neighbourTerm = this.initializeNewNeighbourTerm(termObject, hopLimit)
 
             // Add the neighbour term to the complete QueryTerm's neighbour terms list
-            this.getCompleteQueryTerm().addNeighbourTerm(neighbourTerm)
+            this.addCompleteNeighbourTerm(neighbourTerm)
         }
     }
 
+    /**
+     * Initializes a new NeighbourTerm instance based on the provided term object and hop limit.
+     * 
+     * @param termObject - An object containing properties 'term', 'distance', and 'ponderation' representing a neighbour term.
+     * @param hopLimit - The maximum number of hops allowed for the neighbour terms.
+     * 
+     * @returns A new NeighbourTerm instance with the provided term value, distance, ponderation, and hop limit.
+     */
     private initializeNewNeighbourTerm(termObject: any, hopLimit: number): NeighbourTerm {
         return new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, 
                     termObject.distance, termObject.ponderation, hopLimit)
@@ -1263,6 +1300,201 @@ class QueryTermService {
     private addDocument(document: Document): void {
         this.getRanking().addDocument(document)
         this.queryService.updateResultsList()
+    }
+}
+
+
+class QueryTermsList {
+    private dynamicList: HTMLElement
+    private queryService: QueryService
+
+    constructor(queryService: QueryService) {
+        this.queryService = queryService
+        this.dynamicList = document.getElementById('queryTermsList') as HTMLElement
+    }
+
+    /**
+     * Updates the list of query terms with new query terms.
+     *
+     * @param queryTerms - An array of QueryTerm objects to be displayed in the list.
+     */
+    public updateList(queryTerms: QueryTerm[]): void {
+        // Clear existing list items
+        this.dynamicList.innerHTML = ''
+
+        // Iterate over the query terms and create list items for each one
+        queryTerms.forEach(queryTerm => {
+            // Create a new list item element
+            const listItem = document.createElement("li")
+
+            // Set the text content of the list item to be the value of the query term
+            listItem.textContent = queryTerm.getValue()
+
+            // Add a click event listener to the list item
+            listItem.addEventListener("click", () => {
+                // When the list item is clicked, set the active query term service to the value of the query term
+                this.queryService.setActiveQueryTermService(queryTerm.getValue())
+            })
+
+            // Append the list item to the dynamic list container
+            this.dynamicList.appendChild(listItem)
+        })
+    }
+}
+
+
+class QueryService {
+    private activeQueryTermService: QueryTermService | undefined
+    private queryTermServices: QueryTermService[]
+    private neighbourTermsTable: NeighbourTermsTable
+    private addTermsTable: AddTermsTable
+    private queryTermsList: QueryTermsList
+    private resultsList: ResultsList
+
+    constructor() {
+        this.queryTermServices = []
+        this.neighbourTermsTable = new NeighbourTermsTable()
+        this.resultsList = new ResultsList()
+        this.queryTermsList = new QueryTermsList(this)
+        this.addTermsTable = new AddTermsTable()
+    }
+
+    /**
+     * Sets the query for the service.
+     * Deactivates the currently active QueryTermService, creates a new Query object,
+     * and triggers the query generation process.
+     * 
+     * @param queryValue - The new query string.
+     * @param searchResults - The number of search results to retrieve.
+     * @param limitDistance - The maximum distance limit for neighbour terms.
+     * @param graphTerms - The number of neighbour terms to include in the graph.
+     */
+    public setQuery(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
+        this.activeQueryTermService?.deactivate()
+        this.generateNewQueryTermService(queryValue, searchResults, limitDistance, graphTerms)
+        if (this.queryTermServices.length > 0) {
+            this.setActiveQueryTermService(queryValue)
+        }
+    }
+
+    public getActiveQueryTermService(): QueryTermService | undefined { 
+        return this.activeQueryTermService 
+    }
+
+    /**
+     * Sets the active QueryTermService based on the provided query value.
+     * Deactivates the currently active QueryTermService, finds the corresponding QueryTermService,
+     * by the provided queryValue, and displays the views associated with the QueryTerm.
+     *
+     * @param queryValue - The value of the query term for which to set the active QueryTermService.
+     */
+    public setActiveQueryTermService(queryValue: string): void {
+        this.activeQueryTermService?.deactivate()
+        const queryTermService = this.findQueryTermService(queryValue)
+        if (queryTermService !== undefined) {
+            this.activeQueryTermService = queryTermService
+            this.activeQueryTermService.display()
+            this.neighbourTermsTable.setActiveTermService(this.activeQueryTermService)
+            this.addTermsTable.setActiveTermService(this.activeQueryTermService)
+            this.resultsList.setActiveTermService(this.activeQueryTermService)
+            this.updateNeighbourTermsTable()
+            this.updateResultsList()
+            this.updateAddTermsTable()
+        }
+    }
+
+    public updateNeighbourTermsTable(): void {
+        this.neighbourTermsTable.updateTable()
+    }
+
+    public updateResultsList(): void {
+        this.resultsList.updateList()
+    }
+
+    public updateAddTermsTable(): void {
+        this.addTermsTable.updateTable()
+    }
+
+    /**
+     * Generates a new QueryTermService for a given query value.
+     * This method checks if a QueryTermService for the given query value already exists.
+     * If not, it creates a new QueryTermService, adds it to the queryTermServices array,
+     * and updates the query terms list.
+     *
+     * @param queryValue - The value of the query term for which to generate a new QueryTermService.
+     * @param searchResults - The number of search results to retrieve.
+     * @param limitDistance - The maximum distance limit for neighbour terms.
+     * @param graphTerms - The number of neighbour terms to include in the graph.
+     */
+    private generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
+        if (this.findQueryTermService(queryValue) === undefined) {
+            let queryTermService = new QueryTermService(this, queryValue, searchResults, limitDistance, graphTerms)
+            this.queryTermServices.push(queryTermService)
+            this.updateQueryTermsList()
+        }
+    }
+
+    private findQueryTermService(queryValue: string): QueryTermService | undefined {
+        return this.queryTermServices.find(
+            termService => termService.getVisibleQueryTerm().getValue() === queryValue
+        )
+    }
+
+    private updateQueryTermsList(): void {
+        this.queryTermsList.updateList(
+            this.queryTermServices.map(termService => termService.getVisibleQueryTerm())
+        )
+    }
+}
+
+
+class AddTermsTable {
+    private activeTermService: QueryTermService | undefined
+    private dynamicTable: HTMLElement
+
+    constructor() {
+        this.dynamicTable = document.getElementById('addTermsTable') as HTMLElement
+    }
+
+    public setActiveTermService(queryTermService: QueryTermService): void {
+        this.activeTermService = queryTermService
+    }
+    
+    public updateTable(): void {
+        // Get the table body element
+        const tbody = this.dynamicTable.getElementsByTagName('tbody')[0]
+
+        // Clear existing rows in the table
+        tbody.innerHTML = '' 
+
+        // Check if the activeTermService is defined
+        if (this.activeTermService === undefined) return
+
+        const visibleNeighbourTermsValues = this.activeTermService.getVisibleQueryTerm().getNeighbourTermsValues()
+
+        // Iterate over the neighbour terms of the active query term
+        for(const term of this.activeTermService.getCompleteQueryTerm().getNeighbourTerms()) {
+            // Check if the term is not already in the visible neighbour terms list
+            if (!visibleNeighbourTermsValues.includes(term.getValue())) {
+                // Create a new row in the table
+                const row = tbody.insertRow()
+
+                // Create cells for the row
+                const cell1 = row.insertCell(0)
+                const cell2 = row.insertCell(1)
+
+                // Set the text content of the first cell
+                cell1.innerHTML = term.getValue()
+                
+                // Create the <i> element
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-plus-circle';
+                icon.style.cursor = 'pointer';
+
+                // Append the <i> element to the second cell
+                cell2.appendChild(icon);
+            }
+        }
     }
 }
 
@@ -1474,142 +1706,6 @@ class ResultsList {
         });
     }
     
-}
-
-
-class QueryTermsList {
-    private dynamicList: HTMLElement
-    private queryService: QueryService
-
-    constructor(queryService: QueryService) {
-        this.queryService = queryService
-        this.dynamicList = document.getElementById('queryTermsList') as HTMLElement
-    }
-
-    /**
-     * Updates the list of query terms with new query terms.
-     *
-     * @param queryTerms - An array of QueryTerm objects to be displayed in the list.
-     */
-    public updateList(queryTerms: QueryTerm[]): void {
-        // Clear existing list items
-        this.dynamicList.innerHTML = ''
-
-        // Iterate over the query terms and create list items for each one
-        queryTerms.forEach(queryTerm => {
-            // Create a new list item element
-            const listItem = document.createElement("li")
-
-            // Set the text content of the list item to be the value of the query term
-            listItem.textContent = queryTerm.getValue()
-
-            // Add a click event listener to the list item
-            listItem.addEventListener("click", () => {
-                // When the list item is clicked, set the active query term service to the value of the query term
-                this.queryService.setActiveQueryTermService(queryTerm.getValue())
-            })
-
-            // Append the list item to the dynamic list container
-            this.dynamicList.appendChild(listItem)
-        })
-    }
-}
-
-
-class QueryService {
-    private activeQueryTermService: QueryTermService | undefined
-    private queryTermServices: QueryTermService[]
-    private neighbourTermsTable: NeighbourTermsTable
-    private queryTermsList: QueryTermsList
-    private resultsList: ResultsList
-
-    constructor() {
-        this.queryTermServices = []
-        this.neighbourTermsTable = new NeighbourTermsTable()
-        this.resultsList = new ResultsList()
-        this.queryTermsList = new QueryTermsList(this)
-    }
-
-    /**
-     * Sets the query for the service.
-     * Deactivates the currently active QueryTermService, creates a new Query object,
-     * and triggers the query generation process.
-     * 
-     * @param queryValue - The new query string.
-     * @param searchResults - The number of search results to retrieve.
-     * @param limitDistance - The maximum distance limit for neighbour terms.
-     * @param graphTerms - The number of neighbour terms to include in the graph.
-     */
-    public setQuery(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
-        this.activeQueryTermService?.deactivate()
-        this.generateNewQueryTermService(queryValue, searchResults, limitDistance, graphTerms)
-        if (this.queryTermServices.length > 0) {
-            this.setActiveQueryTermService(queryValue)
-        }
-    }
-
-    public getActiveQueryTermService(): QueryTermService | undefined { 
-        return this.activeQueryTermService 
-    }
-
-    /**
-     * Sets the active QueryTermService based on the provided query value.
-     * Deactivates the currently active QueryTermService, finds the corresponding QueryTermService,
-     * by the provided queryValue, and displays the views associated with the QueryTerm.
-     *
-     * @param queryValue - The value of the query term for which to set the active QueryTermService.
-     */
-    public setActiveQueryTermService(queryValue: string): void {
-        this.activeQueryTermService?.deactivate()
-        const queryTermService = this.findQueryTermService(queryValue)
-        if (queryTermService !== undefined) {
-            this.activeQueryTermService = queryTermService
-            this.activeQueryTermService.display()
-            this.neighbourTermsTable.setActiveTermService(this.activeQueryTermService)
-            this.resultsList.setActiveTermService(this.activeQueryTermService)
-            this.updateNeighbourTermsTable()
-            this.updateResultsList()
-        }
-    }
-
-    public updateNeighbourTermsTable(): void {
-        this.neighbourTermsTable.updateTable()
-    }
-
-    public updateResultsList(): void {
-        this.resultsList.updateList()
-    }
-
-    /**
-     * Generates a new QueryTermService for a given query value.
-     * This method checks if a QueryTermService for the given query value already exists.
-     * If not, it creates a new QueryTermService, adds it to the queryTermServices array,
-     * and updates the query terms list.
-     *
-     * @param queryValue - The value of the query term for which to generate a new QueryTermService.
-     * @param searchResults - The number of search results to retrieve.
-     * @param limitDistance - The maximum distance limit for neighbour terms.
-     * @param graphTerms - The number of neighbour terms to include in the graph.
-     */
-    private generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
-        if (this.findQueryTermService(queryValue) === undefined) {
-            let queryTermService = new QueryTermService(this, queryValue, searchResults, limitDistance, graphTerms)
-            this.queryTermServices.push(queryTermService)
-            this.updateQueryTermsList()
-        }
-    }
-
-    private findQueryTermService(queryValue: string): QueryTermService | undefined {
-        return this.queryTermServices.find(
-            termService => termService.getVisibleQueryTerm().getValue() === queryValue
-        )
-    }
-
-    private updateQueryTermsList(): void {
-        this.queryTermsList.updateList(
-            this.queryTermServices.map(termService => termService.getVisibleQueryTerm())
-        )
-    }
 }
 
 

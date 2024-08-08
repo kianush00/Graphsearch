@@ -131,7 +131,7 @@ th {
 
 #addTermsContainer {
     margin-left: 30px;
-    width: 40%; /* Adjust the width as needed */
+    width: 25%; /* Adjust the width as needed */
 }
 
 #addTermsTable {
@@ -144,12 +144,12 @@ th {
 
 #addTermsTable td:nth-child(1) {
     text-align: left;
-    width: 76%; 
+    width: 70%; 
 }
 
 #addTermsTable td:nth-child(2) {
     text-align: center;
-    width: 24%;
+    width: 30%;
 }
 
 
