@@ -28,7 +28,7 @@ class MathUtils:
             The calculated weight factor.
         """
         if (weighted == 'linear'):
-            factor = float((results_size - 0.7 * (ranking_position - 1)) / results_size)
+            factor = float((results_size - 0.5 * (ranking_position - 1)) / results_size)
         elif (weighted == 'inverse'):
             factor = float(1 / (1 + 0.05 * (ranking_position - 1)))
         else:

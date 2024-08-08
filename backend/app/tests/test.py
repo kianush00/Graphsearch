@@ -592,9 +592,9 @@ class TestSREX(unittest.TestCase):
 
         # Create expected results
         expected_result1 = 1.0
-        expected_result2 = 0.9319177698643515
-        expected_result3 = 0.6815542881705524
-        expected_result4 = 0.6388034834058975
+        expected_result2 = 0.8864257281915631
+        expected_result3 = 0.709745967856668
+        expected_result4 = 0.692365139519731
 
         # Assert the result matches the expected output
         self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
@@ -626,9 +626,9 @@ class TestSREX(unittest.TestCase):
 
         # Create expected results
         expected_result1 = 1.0
-        expected_result2 = 0.9218968481122465
-        expected_result3 = 0.7203869988241294
-        expected_result4 = 0.6499417292756441
+        expected_result2 = 0.8957024986164903
+        expected_result3 = 0.7547840959959977
+        expected_result4 = 0.706750222299911
 
         # Assert the result matches the expected output
         self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
