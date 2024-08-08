@@ -726,6 +726,10 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.ponderation
     }
 
+    public getHopLimit(): number {
+        return this.hopLimit
+    }
+
     /**
      * Converts the NeighbourTerm instance into an object containing term, ponderation, and distance.
      * 
@@ -873,8 +877,12 @@ class QueryTerm extends Term implements ViewManager {
         return this.neighbourTerms.map(term => term.toObject())
     }
 
-    public getNeighbourTermById(id: string): NeighbourTerm | undefined {
-        return this.neighbourTerms.find(p => p.getNode()?.getId() === id)
+    public getNeighbourTermByNodeId(id: string): NeighbourTerm | undefined {
+        return this.neighbourTerms.find(nterm => nterm.getNode()?.getId() === id)
+    }
+
+    public getNeighbourTermByValue(value: string): NeighbourTerm | undefined {
+        return this.neighbourTerms.find(nterm => nterm.getValue() === value)
     }
 
     public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
@@ -1083,9 +1091,9 @@ class QueryTermService {
      * @param position - The new position of the neighbour term node.
      */
     public nodeDragged(id: string, position: Position): void {
-        let term: NeighbourTerm | undefined = this.getVisibleQueryTerm().getNeighbourTermById(id)
-        if (term === undefined) return
-        term.setPosition(position)
+        let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
+        if (neighbourTerm === undefined) return
+        neighbourTerm.setPosition(position)
 
         // Update the neighbour terms table with the new hops values
         this.queryService.updateNeighbourTermsTable()
@@ -1126,6 +1134,7 @@ class QueryTermService {
     public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
+        this.queryService.updateAddTermsTable()
         if (this.isVisible) this.display()
     }
 
@@ -1139,10 +1148,12 @@ class QueryTermService {
      * @param id - The id of the neighbour term to be removed.
      */
     public removeVisibleNeighbourTerm(id: string): void {
-        let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermById(id)
+        let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
         if (neighbourTerm === undefined) return
         this.getVisibleQueryTerm().removeNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
+        this.queryService.updateAddTermsTable()
+        if (this.isVisible) this.display()
     }
 
     /**
@@ -1304,45 +1315,6 @@ class QueryTermService {
 }
 
 
-class QueryTermsList {
-    private dynamicList: HTMLElement
-    private queryService: QueryService
-
-    constructor(queryService: QueryService) {
-        this.queryService = queryService
-        this.dynamicList = document.getElementById('queryTermsList') as HTMLElement
-    }
-
-    /**
-     * Updates the list of query terms with new query terms.
-     *
-     * @param queryTerms - An array of QueryTerm objects to be displayed in the list.
-     */
-    public updateList(queryTerms: QueryTerm[]): void {
-        // Clear existing list items
-        this.dynamicList.innerHTML = ''
-
-        // Iterate over the query terms and create list items for each one
-        queryTerms.forEach(queryTerm => {
-            // Create a new list item element
-            const listItem = document.createElement("li")
-
-            // Set the text content of the list item to be the value of the query term
-            listItem.textContent = queryTerm.getValue()
-
-            // Add a click event listener to the list item
-            listItem.addEventListener("click", () => {
-                // When the list item is clicked, set the active query term service to the value of the query term
-                this.queryService.setActiveQueryTermService(queryTerm.getValue())
-            })
-
-            // Append the list item to the dynamic list container
-            this.dynamicList.appendChild(listItem)
-        })
-    }
-}
-
-
 class QueryService {
     private activeQueryTermService: QueryTermService | undefined
     private queryTermServices: QueryTermService[]
@@ -1448,6 +1420,45 @@ class QueryService {
 }
 
 
+class QueryTermsList {
+    private dynamicList: HTMLElement
+    private queryService: QueryService
+
+    constructor(queryService: QueryService) {
+        this.queryService = queryService
+        this.dynamicList = document.getElementById('queryTermsList') as HTMLElement
+    }
+
+    /**
+     * Updates the list of query terms with new query terms.
+     *
+     * @param queryTerms - An array of QueryTerm objects to be displayed in the list.
+     */
+    public updateList(queryTerms: QueryTerm[]): void {
+        // Clear existing list items
+        this.dynamicList.innerHTML = ''
+
+        // Iterate over the query terms and create list items for each one
+        queryTerms.forEach(queryTerm => {
+            // Create a new list item element
+            const listItem = document.createElement("li")
+
+            // Set the text content of the list item to be the value of the query term
+            listItem.textContent = queryTerm.getValue()
+
+            // Add a click event listener to the list item
+            listItem.addEventListener("click", () => {
+                // When the list item is clicked, set the active query term service to the value of the query term
+                this.queryService.setActiveQueryTermService(queryTerm.getValue())
+            })
+
+            // Append the list item to the dynamic list container
+            this.dynamicList.appendChild(listItem)
+        })
+    }
+}
+
+
 class AddTermsTable {
     private activeTermService: QueryTermService | undefined
     private dynamicTable: HTMLElement
@@ -1491,8 +1502,30 @@ class AddTermsTable {
                 icon.className = 'fas fa-plus-circle';
                 icon.style.cursor = 'pointer';
 
+                // Add event listener to the icon element
+                icon.addEventListener('click', () => {
+                    this.handleTermAddition(term.getValue());
+                });
+
                 // Append the <i> element to the second cell
                 cell2.appendChild(icon);
+            }
+        }
+    }
+
+    private handleTermAddition(termValue: string) {
+        if (this.activeTermService !== undefined) {
+            const neighbourTerm = this.activeTermService.getCompleteQueryTerm().getNeighbourTermByValue(termValue)
+            if (neighbourTerm !== undefined) {
+                // Add the neighbour term to the active query term's visible neighbour terms
+                const queryTerm = this.activeTermService.getVisibleQueryTerm()
+                const value = neighbourTerm.getValue()
+                const hops = neighbourTerm.getHops()
+                const ponderation = neighbourTerm.getPonderation()
+                const hopLimit = neighbourTerm.getHopLimit()
+
+                let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, hops, ponderation, hopLimit)
+                this.activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm)
             }
         }
     }
@@ -1918,6 +1951,10 @@ const cy = cytoscape({
 cy.on('drag', 'node', evt => {
     queryService.getActiveQueryTermService()?.nodeDragged(evt.target.id(), evt.target.position())
 })
+
+cy.on('cxttap', "node", evt => {
+    queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id())
+});
 
 
 const queryService: QueryService = new QueryService()

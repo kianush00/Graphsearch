@@ -84,7 +84,7 @@ html, body {
 #cy {
     width: inherit;
     height: 25.5rem;
-    border: 1px solid black;
+    border: 1px solid #999;
     border-radius: 0.9rem;
 }
 
@@ -102,54 +102,51 @@ html, body {
     cursor: pointer;
 }
 
-#neighboursTermsTable table {
-    padding: 0 2rem; /* Add horizontal padding */
+
+
+#neighbourTermsContainer, #addTermsContainer {
+    width: 44%; /* Adjust the width as needed */
+    display: inline-block;
+    vertical-align: top;
+    margin-bottom: 0.6rem;
+}
+
+#neighbourTermsTableContainer, #addTermsTableContainer {
+    max-height: 232px; /* Set the fixed height as needed */
+    overflow-y: auto; /* Enable vertical scrolling */
+    border: 1px solid #ccc; /* Optional: add a border for better visibility */
+}
+
+#neighboursTermsTable, #addTermsTable {
     border-collapse: collapse;
+    width: 100%;
 }
 
-th, td {
-    border: 1px solid black;
-    text-align: left;
-    padding: 1px;
-    font-size: 14px;
+#addTermsTable th, #addTermsTable td, #neighboursTermsTable th, #neighboursTermsTable td {
+    border: 1px solid #aaa; /* Optional: add a border for better visibility */
+    padding: 2px; /* Optional: add padding for better readability */
 }
 
-th {
+#neighboursTermsTable th, #addTermsContainer th{
     background-color: #f2f2f2;
 }
 
-#neighbourTermsTableContainer, #addTermsContainer {
-    display: inline-block;
-    vertical-align: top;
+#neighboursTermsTable td:nth-child(1), #addTermsTable td:nth-child(1) {
+    width: 80%; 
 }
 
-#neighbourTermsTableContainer {
-    width: 50%; /* Adjust the width as needed */
+#neighboursTermsTable td:nth-child(2), #addTermsTable td:nth-child(2) {
+    width: 20%;
 }
 
 
 
 #addTermsContainer {
-    margin-left: 30px;
-    width: 25%; /* Adjust the width as needed */
-}
-
-#addTermsTable {
-    border-collapse: collapse;
-}
-
-#addTermsTable th, #addTermsTable td {
-    border: none;
-}
-
-#addTermsTable td:nth-child(1) {
-    text-align: left;
-    width: 70%; 
+    margin-left: 50px;
 }
 
 #addTermsTable td:nth-child(2) {
     text-align: center;
-    width: 30%;
 }
 
 
@@ -186,6 +183,7 @@ th {
     margin-left: 3rem;
     scroll-behavior: smooth;
     overflow-y: scroll;
+    margin-bottom: 0.6rem;
 }
 
 #resultsList {
@@ -202,10 +200,20 @@ th {
     border-bottom: none;
 }
 
+h1, h2, h3, h4, body, input, table {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+}
+
+body, input, table, th, td {
+    font-size: 14px;
+}
+
 .title {
+    font-size: 16px;
     font-weight: bold;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .abstract {
-    font-size: 0.85em; 
+    font-family: Arial, Helvetica, sans-serif;
 }
