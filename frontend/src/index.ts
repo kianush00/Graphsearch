@@ -1672,47 +1672,46 @@ class ResultsList {
         const queryTerms = this.activeTermService?.getVisibleQueryTerm().getValue() as string
         const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
         const neighbourTermsList = this.activeTermService?.getVisibleQueryTerm().getNeighbourTermsValues() as string[]
-        this.applyHighlightingToWords(element, queryTermsList, 'orange');
-        this.applyHighlightingToWords(element, neighbourTermsList, 'yellow');
+        this.applyHighlightingToWords(element, queryTermsList, neighbourTermsList);
     }
 
     /**
-     * Applies highlighting to specific words in an HTML element.
-     * 
-     * @param element - The HTML element to apply highlighting to.
-     * @param words - The words to highlight.
-     * @param color - The color to use for highlighting.
-     */
-    private applyHighlightingToWords(element: HTMLElement, words: string[], color: string = 'orange'): void {
-        const originalText = element.innerHTML;
-        const highlightedText = this.highlightWords(originalText, words, color);
+    ​ * Applies highlighting to the words in an HTML element.
+    ​ * 
+    ​ * This function takes an HTML element, a list of query terms, and a list of neighbour terms.
+    ​ * It removes any existing highlighting spans, splits the text by spaces, and replaces matching words with highlighted spans.
+    ​ * The highlighted spans are created using the 'orange' and 'yellow' background colors for query terms and neighbour terms, respectively.
+    ​ * Finally, the updated innerHTML of the element is set with the highlighted text.
+    ​ *
+    ​ * @param element - The HTML element to apply highlighting to.
+    ​ * @param queryTermsList - A list of query terms.
+    ​ * @param neighbourTermsList - A list of neighbour terms.
+    ​ */
+    private applyHighlightingToWords(element: HTMLElement, queryTermsList: string[], neighbourTermsList: string[]): void {
+        // Remove any existing highlighting spans
+        let originalText = element.textContent as string;
+
+        // Split text by spaces and replace matching words
+        let highlightedText = originalText.split(' ').map(word => {
+            // Recreate regex objects in each iteration to avoid state issues with global regex
+            const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
+            const neighbourTermsRegex = new RegExp(neighbourTermsList.join('|'), 'gi');
+
+            if (queryTermsRegex.test(word)) {
+                return `<span style="background-color: orange;">${word}</span>`;
+            } else if (neighbourTermsRegex.test(word)) {
+                return `<span style="background-color: yellow;">${word}</span>`;
+            } else {
+                return word;
+            }
+        }).join(' ');
+
+        // Update the innerHTML of the element with the highlighted text
         element.innerHTML = highlightedText;
     }
 
-    /**
-     * Highlights specific words in a given text string.
-     * 
-     * @param text - The original text string.
-     * @param words - An array of words to highlight.
-     * @param color - The color to use for highlighting. Default is 'orange'.
-     * 
-     * @returns A new string with the specified words highlighted with the given color.
-     * Words are highlighted by wrapping them in a span element with the specified background color.
-     */
-    private highlightWords(text: string, words: string[], color: string = 'orange'): string {
-        // Create a regular expression to find words that contain any substring of 'words'
-        const regex = new RegExp(words.join('|'), 'gi');
-    
-        // Split text by spaces and replace matching words
-        const highlightedText = text.split(' ').map(word => {
-            if (regex.test(word)) {
-                return `<span style="background-color: ${color};">${word}</span>`;
-            }
-            return word;
-        }).join(' ');
-    
-        return highlightedText;
-    }
+
+
 
     /**
      * This function adds a click event listener to the title element, which opens the original URL document webpage in a new tab when clicked.
@@ -1918,7 +1917,7 @@ const cy = cytoscape({
             'width': '20px',
             'height': '20px',
             'label': "data(id)",
-            "font-size": "15px"
+            "font-size": "13px"
             },
         },
         {
