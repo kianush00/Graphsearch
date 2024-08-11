@@ -15,12 +15,19 @@ class PydanticNeighbourTermRequest(BaseModel):
     distance: float
     
 
+class PydanticSentenceRequest(BaseModel):
+    position_in_doc: int
+    raw_text: str
+    neighbour_terms: List[PydanticNeighbourTermRequest]
+
+
 class PydanticDocumentRequest(BaseModel):
     doc_id: str
     title: str
     abstract: str
-    initial_ranking_position: int
+    weight: float
     neighbour_terms: List[PydanticNeighbourTermRequest]
+    sentences: List[PydanticSentenceRequest]
 
 
 class PydanticRankingRequest(BaseModel):

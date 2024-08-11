@@ -622,7 +622,7 @@ class Document(QueryTreeHandler):
     def __get_list_of_sentence_strings(self) -> list[str]:
         """
         Transform the text of the current document (title + abstract) into a list of string 
-        sentences. Split the text by dots.
+        sentences. Split the text by dots and trim the text portions.
 
         Returns
         -------
@@ -634,6 +634,7 @@ class Document(QueryTreeHandler):
             list_of_sentence_str.append(self.__title)
         if self.__abstract:
             abstract_list_of_sentence_str = self.__abstract.split('. ')
+            abstract_list_of_sentence_str = [sentence.strip() for sentence in abstract_list_of_sentence_str]
             list_of_sentence_str.extend(abstract_list_of_sentence_str)
         return list_of_sentence_str
     

@@ -287,6 +287,8 @@ class HTTPRequestUtils {
             // Handle the response
             const result = await response.json()
             console.log('Success:', result)
+            const sizeKb = new TextEncoder().encode(JSON.stringify(result)).length / 1024
+            console.log('Size of response in KB:', sizeKb)
             return result
         } catch (error) {
             console.error('Error:', error)
@@ -904,71 +906,25 @@ class QueryTerm extends Term implements ViewManager {
 }
 
 
-interface DocumentObject {
-    doc_id: string;
-    title: string;
-    abstract: string;
-    initial_ranking_position: number;
-    neighbour_terms: NTermObject[];
-}
-
-class Document {
-    private queryTerm: QueryTerm
-    private id: string
-    private title: string
-    private abstract: string
-    private initialRankingPosition: number
+class TextElement {
+    protected queryTerm: QueryTerm
 
     /**
-     * Represents a document associated with a query term.
-     * Each object has properties: term, distance, and ponderation.
-     * 
-     * @param queryTermValue - The value of the query term associated with the document.
-     * @param id - The unique identifier of the document.
-     * @param title - The title of the document.
-     * @param abstract - The abstract of the document.
-     * @param initialRankingPosition - The initial ranking position of the document.
-     * @param responseNeighbourTerms - An array of objects containing neighbour term data retrieved from the response.
-     * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
-     */
-    constructor(queryTermValue: string, id: string, title: string, abstract: string, 
-                initialRankingPosition: number, responseNeighbourTerms: any[], hopLimit: number){
+    ​ * Constructor for the QueryTerm class.
+    ​ * Initializes a new QueryTerm instance with the provided query term value and neighbour terms.
+    ​ *
+    ​ * @param queryTermValue - The value of the query term.
+    ​ * @param responseNeighbourTerms - An array of objects representing neighbour terms retrieved from the response.
+    ​ * Each object should have properties: term, distance, and ponderation.
+    ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
+    ​ */
+    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number) {
         this.queryTerm = new QueryTerm(queryTermValue)
-        this.id = id
-        this.title = title
-        this.abstract = abstract
-        this.initialRankingPosition = initialRankingPosition
         this.initializeNeighbourTermsFromResponse(responseNeighbourTerms, hopLimit)
     }
 
     public getQueryTerm(): QueryTerm {
         return this.queryTerm
-    }
-
-    public getId(): string {
-        return this.id
-    }
-
-    public getTitle(): string {
-        return this.title
-    }
-
-    public getAbstract(): string {
-        return this.abstract
-    }
-
-    public getInitialRankingPosition(): number {
-        return this.initialRankingPosition
-    }
-
-    public toObject(): DocumentObject {
-        return {
-            doc_id: this.id,
-            title: this.title,
-            abstract: this.abstract,
-            initial_ranking_position: this.initialRankingPosition,
-            neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
-        }
     }
 
     /**
@@ -990,8 +946,147 @@ class Document {
         }
         this.queryTerm.setNeighbourTerms(neighbourTerms)
     }
-    
 }
+
+
+
+interface SentenceObject {
+    position_in_doc: number;
+    raw_text: string;
+    neighbour_terms: NTermObject[];
+}
+
+class Sentence extends TextElement {
+    private positionInDoc: number
+    private rawText: string
+
+    /**
+    ​ * Constructor for the Sentence class.
+    ​ * Initializes a new Sentence instance with the provided query term value, neighbour terms, and sentence details.
+    ​ *
+    ​ * @param queryTermValue - The value of the query term associated with the sentence.
+    ​ * @param responseNeighbourTerms - An array of objects representing neighbour terms retrieved from the response.
+    ​ * Each object should have properties: term, distance, and ponderation.
+    ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
+    ​ * @param positionInDoc - The position of the sentence in the document.
+    ​ * @param rawText - The raw text of the sentence.
+    ​ */
+    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number, positionInDoc: number, rawText: string){
+        super(queryTermValue, responseNeighbourTerms, hopLimit)
+        this.positionInDoc = positionInDoc
+        this.rawText = rawText
+    }
+
+    public getPositionInDoc(): number {
+        return this.positionInDoc
+    }
+
+    public getRawText(): string {
+        return this.rawText
+    }
+
+    public toObject(): SentenceObject {
+        return {
+            position_in_doc: this.positionInDoc,
+            raw_text: this.rawText,
+            neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
+        }
+    }
+}
+
+
+interface DocumentObject {
+    doc_id: string;
+    title: string;
+    abstract: string;
+    weight: number;
+    neighbour_terms: NTermObject[];
+    sentences: SentenceObject[];
+}
+
+class Document extends TextElement{
+    private id: string
+    private title: string
+    private abstract: string
+    private weight: number
+    private sentences: Sentence[] = []
+
+    /**
+    ​ * Constructor for the Document class.
+    ​ * Initializes a new Document instance with the provided query term value, neighbour terms, document details, and sentence data.
+    ​ *
+    ​ * @param queryTermValue - The value of the query term associated with the document.
+    ​ * @param responseNeighbourTerms - An array of objects representing neighbour terms retrieved from the response.
+    ​ * Each object has properties: term, distance, and ponderation.
+    ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
+    ​ * @param idTitleAbstract - An array containing the document's id, title, and abstract.
+    ​ * @param weight - The weight of the document.
+    ​ * @param responseSentences - An array of objects representing sentences retrieved from the response.
+    ​ * Each object has properties: position_in_doc, raw_text, and neighbour_terms.
+    ​ */
+    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number, idTitleAbstract: [string, string, string], 
+        weight: number, responseSentences: any[]){
+        super(queryTermValue, responseNeighbourTerms, hopLimit)
+        this.id = idTitleAbstract[0]
+        this.title = idTitleAbstract[1]
+        this.abstract = idTitleAbstract[2]
+        this.weight = weight
+        this.sentences = this.initializeSentencesFromResponse(responseSentences, hopLimit)
+    }
+
+    public getId(): string {
+        return this.id
+    }
+
+    public getTitle(): string {
+        return this.title
+    }
+
+    public getAbstract(): string {
+        return this.abstract
+    }
+
+    public getWeight(): number {
+        return this.weight
+    }
+
+    public getSentences(): Sentence[] {
+        return this.sentences
+    }
+
+    public toObject(): DocumentObject {
+        return {
+            doc_id: this.id,
+            title: this.title,
+            abstract: this.abstract,
+            weight: this.weight,
+            neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects(),
+            sentences: this.sentences.map(sentence => sentence.toObject())
+        }
+    }
+
+    /**
+    ​ * Initializes sentences from the provided response data.
+    ​ * 
+    ​ * @param responseSentences - An array of objects representing sentences retrieved from the response.
+    ​ * Each object has properties 'position_in_doc', 'raw_text', and 'neighbour_terms'.
+    ​ * 
+    ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the sentences.
+    ​ * 
+    ​ * @returns An array of Sentence instances, each representing a sentence from the response data.
+    ​ * Each Sentence instance is created with the query term value, neighbour terms, hop limit, position, and raw text.
+    ​ */
+    private initializeSentencesFromResponse(responseSentences: any[], hopLimit: number): Sentence[] {
+        const sentences = []
+        for (const sentenceObject of responseSentences) {
+            let sentence = new Sentence(this.queryTerm.getValue(), sentenceObject.neighbour_terms, 
+                    hopLimit, sentenceObject.position_in_doc, sentenceObject.raw_text)
+            sentences.push(sentence)
+        }
+        return sentences
+    }
+}
+
 
 interface RankingObject {
     visible_neighbour_terms: NTermObject[];
@@ -1291,10 +1386,11 @@ class QueryTermService {
             const doc_id = documentObject['doc_id']
             const title = documentObject['title']
             const abstract = documentObject['abstract']
-            const initial_ranking_position = documentObject['initial_ranking_position']
+            const weight = documentObject['weight']
             const response_neighbour_terms = documentObject['neighbour_terms']
-            let document = new Document(this.ranking.getVisibleQueryTerm().getValue(), doc_id, title, 
-                            abstract, initial_ranking_position, response_neighbour_terms, hopLimit)
+            const sentences = documentObject['sentences']
+            let document = new Document(this.ranking.getVisibleQueryTerm().getValue(), response_neighbour_terms, hopLimit, 
+                    [doc_id, title, abstract], weight, sentences)
             this.addDocument(document)
         }
     }
@@ -1917,7 +2013,8 @@ const cy = cytoscape({
             'width': '20px',
             'height': '20px',
             'label': "data(id)",
-            "font-size": "13px"
+            'font-size': '13px',
+            'color': '#616161'
             },
         },
         {
@@ -1938,7 +2035,7 @@ const cy = cytoscape({
               'width': '15px',
               'height': '15px',
               'label': 'data(label)',
-              "font-size": "13px"
+              'font-size': '13px'
             }
         }
     ],

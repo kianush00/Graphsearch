@@ -1,10 +1,9 @@
 from models.request.request import PydanticRankingRequest, PydanticNeighbourTermRequest
-from models.request.response import PydanticRanking, PydanticDocument, PydanticNeighbourTerm, RerankNewPositions
+from models.request.response import PydanticRanking, PydanticDocument, PydanticSentence, PydanticNeighbourTerm, RerankNewPositions
 from models.srex.ranking import Ranking
 from models.srex.vicinity_graph import VicinityGraph, VicinityNode
 from utils.data_utils import DataUtils
 from utils.vector_utils import VectorUtils
-from utils.math_utils import MathUtils
 from fastapi import HTTPException
 from typing import List
 
@@ -47,15 +46,26 @@ class QueryService:
             complete_neighbour_terms = self.__get_pydantic_neighbour_term_list(ranking.get_graph().get_graph_as_dict())
             
             # Get documents and its neighbour terms
-            documents = []
+            documents: list[PydanticDocument] = []
             for d in ranking.get_documents():
                 doc_neighbour_terms = self.__get_pydantic_neighbour_term_list(d.get_graph().get_graph_as_dict())
                 _doc_id = d.get_doc_id()
                 _title = d.get_title()
                 _abstract = d.get_abstract()
-                _ranking_position = d.get_ranking_position()
+                _weight = d.get_weight()
+                
+                # Get the document sentences and their neighbour terms
+                _sentences: list[PydanticSentence] = []
+                for s in d.get_sentences():
+                    _position_in_doc = s.get_position_in_doc()
+                    _raw_text = s.get_raw_text()
+                    sentence_neighbour_terms = self.__get_pydantic_neighbour_term_list(s.get_graph().get_graph_as_dict())
+                    _sentences.append(PydanticSentence(position_in_doc=_position_in_doc, raw_text=_raw_text, 
+                                                       neighbour_terms=sentence_neighbour_terms))
+                
+                # Add the document to the list of documents with their neighbour terms and sentences
                 documents.append(PydanticDocument(doc_id=_doc_id, title=_title, abstract=_abstract, 
-                                                  initial_ranking_position=_ranking_position, neighbour_terms=doc_neighbour_terms))
+                        weight=_weight, neighbour_terms=doc_neighbour_terms, sentences=_sentences))
 
             return PydanticRanking(visible_neighbour_terms=visible_neighbour_terms, 
                                    complete_neighbour_terms=complete_neighbour_terms,
@@ -84,17 +94,15 @@ class QueryService:
             visible_graph = self.__get_graph_from_pydantic_neighbour_term_list(ranking.visible_neighbour_terms)
             
             # Initialize a list of document graphs from the ranking
-            document_rankpos_graph_tuple_list: list[tuple[int, VicinityGraph]] = []
+            document_rankpos_graph_tuple_list: list[tuple[float, VicinityGraph]] = []
             for document in ranking.documents:
                 document_rankpos_graph_tuple_list.append( 
-                    (document.initial_ranking_position, 
-                    self.__get_graph_from_pydantic_neighbour_term_list(document.neighbour_terms)) 
+                    (document.weight, self.__get_graph_from_pydantic_neighbour_term_list(document.neighbour_terms)) 
                 )
             
             # Create similarity list
             similarity_ranking: list[float] = []
-            for rank_pos, graph in document_rankpos_graph_tuple_list:
-                doc_weight = MathUtils.calculate_document_weight(len(document_rankpos_graph_tuple_list), rank_pos)
+            for doc_weight, graph in document_rankpos_graph_tuple_list:
                 cosine_similarity = doc_weight * visible_graph.get_cosine_similarity(graph)
                 similarity_ranking.append(cosine_similarity)
             
@@ -145,6 +153,4 @@ class QueryService:
 
 
 queryService = QueryService()
-
-
 
