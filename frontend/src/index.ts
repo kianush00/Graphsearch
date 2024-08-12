@@ -1263,7 +1263,6 @@ class QueryTermService {
      */
     public addCompleteNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.getCompleteQueryTerm().addNeighbourTerm(neighbourTerm)
-        this.queryService.updateAddTermsTable()
     }
 
     /**
@@ -1353,6 +1352,9 @@ class QueryTermService {
             // Add the neighbour term to the complete QueryTerm's neighbour terms list
             this.addCompleteNeighbourTerm(neighbourTerm)
         }
+
+        // Update the neighbour terms table in the QueryService
+        this.queryService.updateAddTermsTable()
     }
 
     /**
