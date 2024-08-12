@@ -171,7 +171,7 @@ class TextUtils {
 
 class ConversionUtils {
     private static minDistance: number = 50.0
-    private static maxDistance: number = 150.0
+    private static maxDistance: number = 140.0
     private static hopMinValue: number = 1.0
 
     /**
@@ -1369,7 +1369,7 @@ class QueryTermService {
     }
 
     /**
-     * Generates ranking documents for the current query term.
+     * Generates ranking documents for the current query term, and updates the results list component.
      * 
      * @param result - The result object containing ranking documents data.
      * The result object is expected to have a property 'documents',
@@ -1393,6 +1393,9 @@ class QueryTermService {
                     [doc_id, title, abstract], weight, sentences)
             this.addDocument(document)
         }
+
+        // Update the ranking's documents list
+        this.queryService.updateResultsList()
     }
     
     /**
@@ -1402,11 +1405,10 @@ class QueryTermService {
      * 
      * @remarks
      * This function is responsible for adding a new document to the ranking and updating the results list.
-     * It calls the `addDocument` method of the ranking and the `updateResultsList` method of the query service.
+     * It calls the `addDocument` method of the ranking
      */
     private addDocument(document: Document): void {
         this.getRanking().addDocument(document)
-        this.queryService.updateResultsList()
     }
 }
 
@@ -1561,12 +1563,27 @@ class AddTermsTable {
 
     constructor() {
         this.dynamicTable = document.getElementById('addTermsTable') as HTMLElement
+        const filterInput = document.getElementById('addTermsFilter') as HTMLInputElement;
+        filterInput.addEventListener('input', () => this.filterTerms());
+        this.toggleFilterVisibility();
     }
 
     public setActiveTermService(queryTermService: QueryTermService): void {
         this.activeTermService = queryTermService
     }
     
+    /**
+    ​ * Updates the table with neighbour terms data.
+    ​ * 
+    ​ * This function retrieves the table body element, clears existing rows, and then iterates over the neighbour terms of the active query term.
+    ​ * For each neighbour term, it creates a new row in the table and populates the cells with the term's value and hops.
+    ​ * If the term is already in the visible neighbour terms list, it is not added to the table.
+    ​ * 
+    ​ * @remarks
+    ​ * This function assumes that the table body element is already present in the HTML structure.
+    ​ * 
+    ​ * @returns {void}
+    ​ */
     public updateTable(): void {
         // Get the table body element
         const tbody = this.dynamicTable.getElementsByTagName('tbody')[0]
@@ -1594,22 +1611,28 @@ class AddTermsTable {
                 cell1.innerHTML = term.getValue()
                 
                 // Create the <i> element
-                const icon = document.createElement('i');
-                icon.className = 'fas fa-plus-circle';
-                icon.style.cursor = 'pointer';
-
-                // Add event listener to the icon element
-                icon.addEventListener('click', () => {
-                    this.handleTermAddition(term.getValue());
-                });
+                const icon = this.createIconElement(term)
 
                 // Append the <i> element to the second cell
                 cell2.appendChild(icon);
             }
         }
+
+        // Toggle the filter input visibility, if the table has rows 
+        this.toggleFilterVisibility()
     }
 
-    private handleTermAddition(termValue: string) {
+    /**
+    ​ * Handles the addition of a neighbour term to the active query term's visible neighbour terms.
+    ​ * 
+    ​ * This function checks if the activeTermService is defined, retrieves the neighbour term by its value,
+    ​ * and if the neighbour term exists, creates a new visible neighbour term and adds it to the active query term.
+    ​ * 
+    ​ * @param termValue - The value of the neighbour term to be added.
+    ​ * 
+    ​ * @returns {void}
+    ​ */
+    private handleTermAddition(termValue: string): void {
         if (this.activeTermService !== undefined) {
             const neighbourTerm = this.activeTermService.getCompleteQueryTerm().getNeighbourTermByValue(termValue)
             if (neighbourTerm !== undefined) {
@@ -1624,6 +1647,80 @@ class AddTermsTable {
                 this.activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm)
             }
         }
+    }
+
+    /**
+    ​ * Filters the terms in the 'addTermsTable' based on the input value in the 'addTermsFilter' input field.
+    ​ * 
+    ​ * This function retrieves the filter input element, the filter value, the table element, and the rows of the table.
+    ​ * It then iterates over each row, retrieves the term cell, and checks if the term's lowercase value contains the filter value.
+    ​ * If it does, the row's display style is set to '', making it visible. If it doesn't, the row's display style is set to 'none', making it hidden.
+    ​ */
+    private filterTerms(): void {
+        const filterInput = document.getElementById('addTermsFilter') as HTMLInputElement;
+        const filterValue = filterInput.value.toLowerCase();
+        const table = document.getElementById('addTermsTable') as HTMLTableElement;
+        const rows = Array.from(table.getElementsByTagName('tbody')[0].getElementsByTagName('tr'));
+    
+        for (const row of rows) {
+            const termCell = row.getElementsByTagName('td')[0];
+            const term = termCell.textContent ?? termCell.innerText;
+    
+            if (term.toLowerCase().indexOf(filterValue) > -1) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Toggles the visibility of the addTermsFilter input based on the presence of rows in the addTermsTable.
+     * 
+     * This method checks whether there are any rows in the table's tbody. If there are no rows, the filter input
+     * is hidden. If there are rows, the filter input is shown.
+     */
+    private toggleFilterVisibility(): void {
+        // Get the table and its tbody element
+        const table = document.getElementById('addTermsTable') as HTMLTableElement;
+        const tbody = table.getElementsByTagName('tbody')[0];
+
+        // Get the filter input
+        const filterInput = document.getElementById('addTermsFilter') as HTMLInputElement;
+
+        // Check if there are any rows in the tbody
+        const rows = tbody.getElementsByTagName('tr');
+        
+        if (rows.length === 0) {
+            // Hide the filter input if there are no rows
+            filterInput.style.display = 'none';
+        } else {
+            // Show the filter input if there are rows
+            filterInput.style.display = 'block';
+        }
+    }
+
+    /**
+    ​ * Creates an icon element for adding a neighbour term to the active query term's visible neighbour terms.
+    ​ * 
+    ​ * @param term - The neighbour term for which to create the icon element.
+    ​ * 
+    ​ * @returns A new HTML element representing the icon.
+    ​ * 
+    ​ * The icon is a fontawesome plus-circle icon with a pointer cursor.
+    ​ * When clicked, it triggers the `handleTermAddition` method with the term's value as a parameter.
+    ​ */
+    private createIconElement(term: NeighbourTerm): HTMLElement {
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-plus-circle';
+        icon.style.cursor = 'pointer';
+
+        // Add event listener to the icon element
+        icon.addEventListener('click', () => {
+            this.handleTermAddition(term.getValue());
+        });
+
+        return icon;
     }
 }
 
@@ -2014,7 +2111,7 @@ const cy = cytoscape({
             'height': '20px',
             'label': "data(id)",
             'font-size': '13px',
-            'color': '#616161'
+            'color': '#5d5d5d'
             },
         },
         {
