@@ -1227,6 +1227,7 @@ class QueryTermService {
      * @param neighbourTerm - The neighbour term to be added.
      */
     public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+        if (this.ranking.getVisibleQueryTerm().getNeighbourTerms().length > 19) return
         this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         this.queryService.updateAddTermsTable()
@@ -1244,7 +1245,7 @@ class QueryTermService {
      */
     public removeVisibleNeighbourTerm(id: string): void {
         let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
-        if (neighbourTerm === undefined) return
+        if (neighbourTerm === undefined || this.ranking.getVisibleQueryTerm().getNeighbourTerms().length < 2) return
         this.getVisibleQueryTerm().removeNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         this.queryService.updateAddTermsTable()
@@ -1858,11 +1859,6 @@ class ResultsList {
         return abstractElement;
     }
 
-    /**
-     * Applies highlighting to the words in an HTML element.
-     * 
-     * @param element - The HTML element to apply highlighting to.
-     */
     private getHighlightedText(sentenceObjects: Sentence[]): string {
         const queryTerms = this.activeTermService?.getVisibleQueryTerm().getValue() as string
         const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
@@ -1870,19 +1866,9 @@ class ResultsList {
         return this.applyHighlightingToWords(sentenceObjects, queryTermsList, neighbourTermsList);
     }
 
-    /**
-    ​ * Applies highlighting to the words in an HTML element.
-    ​ * 
-    ​ * This function takes an HTML element, a list of query terms, and a list of neighbour terms.
-    ​ * It removes any existing highlighting spans, splits the text by spaces, and replaces matching words with highlighted spans.
-    ​ * The highlighted spans are created using the 'orange' and 'yellow' background colors for query terms and neighbour terms, respectively.
-    ​ * Finally, the updated innerHTML of the element is set with the highlighted text.
-    ​ *
-    ​ * @param element - The HTML element to apply highlighting to.
-    ​ * @param queryTermsList - A list of query terms.
-    ​ * @param neighbourTermsList - A list of neighbour terms.
-    ​ */
+    
     private applyHighlightingToWords(sentenceObjects: Sentence[], queryTermsList: string[], neighbourTermsList: string[]): string {
+        if (sentenceObjects.length == 0) return ""
         let highlightedSentences: string[] = []
 
         for (let sentenceObject of sentenceObjects) {
@@ -1891,15 +1877,16 @@ class ResultsList {
                 highlightedSentences.push(sentenceText);
             } else {
                 // Split text by spaces and replace matching words
-                const highlightedSentence = sentenceText.split(' ').map(word => {
+                const words = sentenceText.split(' ');
+                const highlightedSentence = words.map((word, index) => {
                     // Recreate regex objects in each iteration to avoid state issues with global regex
                     const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
                     const neighbourTermsRegex = new RegExp(neighbourTermsList.join('|'), 'gi');
 
-                    if (queryTermsRegex.test(word)) {
-                        return `<span style="background-color: orange;">${word}</span>`;
-                    } else if (neighbourTermsRegex.test(word)) {
-                        return `<span style="background-color: yellow;">${word}</span>`;
+                    if (neighbourTermsRegex.test(word)) {
+                        return this.getHighlightedTextIfNeighbourWord(word, words, index, queryTermsList);
+                    } else if (queryTermsRegex.test(word)) {
+                        return `<span style="background-color: #98EE98;">${word}</span>`;
                     } else {
                         return word;
                     }
@@ -1910,6 +1897,66 @@ class ResultsList {
 
         const highlightedText = highlightedSentences.join('. ')
         return highlightedText;
+    }
+
+    private getHighlightedTextIfNeighbourWord(word: string, words: string[], index: number, queryTermsList: string[]): string {
+        const stopwords = ["a", "about", "above", "accordingly", "after", "against", "ain", "all", "also", "although", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "besides", "between", "both", "but", "by", "can", "can't", "cannot", "consequently", "could", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "due", "during", "each", "etc", "every", "few", "for", "from", "further", "furthermore", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "however", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "let's", "likewise", "ll", "m", "ma", "me", "might", "mightn", "mightn't", "more", "moreover", "most", "must", "mustn", "mustn't", "my", "myself", "needn", "needn't", "nevertheless", "no", "nonetheless", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she'd", "she'll", "she's", "should", "should've", "shouldn", "shouldn't", "similarly", "since", "so", "some", "such", "t", "than", "that", "that'll", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "therefore", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "though", "through", "thus", "to", "too", "under", "unless", "until", "up", "using", "ve", "very", "was", "wasn", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren", "weren't", "what", "what's", "when", "when's", "where", "where's", "whereas", "whether", "which", "while", "who", "who's", "whom", "whose", "why", "why's", "will", "with", "won", "won't", "would", "wouldn", "wouldn't", "y", "yet", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"]
+        const hopLimit = this.activeTermService?.getVisibleQueryTerm().getNeighbourTerms()[0].getHopLimit() ?? 0
+        let foundQueryTerm = false;
+
+        // Check words to the left
+        if (index > 0) {
+            foundQueryTerm = this.checkQueryTermToTheLeft(words, index, hopLimit, stopwords, queryTermsList)
+        }
+
+        // Check words to the right
+        if (index < words.length - 1 && !foundQueryTerm) {
+            foundQueryTerm = this.checkQueryTermToTheRight(words, index, hopLimit, stopwords, queryTermsList)
+        }
+
+        if (foundQueryTerm) {
+            return `<span style="background-color: #D8D8EE;">${word}</span>`;
+        } else {
+            return word;
+        }
+    }
+
+    private checkQueryTermToTheLeft(words: string[], index: number, hopLimit: number, stopwords: string[], queryTermsList: string[]): boolean {
+        let leftCounter = 0;
+        for (let i = index - 1; i >= 0 && leftCounter < hopLimit; i--) {
+            const leftWord = words[i];
+            if (!stopwords.includes(leftWord.toLowerCase())) {
+                const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
+                if (queryTermsRegex.test(leftWord)) {
+                    return true;
+                }
+                if (leftWord.includes('-')) {
+                    leftCounter += (leftWord.split('-').length - 1);
+                }
+                leftCounter++;
+            }
+        }
+        return false;
+    }
+
+    private checkQueryTermToTheRight(words: string[], index: number, hopLimit: number, stopwords: string[], queryTermsList: string[]): boolean {
+        let rightCounter = 0;
+        for (let i = index + 1; i < words.length && rightCounter < hopLimit; i++) {
+            const rightWord = words[i];
+            if (!stopwords.includes(rightWord.toLowerCase())) {
+                const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
+                if (queryTermsRegex.test(rightWord)) {
+                    return true;
+                }
+                if (rightWord.includes('-')) {
+                    const splitWords = rightWord.split('-');
+                    const stopWordsCount = splitWords.filter(word => stopwords.includes(word.toLowerCase())).length;
+                    rightCounter += (splitWords.length - 1) - stopWordsCount;
+                }
+                rightCounter++;
+            }
+        }
+        return false;
     }
 
     /**
@@ -2112,7 +2159,7 @@ const cy = cytoscape({
         {
             selector: '.' + NodeType.central_node,
             style: {
-            "background-color": '#EB6030',
+            "background-color": '#40CC40',
             'width': '20px',
             'height': '20px',
             'label': "data(id)",
@@ -2134,7 +2181,7 @@ const cy = cytoscape({
         {
             selector: '.' + NodeType.outer_node,
             style: {
-              'background-color': '#3060EB',
+              'background-color': '#8080EE',
               'width': '15px',
               'height': '15px',
               'label': 'data(label)',
