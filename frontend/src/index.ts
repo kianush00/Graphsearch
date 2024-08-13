@@ -1835,9 +1835,9 @@ class ResultsList {
     private createTitleElement(index: number, doc: Document): HTMLSpanElement {
         const titleElement = document.createElement('span');
         titleElement.className = 'title';
-        titleElement.textContent = (index + 1) + ". " + doc.getTitle();
+        const titleSentenceObject = [doc.getSentences()[0]];
         // Highlight the title element with orange color for the query terms and yellow color for the neighbour terms
-        this.applyHighlighting(titleElement)
+        titleElement.innerHTML = (index + 1) + ". " + this.getHighlightedText(titleSentenceObject)
         return titleElement;
     }
 
@@ -1851,9 +1851,9 @@ class ResultsList {
     private createAbstractElement(doc: Document): HTMLParagraphElement {
         const abstractElement = document.createElement('p');
         abstractElement.className = 'abstract';
-        abstractElement.textContent = doc.getAbstract();
+        const abstractSentenceObjects = doc.getSentences().slice(1);
         // Highlight the abstract element with orange color for the query terms and yellow color for the neighbour terms
-        this.applyHighlighting(abstractElement)
+        abstractElement.innerHTML = this.getHighlightedText(abstractSentenceObjects);
         abstractElement.style.display = "none";
         return abstractElement;
     }
@@ -1863,11 +1863,11 @@ class ResultsList {
      * 
      * @param element - The HTML element to apply highlighting to.
      */
-    private applyHighlighting(element: HTMLElement): void {
+    private getHighlightedText(sentenceObjects: Sentence[]): string {
         const queryTerms = this.activeTermService?.getVisibleQueryTerm().getValue() as string
         const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
         const neighbourTermsList = this.activeTermService?.getVisibleQueryTerm().getNeighbourTermsValues() as string[]
-        this.applyHighlightingToWords(element, queryTermsList, neighbourTermsList);
+        return this.applyHighlightingToWords(sentenceObjects, queryTermsList, neighbourTermsList);
     }
 
     /**
@@ -1882,31 +1882,35 @@ class ResultsList {
     ​ * @param queryTermsList - A list of query terms.
     ​ * @param neighbourTermsList - A list of neighbour terms.
     ​ */
-    private applyHighlightingToWords(element: HTMLElement, queryTermsList: string[], neighbourTermsList: string[]): void {
-        // Remove any existing highlighting spans
-        let originalText = element.textContent as string;
+    private applyHighlightingToWords(sentenceObjects: Sentence[], queryTermsList: string[], neighbourTermsList: string[]): string {
+        let highlightedSentences: string[] = []
 
-        // Split text by spaces and replace matching words
-        let highlightedText = originalText.split(' ').map(word => {
-            // Recreate regex objects in each iteration to avoid state issues with global regex
-            const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
-            const neighbourTermsRegex = new RegExp(neighbourTermsList.join('|'), 'gi');
-
-            if (queryTermsRegex.test(word)) {
-                return `<span style="background-color: orange;">${word}</span>`;
-            } else if (neighbourTermsRegex.test(word)) {
-                return `<span style="background-color: yellow;">${word}</span>`;
+        for (let sentenceObject of sentenceObjects) {
+            const sentenceText = sentenceObject.getRawText();
+            if (sentenceObject.getQueryTerm().getNeighbourTerms().length == 0 || neighbourTermsList.length == 0) {
+                highlightedSentences.push(sentenceText);
             } else {
-                return word;
+                // Split text by spaces and replace matching words
+                const highlightedSentence = sentenceText.split(' ').map(word => {
+                    // Recreate regex objects in each iteration to avoid state issues with global regex
+                    const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
+                    const neighbourTermsRegex = new RegExp(neighbourTermsList.join('|'), 'gi');
+
+                    if (queryTermsRegex.test(word)) {
+                        return `<span style="background-color: orange;">${word}</span>`;
+                    } else if (neighbourTermsRegex.test(word)) {
+                        return `<span style="background-color: yellow;">${word}</span>`;
+                    } else {
+                        return word;
+                    }
+                }).join(' ');
+                highlightedSentences.push(highlightedSentence);
             }
-        }).join(' ');
+        }
 
-        // Update the innerHTML of the element with the highlighted text
-        element.innerHTML = highlightedText;
+        const highlightedText = highlightedSentences.join('. ')
+        return highlightedText;
     }
-
-
-
 
     /**
      * This function adds a click event listener to the title element, which opens the original URL document webpage in a new tab when clicked.
@@ -1971,7 +1975,7 @@ class QueryComponent {
         // Set default values for the inputs
         this.searchResultsInput.value = "10";
         this.limitDistanceInput.value = "4";
-        this.graphTermsInput.value = "10";
+        this.graphTermsInput.value = "7";
 
         this.addEventListeners()
     }

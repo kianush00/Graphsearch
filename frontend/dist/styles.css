@@ -213,7 +213,7 @@ h1, h2, h3, h4, body, input, table {
 }
 
 body, input, table, th, td {
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .title {
@@ -223,5 +223,6 @@ body, input, table, th, td {
 }
 
 .abstract {
+    font-size: 1.1em;
     font-family: Arial, Helvetica, sans-serif;
 }

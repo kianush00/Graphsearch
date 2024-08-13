@@ -139,7 +139,7 @@ class QueryService:
         for doc_weight, doc_sentence_graph_list in document_rankpos_graph_tuple_list:
             # Calculate the cosine similarity between the visible graph and each sentence graph in the document
             cosine_similarity_by_graph: list[float] = [
-                doc_weight * visible_graph.get_cosine_similarity(graph, include_ponderation) for graph in doc_sentence_graph_list
+                (doc_weight * 0.05) + (doc_weight * visible_graph.get_cosine_similarity(graph, include_ponderation)) for graph in doc_sentence_graph_list
             ]
             
             # Sort the list of similarity scores and get the first two scores
