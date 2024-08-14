@@ -80,10 +80,10 @@ class QueryService:
             visible_graph = self.__get_graph_from_pydantic_neighbour_term_list(ranking.visible_neighbour_terms)
             
             # Initialize a list of sentence graphs from the documents of the ranking
-            document_rankpos_graph_tuple_list = self.__get_rankpos_and_sentence_graphs_from_documents(ranking)
+            document_doc_weight_graph_tuple_list = self.__get_doc_weight_and_sentence_graphs_from_documents(ranking)
             
             # Create similarity list
-            similarity_ranking: list[float] = self.__calculate_similarity_ranking(document_rankpos_graph_tuple_list, visible_graph, include_ponderation)
+            similarity_ranking: list[float] = self.__calculate_similarity_ranking(document_doc_weight_graph_tuple_list, visible_graph, include_ponderation)
             
             # Get sorted similarity list
             rank_new_positions = VectorUtils.get_sorted_positions(similarity_ranking)
@@ -92,7 +92,7 @@ class QueryService:
             raise HTTPException(status_code=400, detail=f"Bad request: {e}")
     
     
-    def __get_rankpos_and_sentence_graphs_from_documents(self, ranking: PydanticRankingRequest) -> list[tuple[float, list[VicinityGraph]]]:
+    def __get_doc_weight_and_sentence_graphs_from_documents(self, ranking: PydanticRankingRequest) -> list[tuple[float, list[VicinityGraph]]]:
         """
         This function extracts the document weight and sentence neighbour term graphs from a PydanticRankingRequest object.
 
@@ -104,19 +104,19 @@ class QueryService:
         - list[tuple[float, list[VicinityGraph]]]: A list of tuples. Each tuple contains a document weight (float) and a list of 
         VicinityGraph objects representing the neighbour terms of the document's sentences.
         """
-        document_rankpos_graph_tuple_list = []
+        document_doc_weight_graph_tuple_list = []
         for document in ranking.documents:
             # Get the document weight and its sentence graphs list
             document_sentence_graph_list = [
                 self.__get_graph_from_pydantic_neighbour_term_list(s.neighbour_terms) for s in document.sentences
             ]
-            document_rankpos_graph_tuple_list.append( (document.weight, document_sentence_graph_list) )
+            document_doc_weight_graph_tuple_list.append( (document.weight, document_sentence_graph_list) )
         
-        return document_rankpos_graph_tuple_list
+        return document_doc_weight_graph_tuple_list
     
     
     def __calculate_similarity_ranking(self, 
-        document_rankpos_graph_tuple_list: list[tuple[float, list[VicinityGraph]]], 
+        document_doc_weight_graph_tuple_list: list[tuple[float, list[VicinityGraph]]], 
         visible_graph: VicinityGraph, 
         include_ponderation: bool
         ) -> list[float]:
@@ -124,7 +124,7 @@ class QueryService:
         Calculates the similarity ranking between the visible neighbour terms and the neighbour terms of each document.
         
         Parameters:
-        - document_rankpos_graph_tuple_list (list[tuple[float, list[VicinityGraph]]]): A list of tuples, where each tuple contains 
+        - document_doc_weight_graph_tuple_list (list[tuple[float, list[VicinityGraph]]]): A list of tuples, where each tuple contains 
         a document weight (float) and a list of VicinityGraph objects representing the neighbour terms of the document's sentences.
         - visible_graph (VicinityGraph): A VicinityGraph object representing the neighbour terms of the visible graph.
         - include_ponderation (bool): A flag indicating whether to include ponderation in the cosine similarity calculation.
@@ -136,25 +136,21 @@ class QueryService:
         # Initialize the similarity scores
         similarity_ranking: list[float] = []
         
-        for doc_weight, doc_sentence_graph_list in document_rankpos_graph_tuple_list:
+        for doc_weight, doc_sentence_graph_list in document_doc_weight_graph_tuple_list:
+            if len(doc_sentence_graph_list) < 1:
+                similarity_ranking.append(0.0)
+                continue
+            
             # Calculate the cosine similarity between the visible graph and each sentence graph in the document
             cosine_similarity_by_graph: list[float] = [
-                (doc_weight * 0.05) + (doc_weight * visible_graph.get_cosine_similarity(graph, include_ponderation)) for graph in doc_sentence_graph_list
+                (doc_weight * 0.05) + visible_graph.get_cosine_similarity(graph, include_ponderation) for graph in doc_sentence_graph_list
             ]
-            
+                            
             # Sort the list of similarity scores and get the first two scores
-            cosine_similarity_by_graph_top_2 = sorted(cosine_similarity_by_graph, reverse=True)[:2]
-            
-            # Get the average between the two scores
-            if len(cosine_similarity_by_graph_top_2) < 1:
-                cosine_similarity_avg_top_2 = 0
-            if len(cosine_similarity_by_graph_top_2) < 2:
-                cosine_similarity_avg_top_2 = cosine_similarity_by_graph_top_2[0]
-            else:
-                cosine_similarity_avg_top_2 = (cosine_similarity_by_graph_top_2[0] + cosine_similarity_by_graph_top_2[1]) / 2
+            cosine_similarity_top_1_sentence = sorted(cosine_similarity_by_graph, reverse=True)[0]
                 
             # Add the average similarity score to the ranking list
-            similarity_ranking.append(cosine_similarity_avg_top_2)
+            similarity_ranking.append(cosine_similarity_top_1_sentence)
             
         return similarity_ranking
     
