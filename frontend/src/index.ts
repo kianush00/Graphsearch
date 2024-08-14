@@ -170,8 +170,8 @@ class TextUtils {
 
 
 class ConversionUtils {
-    private static minDistance: number = 50.0
-    private static maxDistance: number = 140.0
+    private static minDistance: number = 45.0
+    private static maxDistance: number = 125.0
     private static hopMinValue: number = 1.0
 
     /**
