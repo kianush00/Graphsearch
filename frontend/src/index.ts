@@ -784,7 +784,7 @@ class NeighbourTerm extends Term implements ViewManager {
      * Finally, it updates the position of the neighbour term node and calls the `updateNodePosition` method.
      */
     public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
-        const newAngle = (index / neighbourTermsLength) * Math.PI * 2
+        const newAngle = (index / neighbourTermsLength) * Math.PI * 2 + 0.25
         const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.hopLimit)
         this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this.updateNodePosition(nodeDistance)
@@ -2268,6 +2268,10 @@ cy.on('drag', 'node', evt => {
 
 cy.on('cxttap', "node", evt => {
     queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id())
+});
+
+cy.on('cxttap', "edge", evt => {
+    queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id().substring(2))
 });
 
 
