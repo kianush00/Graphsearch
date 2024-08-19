@@ -235,7 +235,8 @@ body, input, table, th, td {
 footer {
     text-align: right; 
     padding-right: 7.5rem; 
-    margin-top: 15px;
+    padding-top: 0.7rem;
+    background-color: #F8F8F8;
 }
 
 #gitlabIcon {

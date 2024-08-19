@@ -1004,7 +1004,7 @@ interface DocumentObject {
     sentences: SentenceObject[];
 }
 
-class Document extends TextElement{
+class Document extends TextElement {
     private id: string
     private title: string
     private abstract: string
@@ -1837,8 +1837,10 @@ class ResultsList {
         const titleElement = document.createElement('span');
         titleElement.className = 'title';
         const titleSentenceObject = [doc.getSentences()[0]];
-        // Highlight the title element with orange color for the query terms and yellow color for the neighbour terms
-        titleElement.innerHTML = (index + 1) + ". " + this.getHighlightedText(titleSentenceObject)
+        // Highlight the title element with green color for the query terms and purple color for the neighbour terms
+        titleElement.appendChild(document.createTextNode((index + 1) + '. '));
+        const highlightedSpanContainer = this.applyHighlightingToSentences(titleSentenceObject);
+        titleElement.appendChild(highlightedSpanContainer);
         return titleElement;
     }
 
@@ -1853,8 +1855,9 @@ class ResultsList {
         const abstractElement = document.createElement('p');
         abstractElement.className = 'abstract';
         const abstractSentenceObjects = doc.getSentences().slice(1);
-        // Highlight the abstract element with orange color for the query terms and yellow color for the neighbour terms
-        abstractElement.innerHTML = this.getHighlightedText(abstractSentenceObjects);
+        // Highlight the abstract element with green color for the query terms and purple color for the neighbour terms
+        const highlightedSpanContainer = this.applyHighlightingToSentences(abstractSentenceObjects);
+        abstractElement.appendChild(highlightedSpanContainer);
         abstractElement.style.display = "none";
         return abstractElement;
     }
@@ -1864,18 +1867,18 @@ class ResultsList {
      * It uses the query terms and neighbour terms to apply different colors to the words.
      *
      * @param sentenceObjects - An array of Sentence objects to generate highlighted text for.
-     * @returns A string containing the highlighted text for the given sentences.
+     * @returns A span element containing the highlighted text for the given sentences.
      *
      * @remarks
      * The function retrieves the query terms and neighbour terms from the activeTermService,
      * and then applies highlighting to the words in the sentences based on these terms.
      * The highlighting is applied using different colors for the query terms and neighbour terms.
      */
-    private getHighlightedText(sentenceObjects: Sentence[]): string {
+    private applyHighlightingToSentences(sentenceObjects: Sentence[]): HTMLSpanElement {
         const queryTerms = this.activeTermService?.getVisibleQueryTerm().getValue() as string
         const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
         const neighbourTermsList = this.activeTermService?.getVisibleQueryTerm().getNeighbourTermsValues() as string[]
-        return this.applyHighlightingToWords(sentenceObjects, queryTermsList, neighbourTermsList);
+        return this.getHighlightedText(sentenceObjects, queryTermsList, neighbourTermsList);
     }
 
     /**
@@ -1885,7 +1888,7 @@ class ResultsList {
      * @param queryTermsList - An array of strings representing the query terms.
      * @param neighbourTermsList - An array of strings representing the neighbour terms.
      *
-     * @returns A string containing the highlighted sentences.
+     * @returns A span element containing the highlighted sentences.
      *
      * @remarks
      * This function iterates over each sentence object, splits the text into words,
@@ -1894,36 +1897,88 @@ class ResultsList {
      * The highlighted words are wrapped in HTML span tags with a specific background color.
      * The function then joins the highlighted words back into sentences and returns the result.
      */
-    private applyHighlightingToWords(sentenceObjects: Sentence[], queryTermsList: string[], neighbourTermsList: string[]): string {
-        if (sentenceObjects.length == 0) return ""
-        let highlightedSentences: string[] = []
+    private getHighlightedText(sentenceObjects: Sentence[], queryTermsList: string[], neighbourTermsList: string[]): HTMLSpanElement {
+        if (sentenceObjects.length == 0) return document.createElement('span');
+        let highlightedSentences: [string, boolean][] = []
 
         for (let sentenceObject of sentenceObjects) {
             const sentenceText = sentenceObject.getRawText();
             if (sentenceObject.getQueryTerm().getNeighbourTerms().length == 0 || neighbourTermsList.length == 0) {
-                highlightedSentences.push(sentenceText);
+                // If there are no neighbour terms, just return the original sentence
+                highlightedSentences.push([sentenceText, false]);
             } else {
                 // Split text by spaces and replace matching words
                 const words = sentenceText.split(' ');
-                const highlightedSentence = words.map((word, index) => {
-                    // Recreate regex objects in each iteration to avoid state issues with global regex
-                    const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
-                    const neighbourTermsRegex = new RegExp(neighbourTermsList.join('|'), 'gi');
-
-                    if (neighbourTermsRegex.test(word)) {
-                        return this.getHighlightedTextIfNeighbourWord(word, words, index, queryTermsList);
-                    } else if (queryTermsRegex.test(word)) {
-                        return `<span style="background-color: #98EE98;">${word}</span>`;
-                    } else {
-                        return word;
-                    }
-                }).join(' ');
-                highlightedSentences.push(highlightedSentence);
+                const highlightedSentence = this.getHighlightedSentence(words, queryTermsList, neighbourTermsList);
+                highlightedSentences.push([highlightedSentence, true]);
             }
         }
 
-        const highlightedText = highlightedSentences.join('. ')
-        return highlightedText;
+        return this.applyEventListenersToSentences(highlightedSentences);
+    }
+
+    /**
+     * This function generates a highlighted sentence based on the presence of query terms and neighbour terms.
+     *
+     * @param highlightedSentences - An array of strings representing the sentences to be highlighted.
+     * @returns A HTMLSpanElement containing the highlighted sentences, with appropriate event listeners for mouseenter and mouseleave events.
+     */
+    private applyEventListenersToSentences(highlightedSentences: [string, boolean][]): HTMLSpanElement {
+        // Create the main container of type span
+        const mainSpanContainer = document.createElement('span');
+
+        // Add spans to the main container, and a separator in case it is not the last span
+        highlightedSentences.forEach((sentence, index) => {
+            const spanElement = document.createElement('span');
+            spanElement.innerHTML = sentence[0];
+
+            // Add event listeners for mouseenter and mouseleave events if the sentence contains query terms or neighbour terms
+            if (sentence[1]) {
+                spanElement.addEventListener("mouseenter", () => {
+                    spanElement.style.backgroundColor = "#E4E4E4";
+                });
+            
+                spanElement.addEventListener("mouseleave", () => {
+                    spanElement.style.backgroundColor = "inherit";
+                });
+            }
+
+            // Append the span element to the main container, with a separator if it is not the last span
+            mainSpanContainer.appendChild(spanElement);
+            if (index < (highlightedSentences.length - 1)) {
+                mainSpanContainer.appendChild(document.createTextNode('. '));
+            }
+        });
+
+        return mainSpanContainer;
+    }
+
+    /**
+     * This function generates a highlighted sentence based on the presence of query terms and neighbour terms.
+     *
+     * @param words - An array of words that make up the sentence.
+     * @param queryTermsList - A list of query terms to be checked against.
+     * @param neighbourTermsList - A list of neighbour terms to be checked against.
+     *
+     * @returns A string representing the highlighted sentence. Each query term and neighbour term is highlighted
+     * with a different background color. Non-matching words are returned as is.
+     */
+    private getHighlightedSentence(words: string[], queryTermsList: string[], neighbourTermsList: string[]): string {
+        const highlightedSentence = words.map((word, index) => {
+            // Recreate regex objects in each iteration to avoid state issues with global regex
+            const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
+            const neighbourTermsRegex = new RegExp(neighbourTermsList.join('|'), 'gi');
+
+            if (neighbourTermsRegex.test(word)) {
+                return this.getHighlightedWordIfNeighbourTerm(word, words, index, queryTermsList);
+            } else if (queryTermsRegex.test(word)) {
+                return `<span style="background-color: #98EE98;">${word}</span>`;
+            } else {
+                return word;
+            }
+        }).join(' ');
+
+        return highlightedSentence;
     }
 
     /**
@@ -1938,7 +1993,7 @@ class ResultsList {
      * @returns A string representing the given word with a highlighted background color if 
      * it is a query term. If it is not a query term, the original word is returned.
      */
-    private getHighlightedTextIfNeighbourWord(word: string, words: string[], index: number, queryTermsList: string[]): string {
+    private getHighlightedWordIfNeighbourTerm(word: string, words: string[], index: number, queryTermsList: string[]): string {
         const stopwords = ["a", "about", "above", "accordingly", "after", "against", "ain", "all", "also", "although", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "besides", "between", "both", "but", "by", "can", "can't", "cannot", "consequently", "could", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "due", "during", "each", "etc", "every", "few", "for", "from", "further", "furthermore", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "however", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "let's", "likewise", "ll", "m", "ma", "me", "might", "mightn", "mightn't", "more", "moreover", "most", "must", "mustn", "mustn't", "my", "myself", "needn", "needn't", "nevertheless", "no", "nonetheless", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she'd", "she'll", "she's", "should", "should've", "shouldn", "shouldn't", "similarly", "since", "so", "some", "such", "t", "than", "that", "that'll", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "therefore", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "though", "through", "thus", "to", "too", "under", "unless", "until", "up", "using", "ve", "very", "was", "wasn", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren", "weren't", "what", "what's", "when", "when's", "where", "where's", "whereas", "whether", "which", "while", "who", "who's", "whom", "whose", "why", "why's", "will", "with", "won", "won't", "would", "wouldn", "wouldn't", "y", "yet", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"]
         const hopLimit = this.activeTermService?.getVisibleQueryTerm().getNeighbourTerms()[0].getHopLimit() ?? 0
         let foundQueryTerm = false;
@@ -1958,6 +2013,38 @@ class ResultsList {
         } else {
             return word;
         }
+    }
+
+    /**
+     * This function checks if a given word is a query term within a specified hop limit to the left of the given index.
+     *
+     * @param words - An array of words surrounding the given word.
+     * @param index - The index of the given word in the words array.
+     * @param hopLimit - The maximum number of words to the left of the given index to check for query terms.
+     * @param stopwords - An array of stopwords to be ignored when checking for query terms.
+     * @param queryTermsList - A list of query terms to be checked against.
+     *
+     * @returns A boolean indicating whether a query term is found within the specified hop limit to the left of the given index.
+     */
+    private checkQueryTermToTheLeft(words: string[], index: number, hopLimit: number, 
+        stopwords: string[], queryTermsList: string[]): boolean {
+        return this.checkQueryTerm(words, index, hopLimit, stopwords, queryTermsList, -1);
+    }
+
+    /**
+     * This function checks if a given word is a query term within a specified hop limit to the right of the given index.
+     *
+     * @param words - An array of words surrounding the given word.
+     * @param index - The index of the given word in the words array.
+     * @param hopLimit - The maximum number of words to the right of the given index to check for query terms.
+     * @param stopwords - An array of stopwords to be ignored when checking for query terms.
+     * @param queryTermsList - A list of query terms to be checked against.
+     *
+     * @returns A boolean indicating whether a query term is found within the specified hop limit to the right of the given index.
+     */
+    private checkQueryTermToTheRight(words: string[], index: number, hopLimit: number, 
+        stopwords: string[], queryTermsList: string[]): boolean {
+        return this.checkQueryTerm(words, index, hopLimit, stopwords, queryTermsList, 1);
     }
 
     /**
@@ -1993,38 +2080,6 @@ class ResultsList {
             }
         }
         return false;
-    }
-
-    /**
-     * This function checks if a given word is a query term within a specified hop limit to the left of the given index.
-     *
-     * @param words - An array of words surrounding the given word.
-     * @param index - The index of the given word in the words array.
-     * @param hopLimit - The maximum number of words to the left of the given index to check for query terms.
-     * @param stopwords - An array of stopwords to be ignored when checking for query terms.
-     * @param queryTermsList - A list of query terms to be checked against.
-     *
-     * @returns A boolean indicating whether a query term is found within the specified hop limit to the left of the given index.
-     */
-    private checkQueryTermToTheLeft(words: string[], index: number, hopLimit: number, 
-        stopwords: string[], queryTermsList: string[]): boolean {
-        return this.checkQueryTerm(words, index, hopLimit, stopwords, queryTermsList, -1);
-    }
-
-    /**
-     * This function checks if a given word is a query term within a specified hop limit to the right of the given index.
-     *
-     * @param words - An array of words surrounding the given word.
-     * @param index - The index of the given word in the words array.
-     * @param hopLimit - The maximum number of words to the right of the given index to check for query terms.
-     * @param stopwords - An array of stopwords to be ignored when checking for query terms.
-     * @param queryTermsList - A list of query terms to be checked against.
-     *
-     * @returns A boolean indicating whether a query term is found within the specified hop limit to the right of the given index.
-     */
-    private checkQueryTermToTheRight(words: string[], index: number, hopLimit: number, 
-        stopwords: string[], queryTermsList: string[]): boolean {
-        return this.checkQueryTerm(words, index, hopLimit, stopwords, queryTermsList, 1);
     }
 
     /**
