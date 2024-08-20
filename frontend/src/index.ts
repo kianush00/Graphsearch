@@ -2389,7 +2389,7 @@ const cySentence = cytoscape({
         {
             selector: '.' + NodeType.central_node,
             style: {
-            "background-color": '#40CC40',
+            "background-color": '#70CC70',
             'width': '16px',
             'height': '16px',
             'label': "data(id)",
@@ -2411,7 +2411,7 @@ const cySentence = cytoscape({
         {
             selector: '.' + NodeType.outer_node,
             style: {
-                'background-color': '#8080EE',
+                'background-color': '#A0A0EE',
                 'width': '12px',
                 'height': '12px',
                 'label': 'data(label)',
