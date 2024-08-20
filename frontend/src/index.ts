@@ -170,8 +170,8 @@ class TextUtils {
 
 
 class ConversionUtils {
-    private static minDistance: number = 45.0
-    private static maxDistance: number = 125.0
+    private static minMaxDistancesUserGraph: [number, number] = [45.0, 125.0]
+    private static minMaxDistancesSentenceGraph: [number, number] = [40.0, 65.0]
     private static hopMinValue: number = 1.0
 
     /**
@@ -189,9 +189,10 @@ class ConversionUtils {
      * It also assumes that the hopMinValue is 0.
      * If the hopMaxValue is less than 2, the function returns 1.0.
      */
-    public static convertHopsToDistance(hops: number, hopMaxValue: number): number {
+    public static convertHopsToDistance(hops: number, hopMaxValue: number, userGraphConversion: boolean): number {
         if (hopMaxValue < 2) return 1.0
-        const normalizedValue = this.normalize(hops, this.hopMinValue, hopMaxValue, this.minDistance, this.maxDistance)
+        const minMaxDistances = this.getMinMaxDistances(userGraphConversion)
+        const normalizedValue = this.normalize(hops, this.hopMinValue, hopMaxValue, minMaxDistances[0], minMaxDistances[1])
         return normalizedValue
     }
 
@@ -209,9 +210,10 @@ class ConversionUtils {
      * If the hopMaxValue is less than 2, the function returns 1.0.
      * The returned value is rounded to one decimal place.
      */
-    public static convertDistanceToHops(distance: number, hopMaxValue: number): number {
+    public static convertDistanceToHops(distance: number, hopMaxValue: number, userGraphConversion: boolean): number {
         if (hopMaxValue < 2) return 1.0
-        const normalizedValue = this.normalize(distance, this.minDistance, this.maxDistance, this.hopMinValue, hopMaxValue)
+        const minMaxDistances = this.getMinMaxDistances(userGraphConversion)
+        const normalizedValue = this.normalize(distance, minMaxDistances[0], minMaxDistances[1], this.hopMinValue, hopMaxValue)
         return parseFloat(normalizedValue.toFixed(1))
     }
 
@@ -228,7 +230,7 @@ class ConversionUtils {
      * Otherwise, it returns `false`, indicating that the distance is within the specified range.
      */
     public static validateDistanceOutOfRange(distance: number) : boolean {
-        return distance < this.minDistance || distance > this.maxDistance
+        return distance < this.minMaxDistancesUserGraph[0] || distance > this.minMaxDistancesUserGraph[1]
     }
 
     /**
@@ -256,6 +258,10 @@ class ConversionUtils {
 
         const normalizedValue = newMin + ((value - oldMin) * (newMax - newMin)) / (oldMax - oldMin);
         return normalizedValue;
+    }
+
+    private static getMinMaxDistances(userGraphConversion: boolean) {
+        return userGraphConversion ? this.minMaxDistancesUserGraph : this.minMaxDistancesSentenceGraph
     }
 
 }
@@ -323,6 +329,7 @@ class Edge {
     private targetNode: GraphNode
     private distance: number
     private hopLimit: number
+    private isUserGraphEdge: boolean
     private cyElement: cytoscape.Core
 
     /**
@@ -338,6 +345,7 @@ class Edge {
         this.targetNode = targetNode
         this.distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
         this.hopLimit = hopLimit
+        this.isUserGraphEdge = isUserGraphEdge
         this.cyElement = isUserGraphEdge ? cyUser : cySentence;
         this.addVisualEdgeToInterface()
     }
@@ -357,7 +365,7 @@ class Edge {
     public setDistance(distance: number): void {
         this.distance = distance;
         let cyEdge = this.cyElement.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
-        const hops = ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit)
+        const hops = ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit, this.isUserGraphEdge)
         cyEdge.data('distance', hops)
     }
 
@@ -405,7 +413,7 @@ class Edge {
                 id: this.id,
                 source: this.sourceNode.getId(),
                 target: this.targetNode.getId(),
-                distance: ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit)
+                distance: ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit, this.isUserGraphEdge)
             },
         }
     }
@@ -785,7 +793,7 @@ class NeighbourTerm extends Term implements ViewManager {
         const nodeDistance = this.edge?.getDistance() ?? 0
         this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
         const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
-        this.hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit)
+        this.hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit, this.queryTerm.getIsUserQuery())
         this.updateNodePosition(distance)
     }
 
@@ -805,7 +813,7 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2 + 0.25
-        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.hopLimit)
+        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.hopLimit, this.queryTerm.getIsUserQuery())
         this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this.updateNodePosition(nodeDistance)
     }
@@ -1143,6 +1151,7 @@ class Ranking {
     private visibleQueryTerm: QueryTerm
     private completeQueryTerm: QueryTerm
     private documents: Document[] = []
+    private visibleSentence: Sentence | undefined
 
     constructor(queryTermValue: string) {
         this.visibleQueryTerm = new QueryTerm(queryTermValue, true)
@@ -1163,6 +1172,16 @@ class Ranking {
 
     public addDocument(document: Document): void {
         this.documents.push(document)
+    }
+
+    public getVisibleSentence(): Sentence | undefined {
+        return this.visibleSentence
+    }
+
+    public setVisibleSentence(sentence: Sentence): void {
+        this.visibleSentence?.getQueryTerm().removeViews()
+        this.visibleSentence = sentence
+        this.visibleSentence.getQueryTerm().displayViews()
     }
 
     /**
@@ -1225,6 +1244,14 @@ class QueryTermService {
         return this.ranking
     }
 
+    public getVisibleSentence(): Sentence | undefined {
+        return this.ranking.getVisibleSentence()
+    }
+
+    public setVisibleSentence(sentence: Sentence): void {
+        this.ranking.setVisibleSentence(sentence)
+    }
+
     /**
      * If the node is dragged, updates the position of the neighbour term node and 
      * updates the neighbour term's hops.
@@ -1260,6 +1287,7 @@ class QueryTermService {
     public deactivate(): void {
         this.isVisible = false
         this.getVisibleQueryTerm().removeViews()
+        this.getVisibleSentence()?.getQueryTerm().removeViews()
     }
 
     /**
@@ -1930,7 +1958,7 @@ class ResultsList {
      */
     private getHighlightedText(sentenceObjects: Sentence[], queryTermsList: string[], neighbourTermsList: string[]): HTMLSpanElement {
         if (sentenceObjects.length == 0) return document.createElement('span');
-        let highlightedSentences: [string, QueryTerm | undefined][] = []
+        let highlightedSentences: [string, Sentence | undefined][] = []
 
         for (let sentenceObject of sentenceObjects) {
             const sentenceText = sentenceObject.getRawText();
@@ -1940,8 +1968,8 @@ class ResultsList {
             } else {
                 // Split text by spaces and replace matching words
                 const words = sentenceText.split(' ');
-                const highlightedSentence = this.getHighlightedSentence(words, queryTermsList, neighbourTermsList);
-                highlightedSentences.push([highlightedSentence, sentenceObject.getQueryTerm()]);
+                const highlightedSentenceText = this.getHighlightedSentence(words, queryTermsList, neighbourTermsList);
+                highlightedSentences.push([highlightedSentenceText, sentenceObject]);
             }
         }
 
@@ -1954,20 +1982,22 @@ class ResultsList {
      * @param highlightedSentences - An array of strings representing the sentences to be highlighted.
      * @returns A HTMLSpanElement containing the highlighted sentences, with appropriate event listeners for mouseenter and mouseleave events.
      */
-    private applyEventListenersToSentences(highlightedSentences: [string, QueryTerm | undefined][]): HTMLSpanElement {
+    private applyEventListenersToSentences(highlightedSentences: [string, Sentence | undefined][]): HTMLSpanElement {
         // Create the main container of type span
         const mainSpanContainer = document.createElement('span');
 
         // Add spans to the main container, and a separator in case it is not the last span
         highlightedSentences.forEach((sentence, index) => {
+            const sentenceText = sentence[0];
+            const sentenceObject = sentence[1];
             const spanElement = document.createElement('span');
-            spanElement.innerHTML = sentence[0];
+            spanElement.innerHTML = sentenceText;
 
             // Add event listeners for mouseenter and mouseleave events if the sentence contains query terms or neighbour terms
-            if (sentence[1] !== undefined) {
+            if (sentenceObject !== undefined) {
                 spanElement.addEventListener("mouseenter", () => {
                     spanElement.style.backgroundColor = "#E4E4E4";
-                    sentence[1]?.displayViews()
+                    this.activeTermService?.setVisibleSentence(sentenceObject);
                 });
             
                 spanElement.addEventListener("mouseleave", () => {
@@ -2340,8 +2370,8 @@ const cyUser = cytoscape({
               'width': '15px',
               'height': '15px',
               'label': 'data(label)',
-              'font-size': '13px',
-              'color': '#2d2d2d'
+              'font-size': '12px',
+              'color': '#4b4b4b'
             }
         }
     ],
@@ -2363,7 +2393,7 @@ const cySentence = cytoscape({
             'width': '16px',
             'height': '16px',
             'label': "data(id)",
-            'font-size': '11px',
+            'font-size': '10px',
             'color': '#5d5d5d'
             },
         },
@@ -2375,7 +2405,7 @@ const cySentence = cytoscape({
             "line-color": "#ccc",
             label: "data(distance)",
             "width": "2px", // set the width of the edge
-            "font-size": "10px" // set the font size of the label            
+            "font-size": "11px" // set the font size of the label            
             },
         },
         {
@@ -2385,8 +2415,8 @@ const cySentence = cytoscape({
                 'width': '12px',
                 'height': '12px',
                 'label': 'data(label)',
-                'font-size': '11px',
-                'color': '#2d2d2d'
+                'font-size': '9px',
+                'color': '#4b4b4b'
             }
         }
     ],

@@ -166,7 +166,7 @@ header {
 
 #queryListContainer {
     width: 97%;
-    height: 10rem;
+    height: 11.5rem;
     margin-left: 2.4rem;
     margin-bottom: 1rem;
     scroll-behavior: smooth;
@@ -196,7 +196,7 @@ header {
     scroll-behavior: smooth;
     overflow-y: scroll;
     margin-bottom: 0.6rem;
-    max-height: 530px; /* Set the fixed height as needed */
+    max-height: 31.5rem; /* Set the fixed height as needed */
 }
 
 #resultsList {
@@ -245,8 +245,8 @@ footer {
 }
 
 #cySentence {
-    width: 25rem;
-    height: 22rem;
+    width: 15.5rem;
+    height: 11.5rem;
     border: 1px solid #999;
     border-radius: 0.9rem;
 }
