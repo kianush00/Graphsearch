@@ -244,3 +244,10 @@ footer {
     height: 48px;
 }
 
+#cySentence {
+    width: 25rem;
+    height: 22rem;
+    border: 1px solid #999;
+    border-radius: 0.9rem;
+}
+

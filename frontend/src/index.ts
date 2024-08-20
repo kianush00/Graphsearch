@@ -283,13 +283,23 @@ class HTTPRequestUtils {
                 },
                 body: JSON.stringify(data),
             })
+
+            // Check the status code of the response
+            const statusCode = response.status;
+            console.log('HTTP Status Code:', statusCode);
         
-            // Handle the response
-            const result = await response.json()
-            console.log('Success:', result)
-            const sizeKb = new TextEncoder().encode(JSON.stringify(result)).length / 1024
-            console.log('Size of response in KB:', sizeKb)
-            return result
+            // Handle the response if code is successful
+            const result = await response.json();
+            if (response.ok) { // response.ok is true if code is between 200-299
+                console.log('Success:', result);
+                const sizeKb = new TextEncoder().encode(JSON.stringify(result)).length / 1024;
+                console.log('Size of response in KB:', sizeKb);
+                return result;
+            } else {
+                console.error('Error:', result);
+                alert(`${result['detail']}`);
+                return null;
+            }
         } catch (error) {
             console.error('Error:', error)
         }
@@ -313,6 +323,7 @@ class Edge {
     private targetNode: GraphNode
     private distance: number
     private hopLimit: number
+    private cyElement: cytoscape.Core
 
     /**
      * Represents an edge in the graph, connecting two nodes.
@@ -321,13 +332,14 @@ class Edge {
      * @param targetNode - The target node of the edge.
      * @param hopLimit - The maximum number of hops allowed for the edge.
      */
-    constructor(sourceNode: GraphNode, targetNode: GraphNode, hopLimit: number) {
+    constructor(sourceNode: GraphNode, targetNode: GraphNode, hopLimit: number, isUserGraphEdge: boolean) {
         this.id = "e_" + targetNode.getId()
         this.sourceNode = sourceNode
         this.targetNode = targetNode
         this.distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
         this.hopLimit = hopLimit
-        cy.add(this.toObject())
+        this.cyElement = isUserGraphEdge ? cyUser : cySentence;
+        this.addVisualEdgeToInterface()
     }
 
     /**
@@ -343,8 +355,8 @@ class Edge {
      * @returns {void} - This function does not return any value.
      */
     public setDistance(distance: number): void {
-        this.distance = distance
-        let cyEdge = cy.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
+        this.distance = distance;
+        let cyEdge = this.cyElement.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
         const hops = ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit)
         cyEdge.data('distance', hops)
     }
@@ -377,7 +389,7 @@ class Edge {
      * It ensures that the node is removed from the visual representation of the graph.
      */
     public remove(): void {
-        cy.remove(cy.getElementById(this.id))
+        this.cyElement.remove(this.cyElement.getElementById(this.id))
     }
 
     /**
@@ -396,6 +408,10 @@ class Edge {
                 distance: ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit)
             },
         }
+    }
+
+    private addVisualEdgeToInterface(): void {
+        this.cyElement.add(this.toObject())
     }
 }
 
@@ -420,6 +436,7 @@ class GraphNode {
     protected label: string
     protected position: Position
     protected type: NodeType
+    protected cyElement: cytoscape.Core
     
     /**
      * Represents a node in the graph.
@@ -429,11 +446,12 @@ class GraphNode {
      * @param position - The position of the node in the graph.
      * @param type - The type of the node.
      */
-    constructor(id: string, label: string, position: Position, type: NodeType) {
+    constructor(id: string, label: string, position: Position, type: NodeType, isUserGraphNode: boolean) {
         this.id = id
         this.label = label
         this.position = position
         this.type = type
+        this.cyElement = isUserGraphNode ? cyUser : cySentence;
     }
 
     public getId(): string {
@@ -455,7 +473,7 @@ class GraphNode {
      */
     public setLabel(label: string): void {
         this.label = label
-        cy.getElementById(this.id).data('label', label)
+        this.cyElement.getElementById(this.id).data('label', label)
     }
 
     /**
@@ -466,7 +484,7 @@ class GraphNode {
      * It uses the Cytoscape.js library to select the node by its ID and remove it from the graph.
      */
     public remove(): void {
-        cy.remove(cy.getElementById(this.id))
+        this.cyElement.remove(this.cyElement.getElementById(this.id))
     }
 
     /**
@@ -500,12 +518,12 @@ class CentralNode extends GraphNode {
      * @param x - The x-coordinate of the central node's position in the graph.
      * @param y - The y-coordinate of the central node's position in the graph.
      */
-    constructor(id: string, x: number, y: number) {
+    constructor(id: string, x: number, y: number, isUserGraphNode: boolean) {
         let _id = id
         let _label = id
         let _position = { x, y }
         let _type = NodeType.central_node
-        super(_id, _label, _position, _type)
+        super(_id, _label, _position, _type, isUserGraphNode)
         this.addVisualNodeToInterface()
     }
 
@@ -519,7 +537,7 @@ class CentralNode extends GraphNode {
      * The node is also locked and ungrabified to prevent user interaction.
      */
     private addVisualNodeToInterface(): void {
-        cy.add(this.toObject()).addClass(this.type.toString()).lock().ungrabify()
+        this.cyElement.add(this.toObject()).addClass(this.type.toString()).lock().ungrabify()
     }
 }
 
@@ -533,14 +551,14 @@ class OuterNode extends GraphNode {
      * @param distance - The distance from the central node to the outer node.
      *                    Default value is 0, which means the outer node will be positioned randomly.
      */
-    constructor(id: string, distance: number = 0) {
+    constructor(id: string, isUserGraphNode: boolean, distance: number = 0) {
         let _id = id
         let _label = id
         // Generates a random angle from the provided distance, to calculate the new position
         let _position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance)
         let _type = NodeType.outer_node
-        super(_id, _label, _position, _type)
-        this.addVisualNodeToInterface()
+        super(_id, _label, _position, _type, isUserGraphNode)
+        this.addVisualNodeToInterface(isUserGraphNode)
     }
 
     /**
@@ -604,7 +622,7 @@ class OuterNode extends GraphNode {
      * It sets the position of the OuterNode to the current position of the OuterNode instance.
      */
     private updateVisualPosition(): void {
-        cy.getElementById(this.id).position(this.position)
+        this.cyElement.getElementById(this.id).position(this.position)
     }
 
     /**
@@ -615,8 +633,9 @@ class OuterNode extends GraphNode {
      * The node is then added to the graph using the `cy.add` method.
      * The node's class is set to the string representation of the node's type.
      */
-    private addVisualNodeToInterface(): void {
-        cy.add(this.toObject()).addClass(this.type.toString())
+    private addVisualNodeToInterface(isUserGraphNode: boolean): void {
+        const element = this.cyElement.add(this.toObject()).addClass(this.type.toString());
+        if (!isUserGraphNode) element.ungrabify();
     }
 }
 
@@ -702,11 +721,12 @@ class NeighbourTerm extends Term implements ViewManager {
      * This includes creating and positioning the OuterNode and Edge.
      */
     public displayViews(): void {
-        this.node = new OuterNode(TextUtils.getRandomString(24))
+        const isUserQuery = this.queryTerm.getIsUserQuery()
+        this.node = new OuterNode(TextUtils.getRandomString(24), isUserQuery)
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
         if (this.queryTerm.getNode() === undefined) return 
-        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node, this.hopLimit)
+        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node, this.hopLimit, isUserQuery)
     }
 
     /**
@@ -841,16 +861,27 @@ class NeighbourTerm extends Term implements ViewManager {
 class QueryTerm extends Term implements ViewManager {
     protected node: CentralNode | undefined
     private neighbourTerms: NeighbourTerm[] = []
+    private isUserQuery: boolean
+
+    constructor(value: string, isUserQuery: boolean) {
+        super(value);
+        this.isUserQuery = isUserQuery;
+    }
+
+    public getIsUserQuery(): boolean {
+        return this.isUserQuery;
+    }
 
     /**
      * Displays the views of the query term and its associated neighbour terms in the graph.
      * This includes creating and positioning the CentralNode and OuterNodes.
      */
     public displayViews(): void {
-        this.node = new CentralNode(this.value, 0, 0)
+        this.node = new CentralNode(this.value, 0, 0, this.isUserQuery)
         for (let neighbourTerm of this.neighbourTerms) {
-            neighbourTerm.displayViews()
+            neighbourTerm.displayViews();
         }
+        this.centerNode();
     }
 
     /**
@@ -869,6 +900,7 @@ class QueryTerm extends Term implements ViewManager {
 
     public setNeighbourTerms(neighbourTerms: NeighbourTerm[]): void {
         this.neighbourTerms = neighbourTerms
+        this.updateOuterNodesAngles()
     }
 
     public getNeighbourTermsValues(): string[] {
@@ -903,6 +935,20 @@ class QueryTerm extends Term implements ViewManager {
             this.neighbourTerms[i].updateSymmetricalAngularPosition(this.neighbourTerms.length, i)
         }
     }
+
+    /**
+     * Centers the graph on the CentralNode.
+     * 
+     * This function is responsible for zooming in the graph and centering it on the CentralNode.
+     * It first zooms in the graph by a factor of 1.2, then checks if the visible query term has a node.
+     * If the node exists and is a CentralNode, it centers the graph on the node.
+     */
+    private centerNode(): void {
+        const cyElement = this.isUserQuery ? cyUser : cySentence
+        cyElement.zoom(1.2)
+        if (this.node === undefined) return
+        cyElement.center(cyElement.getElementById(this.node.getId()))
+    }
 }
 
 
@@ -919,7 +965,7 @@ class TextElement {
     ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
     ​ */
     constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number) {
-        this.queryTerm = new QueryTerm(queryTermValue)
+        this.queryTerm = new QueryTerm(queryTermValue, false)
         this.initializeNeighbourTermsFromResponse(responseNeighbourTerms, hopLimit)
     }
 
@@ -1099,8 +1145,8 @@ class Ranking {
     private documents: Document[] = []
 
     constructor(queryTermValue: string) {
-        this.visibleQueryTerm = new QueryTerm(queryTermValue)
-        this.completeQueryTerm = new QueryTerm(queryTermValue)
+        this.visibleQueryTerm = new QueryTerm(queryTermValue, true)
+        this.completeQueryTerm = new QueryTerm(queryTermValue, false)
     }
 
     public getVisibleQueryTerm(): QueryTerm {
@@ -1206,9 +1252,6 @@ class QueryTermService {
 
         // Display the views associated with the QueryTerm
         this.getVisibleQueryTerm().displayViews()
-
-        // Center the graph on the CentralNode
-        this.center()
     }
 
     /**
@@ -1267,19 +1310,6 @@ class QueryTermService {
     }
 
     /**
-     * Centers the graph on the CentralNode.
-     * 
-     * This function is responsible for zooming in the graph and centering it on the CentralNode.
-     * It first zooms in the graph by a factor of 1.2, then checks if the visible query term has a node.
-     * If the node exists and is a CentralNode, it centers the graph on the node.
-     */
-    private center(): void {
-        cy.zoom(1.2)
-        if (this.getVisibleQueryTerm().getNode() === undefined) return 
-        cy.center(cy.getElementById((this.getVisibleQueryTerm().getNode() as CentralNode).getId()))
-    }
-
-    /**
      * Retrieves data related to neighbour terms for the current query term.
      * The retrieved data is then used to create new NeighbourTerm instances,
      * which are added to the QueryTerm's neighbour terms list.
@@ -1323,7 +1353,7 @@ class QueryTermService {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = this.initializeNewNeighbourTerm(termObject, hopLimit)
+            let neighbourTerm = this.initializeNewNeighbourTerm(this.getVisibleQueryTerm(), termObject, hopLimit)
 
             // Add the neighbour term to the visible QueryTerm's neighbour terms list
             this.addVisibleNeighbourTerm(neighbourTerm)
@@ -1348,7 +1378,7 @@ class QueryTermService {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['complete_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = this.initializeNewNeighbourTerm(termObject, hopLimit)
+            let neighbourTerm = this.initializeNewNeighbourTerm(this.getCompleteQueryTerm(), termObject, hopLimit)
 
             // Add the neighbour term to the complete QueryTerm's neighbour terms list
             this.addCompleteNeighbourTerm(neighbourTerm)
@@ -1366,8 +1396,8 @@ class QueryTermService {
      * 
      * @returns A new NeighbourTerm instance with the provided term value, distance, ponderation, and hop limit.
      */
-    private initializeNewNeighbourTerm(termObject: any, hopLimit: number): NeighbourTerm {
-        return new NeighbourTerm(this.getVisibleQueryTerm(), termObject.term, 
+    private initializeNewNeighbourTerm(queryTerm: QueryTerm, termObject: any, hopLimit: number): NeighbourTerm {
+        return new NeighbourTerm(queryTerm, termObject.term, 
                     termObject.distance, termObject.ponderation, hopLimit)
     }
 
@@ -1470,9 +1500,6 @@ class QueryService {
             this.neighbourTermsTable.setActiveTermService(this.activeQueryTermService)
             this.addTermsTable.setActiveTermService(this.activeQueryTermService)
             this.resultsList.setActiveTermService(this.activeQueryTermService)
-            this.updateNeighbourTermsTable()
-            this.updateResultsList()
-            this.updateAddTermsTable()
         }
     }
 
@@ -1573,6 +1600,7 @@ class AddTermsTable {
 
     public setActiveTermService(queryTermService: QueryTermService): void {
         this.activeTermService = queryTermService
+        this.updateTable()
     }
     
     /**
@@ -1669,6 +1697,7 @@ class AddTermsTable {
             const termCell = row.getElementsByTagName('td')[0];
             const term = termCell.textContent ?? termCell.innerText;
     
+            // Check if the term contains the filter value and set the row's display style accordingly
             if (term.toLowerCase().indexOf(filterValue) > -1) {
                 row.style.display = '';
             } else {
@@ -1738,6 +1767,7 @@ class NeighbourTermsTable {
 
     public setActiveTermService(queryTermService: QueryTermService): void {
         this.activeTermService = queryTermService
+        this.updateTable()
     }
     
     /**
@@ -1786,6 +1816,7 @@ class ResultsList {
 
     public setActiveTermService(queryTermService: QueryTermService): void {
         this.activeTermService = queryTermService
+        this.updateList()
     }
 
     /**
@@ -1899,18 +1930,18 @@ class ResultsList {
      */
     private getHighlightedText(sentenceObjects: Sentence[], queryTermsList: string[], neighbourTermsList: string[]): HTMLSpanElement {
         if (sentenceObjects.length == 0) return document.createElement('span');
-        let highlightedSentences: [string, boolean][] = []
+        let highlightedSentences: [string, QueryTerm | undefined][] = []
 
         for (let sentenceObject of sentenceObjects) {
             const sentenceText = sentenceObject.getRawText();
             if (sentenceObject.getQueryTerm().getNeighbourTerms().length == 0 || neighbourTermsList.length == 0) {
                 // If there are no neighbour terms, just return the original sentence
-                highlightedSentences.push([sentenceText, false]);
+                highlightedSentences.push([sentenceText, undefined]);
             } else {
                 // Split text by spaces and replace matching words
                 const words = sentenceText.split(' ');
                 const highlightedSentence = this.getHighlightedSentence(words, queryTermsList, neighbourTermsList);
-                highlightedSentences.push([highlightedSentence, true]);
+                highlightedSentences.push([highlightedSentence, sentenceObject.getQueryTerm()]);
             }
         }
 
@@ -1923,7 +1954,7 @@ class ResultsList {
      * @param highlightedSentences - An array of strings representing the sentences to be highlighted.
      * @returns A HTMLSpanElement containing the highlighted sentences, with appropriate event listeners for mouseenter and mouseleave events.
      */
-    private applyEventListenersToSentences(highlightedSentences: [string, boolean][]): HTMLSpanElement {
+    private applyEventListenersToSentences(highlightedSentences: [string, QueryTerm | undefined][]): HTMLSpanElement {
         // Create the main container of type span
         const mainSpanContainer = document.createElement('span');
 
@@ -1933,9 +1964,10 @@ class ResultsList {
             spanElement.innerHTML = sentence[0];
 
             // Add event listeners for mouseenter and mouseleave events if the sentence contains query terms or neighbour terms
-            if (sentence[1]) {
+            if (sentence[1] !== undefined) {
                 spanElement.addEventListener("mouseenter", () => {
                     spanElement.style.backgroundColor = "#E4E4E4";
+                    sentence[1]?.displayViews()
                 });
             
                 spanElement.addEventListener("mouseleave", () => {
@@ -2273,7 +2305,7 @@ class RerankComponent {
 
 
 
-const cy = cytoscape({
+const cyUser = cytoscape({
     container: document.getElementById("cy") as HTMLElement,
     layout: {
         name: "preset",
@@ -2308,7 +2340,8 @@ const cy = cytoscape({
               'width': '15px',
               'height': '15px',
               'label': 'data(label)',
-              'font-size': '13px'
+              'font-size': '13px',
+              'color': '#2d2d2d'
             }
         }
     ],
@@ -2317,15 +2350,60 @@ const cy = cytoscape({
 })
 
 
-cy.on('drag', 'node', evt => {
+const cySentence = cytoscape({
+    container: document.getElementById("cySentence") as HTMLElement,
+    layout: {
+        name: "preset",
+    },
+    style: [
+        {
+            selector: '.' + NodeType.central_node,
+            style: {
+            "background-color": '#40CC40',
+            'width': '16px',
+            'height': '16px',
+            'label': "data(id)",
+            'font-size': '11px',
+            'color': '#5d5d5d'
+            },
+        },
+        {
+            selector: "edge",
+            style: {
+            "curve-style": "bezier",
+            "target-arrow-shape": "triangle",
+            "line-color": "#ccc",
+            label: "data(distance)",
+            "width": "2px", // set the width of the edge
+            "font-size": "10px" // set the font size of the label            
+            },
+        },
+        {
+            selector: '.' + NodeType.outer_node,
+            style: {
+                'background-color': '#8080EE',
+                'width': '12px',
+                'height': '12px',
+                'label': 'data(label)',
+                'font-size': '11px',
+                'color': '#2d2d2d'
+            }
+        }
+    ],
+    userZoomingEnabled: false,
+    userPanningEnabled: false
+})
+
+
+cyUser.on('drag', 'node', evt => {
     queryService.getActiveQueryTermService()?.nodeDragged(evt.target.id(), evt.target.position())
 })
 
-cy.on('cxttap', "node", evt => {
+cyUser.on('cxttap', "node", evt => {
     queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id())
 });
 
-cy.on('cxttap', "edge", evt => {
+cyUser.on('cxttap', "edge", evt => {
     queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id().substring(2))
 });
 
@@ -2335,16 +2413,9 @@ const queryComponent: QueryComponent = new QueryComponent(queryService)
 const rerankComponent: RerankComponent = new RerankComponent(queryService)
 
 
-cy.ready(() => {
-    // queryService.queryTermServices[0].addNeighbourTerm('holaA')
-    // queryService.queryTermServices[0].addNeighbourTerm('holaB')
-    // queryService.queryTermServices[0].addNeighbourTerm('holaC')
-    // queryService.queryTermServices[1].addNeighbourTerm('mundoA')
-    // queryService.queryTermServices[1].addNeighbourTerm('mundoB')
-    // queryService.queryTermServices[1].addNeighbourTerm('mundoC')
-})
+cyUser.ready(() => {})
 
 
 // quick way to get instances in console
-;(window as any).cy = cy
+;(window as any).cy = cyUser
 ;(window as any).queryService = queryService
