@@ -1,5 +1,4 @@
-from numpy.linalg import norm
-from numpy import dot
+import math
 
 
 
@@ -9,7 +8,9 @@ class VectorUtils:
     def normalize_vector(
             vector: list[float], 
             new_min: float = 0, 
-            new_max: float = 1.0
+            new_max: float = 1.0,
+            old_min: float | None = None,
+            old_max: float | None = None
             ) -> list[float]:
         """
         Normalize the given vector to the new range [new_min, new_max] and return the normalized vector.
@@ -22,18 +23,25 @@ class VectorUtils:
             Minimum value of the new range to normalize
         new_max : float, optional
             Maximum value of the new range to normalize
+        old_min : float, optional
+            Minimum value of the original range to normalize
+        old_max : float, optional
+            Maximum value of the original range to normalize
         
         Returns
         -------
         normalized_vector : list[float]
             The normalized vector
         """
-        if not vector:
+        # Validate the vector
+        if (not vector) or (new_max < new_min):
             return []
         
-        # Get the previous vector range
-        old_min = min(vector)
-        old_max = max(vector)
+        # If the user didn't specify the old values, then get the previous vector range
+        if old_min is None:
+            old_min = min(vector)
+        if old_max is None:
+            old_max = max(vector)
         
         # Avoid division by zero if the vector has all the same values
         if old_max == old_min:
@@ -49,38 +57,33 @@ class VectorUtils:
     
     
     @staticmethod
-    def get_cosine_between_vectors(
-            vector1: list[float], 
-            vector2: list[float]
-            ) -> float:
+    def get_euclidean_distance(vector1: list[float], vector2: list[float]) -> float:
         """
-        Calculate and return the cosine of the angle between the two given vectors
-
+        Calculates the Euclidean distance between two vectors.
+        
         Parameters
         ----------
         vector1 : list[float]
-            First vector to calculate
-        vector2 : list[float]
-            Second vector to calculate
-        
+            First vector.
+        vector2 : list[float] 
+            Second vector.
+
         Returns
         -------
-        cosine_of_angle : float
-            The cosine of the angle between the two vectors
+        distance : float
+            Euclidean distance between the two vectors.
         """
-        # Avoid division by zero if the norm of any vector equals zero
-        if norm(vector1) > 0 and norm(vector2) > 0:
-            cosine_of_angle = dot(vector1, vector2) / norm(vector1) / norm(vector2)
-        else:
-            cosine_of_angle = 0
-        
-        return cosine_of_angle
+        if len(vector1) != len(vector2):
+            raise ValueError("Vectors must have the same length.")
+
+        distance = math.sqrt(sum((a - b) ** 2 for a, b in zip(vector1, vector2)))
+        return distance
     
     
     @staticmethod
-    def get_sorted_positions(values: list[float]) -> list[int]:
+    def get_positions_sorted_asc(values: list[float]) -> list[int]:
         """
-        Sort the given list of values in descending order and return a list of their indices.
+        Sort the given list of values in ascending order and return a list of their indices.
 
         Parameters:
         ----------
@@ -95,8 +98,8 @@ class VectorUtils:
         # Enumerate the original list to keep track of the original indices
         indexed_values = list(enumerate(values))
         
-        # Sort the list of tuples (index, value) by the value in descending order
-        sorted_indexed_values = sorted(indexed_values, key=lambda x: x[1], reverse=True)
+        # Sort the list of tuples (index, value) by the value in ascending order
+        sorted_indexed_values = sorted(indexed_values, key=lambda x: x[1], reverse=False)
         
         # Extract the sorted indices
         sorted_positions = [index for index, value in sorted_indexed_values]

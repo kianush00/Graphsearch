@@ -2207,7 +2207,7 @@ class QueryComponent {
         // Set default values for the inputs
         this.searchResultsInput.value = "10";
         this.limitDistanceInput.value = "4";
-        this.graphTermsInput.value = "7";
+        this.graphTermsInput.value = "5";
 
         this.addEventListeners()
     }

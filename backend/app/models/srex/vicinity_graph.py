@@ -346,14 +346,14 @@ class VicinityGraph:
         return visual_graph
     
 
-    def get_cosine_similarity(self,
+    def get_euclidean_distance_as_base_graph(self,
             external_graph: 'VicinityGraph',
             include_ponderation: bool = False
             ) -> float:
         """
-        Calculate the cosine similarity with other graph. To calculate it, it is proposed 
-        to compare the graph using a multidimensional vector space, where the each term 
-        properties define a dimension of the space.
+        Calculate the euclidean distance with another graph. To calculate it, it is proposed to compare 
+        the graph using a multidimensional vector space, where the properties of each term define a 
+        dimension of the space, defining the neighboring terms of the current graph as the base vector.
 
         Parameters
         ----------
@@ -364,35 +364,44 @@ class VicinityGraph:
 
         Returns
         -------
-        cosine_of_angle : float
-            The cosine similarity between the current graph and the external graph
+        distance : float
+            The euclidean distance between the current graph and the external graph
         """
-        # Calculate the base vector with terms from the union between both vectors
-        vector_base = self.__get_terms_from_union_between_graphs(external_graph)
+        def append_values_from_term(term: str, key: str, self_dict: dict, external_dict: dict):
+            """Helper function to append values from a term based on a specific key."""
+            self_value: float = self_dict.get(term, {}).get(key, 0)
+            external_value: float = external_dict.get(term, {}).get(key, 0)
+            if self_value > 0 and external_value > 0:
+                self_vector.append(self_value)
+                external_vector.append(external_value)
+        
+        # Calculate the base vector with terms from the current graph
+        vector_base = set(self.get_terms_from_nodes())
         
         # Get the dictionaries of normalized nodes from each graph 
         normalized_self_nodes = self.get_normalized_nodes_dict()
         normalized_external_nodes = external_graph.get_normalized_nodes_dict()
 
         # Initialize the vectors
-        self_vector = [] 
-        external_vector = []
+        self_vector: list[float] = [] 
+        external_vector: list[float] = []
 
         # Calculate the two vectors in the multidimensional space, i.e. generate the vector space
         for term in vector_base: 
-            self_vector.append(normalized_self_nodes.get(term, {}).get('distance', 0))
-            external_vector.append(normalized_external_nodes.get(term, {}).get('distance', 0))
+            append_values_from_term(term, 'distance', normalized_self_nodes, normalized_external_nodes)
         
         # Add ponderation values to the two vectors if include ponderation is True
         if include_ponderation:
-            for term in vector_base: 
-                self_vector.append(normalized_self_nodes.get(term, {}).get('ponderation', 0))
-                external_vector.append(normalized_external_nodes.get(term, {}).get('ponderation', 0))
+            for term in vector_base:
+                append_values_from_term(term, 'ponderation', normalized_self_nodes, normalized_external_nodes)
 
-        # Calculate the cosine of the angle between the vectors
-        cosine_of_angle = VectorUtils.get_cosine_between_vectors(self_vector, external_vector)
+        # Calculate the euclidean distance between the vectors
+        if len(self_vector) > 0 and len(external_vector) > 0:
+            distance = VectorUtils.get_euclidean_distance(self_vector, external_vector)
+        else:
+            distance = float("inf")
         
-        return cosine_of_angle
+        return distance
     
 
     def get_normalized_nodes_dict(self) -> dict[str, dict[str, float]]:
@@ -416,7 +425,7 @@ class VicinityGraph:
 
         # Get the normalized version of the distance and ponderation vectors, in a range of [0.5, 1.0]
         normalized_ponderation_vector = VectorUtils.normalize_vector(ponderation_vector, 0.5, 1.0)
-        normalized_distance_vector = VectorUtils.normalize_vector(distance_vector, 0.5, 1.0)
+        normalized_distance_vector = VectorUtils.normalize_vector(distance_vector, 0.5, 1.0, 1.0, self.__config.get_limit_distance())
 
         # Assign the normalized values ​​to the dictionary
         for index, subdict in enumerate(normalized_self_nodes.values()):
@@ -562,23 +571,6 @@ class VicinityGraph:
         set[str]: A set containing the terms that exist in both the current graph and the external graph.
         """
         base_terms = set(self.get_terms_from_nodes()) & set(graph_b.get_terms_from_nodes())
-        return base_terms
-    
-
-    def __get_terms_from_union_between_graphs(self,
-            graph_b: 'VicinityGraph'
-            ) -> set[str]:
-        """
-        This function returns the set of terms that exist in the union of the current graph and an external graph.
-        It calculates the union of the terms from the nodes of both graphs.
-
-        Parameters:
-        graph_b (VicinityGraph): The external graph to find the union with the current graph.
-
-        Returns:
-        set[str]: A set containing the terms that exist in both the current graph and the external graph.
-        """
-        base_terms = set(self.get_terms_from_nodes()) | set(graph_b.get_terms_from_nodes())
         return base_terms
     
 

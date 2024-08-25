@@ -103,9 +103,9 @@ class TestSREX(unittest.TestCase):
 
         # Define expected result
         expected_result = {
-            'x': {'ponderation': 0.5, 'distance': 0.5}, 
-            'y': {'ponderation': 0.75, 'distance': 1.0}, 
-            'z': {'ponderation': 1.0, 'distance': 0.8}
+            'x': {'ponderation': 0.5, 'distance': 0.5833333333333334}, 
+            'y': {'ponderation': 0.75, 'distance': 0.75}, 
+            'z': {'ponderation': 1.0, 'distance': 0.6833333333333333}
         }
 
         # Assert the dict match the expected output
@@ -125,14 +125,14 @@ class TestSREX(unittest.TestCase):
         self.assertListEqual(result, expected_result)
     
 
-    def test_get_cosine_between_vectors(self):
+    def test_get_euclidean_distance_between_vectors(self):
         # Initialize vectors values
         vector1 = [1.2, 2.3, 3.5, 3.0]
         vector2 = [3.1, 2.4, 1.1, 1.8]
 
-        # Get the cosine between vectors and assert the results
-        result = VectorUtils.get_cosine_between_vectors(vector1, vector2)
-        expected_result = 0.7851655406125303
+        # Get the euclidean distance between vectors and assert the results
+        result = VectorUtils.get_euclidean_distance(vector1, vector2)
+        expected_result = 3.2893768406797053
         
         self.assertAlmostEqual(result, expected_result, delta=1e-13)
 
@@ -569,7 +569,7 @@ class TestSREX(unittest.TestCase):
         self.assertEqual(result, expected_result)
 
 
-    def test_cosine_similarity_exclude_ponderation(self):
+    def test_euclidean_distance_exclude_ponderation(self):
         # Load stopwords from JSON file
         stop_words = DataUtils.load_stopwords()
 
@@ -579,22 +579,22 @@ class TestSREX(unittest.TestCase):
         # Initialize Ranking object and generate all graphs
         ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
 
-        # Get cosine similarities between vicinity graphs from the documents
+        # Get euclidean distances between vicinity graphs from the documents
         graph1 = ranking.get_document_by_ranking_position(1).get_graph()
         graph2 = ranking.get_document_by_ranking_position(2).get_graph()
         graph3 = ranking.get_document_by_ranking_position(3).get_graph()
         graph4 = ranking.get_document_by_ranking_position(4).get_graph()
 
-        result1 = graph1.get_cosine_similarity(graph1)
-        result2 = graph1.get_cosine_similarity(graph2)
-        result3 = graph1.get_cosine_similarity(graph3)
-        result4 = graph1.get_cosine_similarity(graph4)
+        result1 = graph1.get_euclidean_distance_as_base_graph(graph1)
+        result2 = graph1.get_euclidean_distance_as_base_graph(graph2)
+        result3 = graph1.get_euclidean_distance_as_base_graph(graph3)
+        result4 = graph1.get_euclidean_distance_as_base_graph(graph4)
 
         # Create expected results
-        expected_result1 = 1.0
-        expected_result2 = 0.8864257281915631
-        expected_result3 = 0.709745967856668
-        expected_result4 = 0.692365139519731
+        expected_result1 = 0.0
+        expected_result2 = 0.2041241452319315
+        expected_result3 = 0.30046260628866567
+        expected_result4 = 0.24999999999999992
 
         # Assert the result matches the expected output
         self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
@@ -603,7 +603,7 @@ class TestSREX(unittest.TestCase):
         self.assertAlmostEqual(result4, expected_result4, delta=1e-13)
     
 
-    def test_cosine_similarity_include_ponderation(self):
+    def test_euclidean_distance_include_ponderation(self):
         # Load stopwords from JSON file
         stop_words = DataUtils.load_stopwords()
 
@@ -613,22 +613,22 @@ class TestSREX(unittest.TestCase):
         # Initialize Ranking object and generate all graphs
         ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
 
-        # Get cosine similarities between vicinity graphs from the documents
+        # Get euclidean distances between vicinity graphs from the documents
         graph1 = ranking.get_document_by_ranking_position(1).get_graph()
         graph2 = ranking.get_document_by_ranking_position(2).get_graph()
         graph3 = ranking.get_document_by_ranking_position(3).get_graph()
         graph4 = ranking.get_document_by_ranking_position(4).get_graph()
 
-        result1 = graph1.get_cosine_similarity(graph1, True)
-        result2 = graph1.get_cosine_similarity(graph2, True)
-        result3 = graph1.get_cosine_similarity(graph3, True)
-        result4 = graph1.get_cosine_similarity(graph4, True)
+        result1 = graph1.get_euclidean_distance_as_base_graph(graph1, True)
+        result2 = graph1.get_euclidean_distance_as_base_graph(graph2, True)
+        result3 = graph1.get_euclidean_distance_as_base_graph(graph3, True)
+        result4 = graph1.get_euclidean_distance_as_base_graph(graph4, True)
 
         # Create expected results
-        expected_result1 = 1.0
-        expected_result2 = 0.8957024986164903
-        expected_result3 = 0.7547840959959977
-        expected_result4 = 0.706750222299911
+        expected_result1 = 0.0
+        expected_result2 = 0.2041241452319315
+        expected_result3 = 0.30046260628866567
+        expected_result4 = 0.5590169943749473
 
         # Assert the result matches the expected output
         self.assertAlmostEqual(result1, expected_result1, delta=1e-13)

@@ -61,7 +61,7 @@ class QueryService:
         """
         This function calculates the new ranking positions for a given PydanticRankingRequest object.
         It creates a similarity ranking between the visible neighbour terms of the input ranking and the neighbour terms of each document.
-        The ranking positions are determined based on the similarity scores.
+        The ranking positions are determined based on the similarity scores (shortest euclidean distances between graphs).
 
         Parameters:
         - ranking (PydanticRankingRequest): The input ranking object containing visible neighbour terms and documents.
@@ -82,11 +82,11 @@ class QueryService:
             # Initialize a list of sentence graphs from the documents of the ranking
             document_doc_weight_graph_tuple_list = self.__get_doc_weight_and_sentence_graphs_from_documents(ranking)
             
-            # Create similarity list
-            similarity_ranking: list[float] = self.__calculate_similarity_ranking(document_doc_weight_graph_tuple_list, visible_graph, include_ponderation)
+            # Create similarity scores list
+            similarity_scores: list[float] = self.__calculate_similarity_scores(document_doc_weight_graph_tuple_list, visible_graph, include_ponderation)
             
-            # Get sorted similarity list
-            rank_new_positions = VectorUtils.get_sorted_positions(similarity_ranking)
+            # Get sorted similarity list in ascending order (shortest distance between vectors of the graphs)
+            rank_new_positions = VectorUtils.get_positions_sorted_asc(similarity_scores)
             return RerankNewPositions(ranking_new_positions=rank_new_positions)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Bad request: {e}")
@@ -115,13 +115,15 @@ class QueryService:
         return document_doc_weight_graph_tuple_list
     
     
-    def __calculate_similarity_ranking(self, 
+    def __calculate_similarity_scores(self, 
         document_doc_weight_graph_tuple_list: list[tuple[float, list[VicinityGraph]]], 
         visible_graph: VicinityGraph, 
         include_ponderation: bool
         ) -> list[float]:
         """
-        Calculates the similarity ranking between the visible neighbour terms and the neighbour terms of each document.
+        Calculates the similarity scores between the visible neighbour terms and the neighbour terms of each sentence per 
+        document, until obtaining the most similar sentence from each document. Similarity scores correspond to the 
+        Euclidean distance between two graphs, being more similar when the distance is smaller and vice versa.
         
         Parameters:
         - document_doc_weight_graph_tuple_list (list[tuple[float, list[VicinityGraph]]]): A list of tuples, where each tuple contains 
@@ -135,22 +137,23 @@ class QueryService:
         """
         # Initialize the similarity scores
         similarity_ranking: list[float] = []
-        
+
         for doc_weight, doc_sentence_graph_list in document_doc_weight_graph_tuple_list:
+            # If the document doesn't contain a sentence, then just return a high distance value
             if len(doc_sentence_graph_list) < 1:
-                similarity_ranking.append(0.0)
+                similarity_ranking.append(float("inf"))
                 continue
             
-            # Calculate the cosine similarity between the visible graph and each sentence graph in the document
-            cosine_similarity_by_graph: list[float] = [
-                (doc_weight * 0.05) + visible_graph.get_cosine_similarity(graph, include_ponderation) for graph in doc_sentence_graph_list
+            # Calculate the euclidean distance between the visible graph and each sentence graph in the document
+            euclidean_distance_by_graph: list[float] = [
+                - (doc_weight * 0.01) + visible_graph.get_euclidean_distance_as_base_graph(graph, include_ponderation) for graph in doc_sentence_graph_list
             ]
-                            
-            # Sort the list of similarity scores and get the first two scores
-            cosine_similarity_top_1_sentence = sorted(cosine_similarity_by_graph, reverse=True)[0]
+            
+            # Sort the list of similarity scores in ascending order (shortest distances) and get the first score
+            euclidean_distance_top_1_sentence = sorted(euclidean_distance_by_graph, reverse=False)[0]
                 
-            # Add the average similarity score to the ranking list
-            similarity_ranking.append(cosine_similarity_top_1_sentence)
+            # Add the first similarity score to the ranking list
+            similarity_ranking.append(euclidean_distance_top_1_sentence)
             
         return similarity_ranking
     
