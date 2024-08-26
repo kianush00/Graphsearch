@@ -5,7 +5,14 @@ import logging
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+import nltk
 
+
+
+# Download packages from nltk
+nltk.download('stopwords') 
+nltk.download('punkt')
+nltk.download('wordnet')
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
