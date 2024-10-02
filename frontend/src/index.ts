@@ -2344,7 +2344,7 @@ const cyUser = cytoscape({
         {
             selector: '.' + NodeType.central_node,
             style: {
-            "background-color": '#40CC40',
+            "background-color": '#ff8000',
             'width': '20px',
             'height': '20px',
             'label': "data(id)",
