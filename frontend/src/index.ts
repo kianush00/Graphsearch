@@ -315,7 +315,13 @@ class HTTPRequestUtils {
 
 
 
-interface EdgeData {
+interface EdgeUserData {
+    id: string
+    source: string
+    target: string
+}
+
+interface EdgeSentenceData {
     id: string
     source: string
     target: string
@@ -366,7 +372,9 @@ class Edge {
         this.distance = distance;
         let cyEdge = this.cyElement.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
         const hops = ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit, this.isUserGraphEdge)
-        cyEdge.data('distance', hops)
+        if (!this.isUserGraphEdge) {
+            cyEdge.data('distance', hops)
+        }
     }
 
     /**
@@ -407,15 +415,29 @@ class Edge {
      * The object has properties: id, source, target, and distance.
      * The distance is converted to hops using the ConversionUtils.
      */
-    public toObject(): { data: EdgeData } {
-        return {
-            data: {
-                id: this.id,
-                source: this.sourceNode.getId(),
-                target: this.targetNode.getId(),
-                distance: ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit, this.isUserGraphEdge)
-            },
+    public toObject(): { data: EdgeUserData | EdgeSentenceData } {
+        const baseData = {
+            id: this.id,
+            source: this.sourceNode.getId(),
+            target: this.targetNode.getId(),
+        };
+    
+        // Add distance to the data if the edge is not a user graph edge
+        if (!this.isUserGraphEdge) {
+            return {
+                data: {
+                    ...baseData,
+                    distance: ConversionUtils.convertDistanceToHops(
+                        this.distance, 
+                        this.hopLimit, 
+                        this.isUserGraphEdge
+                    ),
+                }
+            };
         }
+    
+        // Return the base data if the edge is a user graph edge
+        return { data: baseData };
     }
 
     private addVisualEdgeToInterface(): void {
@@ -752,6 +774,10 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.hops
     }
 
+    public setHops(hops: number): void {
+        this.hops = hops
+    }
+
     public getPonderation(): number {
         return this.ponderation
     }
@@ -759,6 +785,12 @@ class NeighbourTerm extends Term implements ViewManager {
     public getHopLimit(): number {
         return this.hopLimit
     }
+
+    public getUserCriteria(): string {
+        if (this.hops < 1.7) return "proximity";
+        if (this.hops < 3.2) return "frequency";
+        return "exclusion";
+    } 
 
     /**
      * Converts the NeighbourTerm instance into an object containing term, ponderation, and distance.
@@ -1299,6 +1331,7 @@ class QueryTermService {
      */
     public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         if (this.ranking.getVisibleQueryTerm().getNeighbourTerms().length > 19) return
+        neighbourTerm.setHops(1.0)
         this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         this.queryService.updateAddTermsTable()
@@ -1828,7 +1861,7 @@ class NeighbourTermsTable {
 
             // Set the text content of the cells
             cell1.innerHTML = neighbourTerm.getValue()
-            cell2.innerHTML = neighbourTerm.getHops().toFixed(1)
+            cell2.innerHTML = neighbourTerm.getUserCriteria()
         }
     }
 }
@@ -2358,7 +2391,6 @@ const cyUser = cytoscape({
             "curve-style": "bezier",
             "target-arrow-shape": "triangle",
             "line-color": "#ccc",
-            label: "data(distance)",
             "width": "2px", // set the width of the edge
             "font-size": "12px" // set the font size of the label            
             },
