@@ -170,9 +170,9 @@ class TextUtils {
 
 
 class ConversionUtils {
-    private static minMaxDistancesUserGraph: [number, number] = [45.0, 125.0]
-    private static minMaxDistancesSentenceGraph: [number, number] = [40.0, 65.0]
-    private static hopMinValue: number = 1.0
+    private static readonly minMaxDistancesUserGraph: [number, number] = [45.0, 125.0]
+    private static readonly minMaxDistancesSentenceGraph: [number, number] = [40.0, 65.0]
+    private static readonly hopMinValue: number = 1.0
 
     /**
      * Converts the number of hops to the corresponding distance in the graph.
@@ -315,28 +315,21 @@ class HTTPRequestUtils {
 
 
 
-interface EdgeUserData {
+interface EdgeData {
     id: string
     source: string
     target: string
+    distance?: number
 }
-
-interface EdgeSentenceData {
-    id: string
-    source: string
-    target: string
-    distance: number
-}
-
 
 class Edge {
-    private id: string
-    private sourceNode: GraphNode
-    private targetNode: GraphNode
+    private readonly id: string
+    private readonly sourceNode: GraphNode
+    private readonly targetNode: GraphNode
     private distance: number
-    private hopLimit: number
-    private isUserGraphEdge: boolean
-    private cyElement: cytoscape.Core
+    private readonly hopLimit: number
+    private readonly isUserGraphEdge: boolean
+    private readonly cyElement: cytoscape.Core
 
     /**
      * Represents an edge in the graph, connecting two nodes.
@@ -415,7 +408,7 @@ class Edge {
      * The object has properties: id, source, target, and distance.
      * The distance is converted to hops using the ConversionUtils.
      */
-    public toObject(): { data: EdgeUserData | EdgeSentenceData } {
+    public toObject(): { data: EdgeData } {
         const baseData = {
             id: this.id,
             source: this.sourceNode.getId(),
@@ -714,18 +707,19 @@ interface ViewManager {
 interface NTermObject {
     term: string;
     ponderation: number;
-    distance: number;
+    distance?: number;
+    criteria?: string;
 }
 
 
 class NeighbourTerm extends Term implements ViewManager {
     protected node: OuterNode | undefined
-    private queryTerm: QueryTerm
+    private readonly queryTerm: QueryTerm
     private hops: number
     private nodePosition: Position = { x: 0, y: 0 }
     private edge: Edge | undefined
-    private ponderation: number
-    private hopLimit: number
+    private readonly ponderation: number
+    private readonly hopLimit: number
 
     /**
      * Represents a neighbour term in the graph.
@@ -741,7 +735,7 @@ class NeighbourTerm extends Term implements ViewManager {
         super(value)
         this.queryTerm = queryTerm
         this.ponderation = ponderation
-        this.hops = hops
+        this.hops = this.queryTerm.getIsUserQuery() ? 1.0 : hops
         this.hopLimit = hopLimit
         this.setLabel(value)
     }
@@ -774,10 +768,6 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.hops
     }
 
-    public setHops(hops: number): void {
-        this.hops = hops
-    }
-
     public getPonderation(): number {
         return this.ponderation
     }
@@ -801,9 +791,22 @@ class NeighbourTerm extends Term implements ViewManager {
      * The distance property contains the number of hops from the central node to the NeighbourTerm instance.
      */
     public toObject(): NTermObject {
-        return {
+        const baseData = {
             term: this.value,
-            ponderation: this.ponderation,
+            ponderation: this.ponderation
+        };
+
+        // Add term, ponderation and criteria properties if it's a user neighbour term
+        if (this.queryTerm.getIsUserQuery()) {
+            return {
+                ...baseData,
+                criteria: this.getUserCriteria()
+            }
+        }
+
+        // Add term, ponderation and distance properties for user queries if it's not a user neighbour term
+        return {
+            ...baseData,
             distance: this.hops
         }
     }
@@ -901,7 +904,7 @@ class NeighbourTerm extends Term implements ViewManager {
 class QueryTerm extends Term implements ViewManager {
     protected node: CentralNode | undefined
     private neighbourTerms: NeighbourTerm[] = []
-    private isUserQuery: boolean
+    private readonly isUserQuery: boolean
 
     constructor(value: string, isUserQuery: boolean) {
         super(value);
@@ -1043,8 +1046,8 @@ interface SentenceObject {
 }
 
 class Sentence extends TextElement {
-    private positionInDoc: number
-    private rawText: string
+    private readonly positionInDoc: number
+    private readonly rawText: string
 
     /**
     ​ * Constructor for the Sentence class.
@@ -1091,11 +1094,11 @@ interface DocumentObject {
 }
 
 class Document extends TextElement {
-    private id: string
-    private title: string
-    private abstract: string
-    private weight: number
-    private sentences: Sentence[] = []
+    private readonly id: string
+    private readonly title: string
+    private readonly abstract: string
+    private readonly weight: number
+    private readonly sentences: Sentence[] = []
 
     /**
     ​ * Constructor for the Document class.
@@ -1180,8 +1183,8 @@ interface RankingObject {
 }
 
 class Ranking {
-    private visibleQueryTerm: QueryTerm
-    private completeQueryTerm: QueryTerm
+    private readonly visibleQueryTerm: QueryTerm
+    private readonly completeQueryTerm: QueryTerm
     private documents: Document[] = []
     private visibleSentence: Sentence | undefined
 
@@ -1254,8 +1257,8 @@ class Ranking {
  * A service class responsible for managing query terms and their associated data.
  */
 class QueryTermService {
-    private queryService: QueryService
-    private ranking: Ranking
+    private readonly queryService: QueryService
+    private readonly ranking: Ranking
     private isVisible: boolean = false
 
     constructor(queryService: QueryService, queryTermValue: string, searchResults: number, limitDistance: number, graphTerms: number) {
@@ -1331,7 +1334,6 @@ class QueryTermService {
      */
     public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         if (this.ranking.getVisibleQueryTerm().getNeighbourTerms().length > 19) return
-        neighbourTerm.setHops(1.0)
         this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         this.queryService.updateAddTermsTable()
@@ -1509,11 +1511,11 @@ class QueryTermService {
 
 class QueryService {
     private activeQueryTermService: QueryTermService | undefined
-    private queryTermServices: QueryTermService[]
-    private neighbourTermsTable: NeighbourTermsTable
-    private addTermsTable: AddTermsTable
-    private queryTermsList: QueryTermsList
-    private resultsList: ResultsList
+    private readonly queryTermServices: QueryTermService[]
+    private readonly neighbourTermsTable: NeighbourTermsTable
+    private readonly addTermsTable: AddTermsTable
+    private readonly queryTermsList: QueryTermsList
+    private readonly resultsList: ResultsList
 
     constructor() {
         this.queryTermServices = []
@@ -1610,8 +1612,8 @@ class QueryService {
 
 
 class QueryTermsList {
-    private dynamicList: HTMLElement
-    private queryService: QueryService
+    private readonly dynamicList: HTMLElement
+    private readonly queryService: QueryService
 
     constructor(queryService: QueryService) {
         this.queryService = queryService
@@ -1650,7 +1652,7 @@ class QueryTermsList {
 
 class AddTermsTable {
     private activeTermService: QueryTermService | undefined
-    private dynamicTable: HTMLElement
+    private readonly dynamicTable: HTMLElement
 
     constructor() {
         this.dynamicTable = document.getElementById('addTermsTable') as HTMLElement
@@ -1820,7 +1822,7 @@ class AddTermsTable {
 
 class NeighbourTermsTable {
     private activeTermService: QueryTermService | undefined
-    private dynamicTable: HTMLElement
+    private readonly dynamicTable: HTMLElement
 
     constructor() {
         this.dynamicTable = document.getElementById('neighboursTermsTable') as HTMLElement
@@ -1869,7 +1871,7 @@ class NeighbourTermsTable {
 
 class ResultsList {
     private activeTermService: QueryTermService | undefined
-    private dynamicList: HTMLElement
+    private readonly dynamicList: HTMLElement
 
     constructor() {
         this.dynamicList = document.getElementById('resultsList') as HTMLElement
@@ -2212,12 +2214,12 @@ class ResultsList {
  * and sending the query to a query service when the Enter key is pressed.
  */
 class QueryComponent {
-    private queryService: QueryService
-    private input: HTMLInputElement
-    private searchIcon: HTMLElement
-    private searchResultsInput: HTMLInputElement
-    private limitDistanceInput: HTMLInputElement
-    private graphTermsInput: HTMLInputElement
+    private readonly queryService: QueryService
+    private readonly input: HTMLInputElement
+    private readonly searchIcon: HTMLElement
+    private readonly searchResultsInput: HTMLInputElement
+    private readonly limitDistanceInput: HTMLInputElement
+    private readonly graphTermsInput: HTMLInputElement
 
     /**
      * Constructs a new instance of QueryComponent.
@@ -2321,8 +2323,8 @@ class QueryComponent {
 
 
 class RerankComponent {
-    private queryService: QueryService
-    private button: HTMLButtonElement
+    private readonly queryService: QueryService
+    private readonly button: HTMLButtonElement
 
     /**
      * Constructs a new instance of RerankComponent.
@@ -2350,7 +2352,7 @@ class RerankComponent {
         if (this.queryService.getActiveQueryTermService() !== undefined) {
             // Create the data to be sent in the POST request
             const ranking = this.queryService.getActiveQueryTermService()?.getRanking().toObject()
-
+            console.log(ranking)
             // Send the POST request
             const response = await HTTPRequestUtils.postData('rerank', ranking)
             

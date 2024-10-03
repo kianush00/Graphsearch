@@ -1,4 +1,4 @@
-from models.request.request import PydanticRankingRequest, PydanticNeighbourTermRequest
+from models.request.request import PydanticRankingRequest, PydanticVisibleNeighbourTermRequest
 from models.request.response import PydanticRanking, PydanticDocument, PydanticSentence, PydanticNeighbourTerm, RerankNewPositions
 from models.srex.ranking import Ranking
 from models.srex.vicinity_graph import VicinityGraph, VicinityNode
@@ -217,20 +217,22 @@ class QueryService:
         ]
     
     
-    def __get_graph_from_pydantic_neighbour_term_list(self, neighbour_terms: List[PydanticNeighbourTermRequest]) -> VicinityGraph:
+    def __get_graph_from_pydantic_neighbour_term_list(self, neighbour_terms: List[PydanticVisibleNeighbourTermRequest]) -> VicinityGraph:
         """
         This function converts a list of PydanticNeighbourTermRequest objects into a VicinityGraph object.
+        A distance of 1 is added to the nodes since the nodes with the "proximity" criterion will be compared 
+        with the ranking documents.
 
         Parameters:
-        - neighbour_terms (List[PydanticNeighbourTermRequest]): A list of PydanticNeighbourTermRequest objects, where each 
-        object represents a neighbour term with its attributes.
+        - neighbour_terms (List[PydanticNeighbourTermRequest]): A list of PydanticNeighbourTermRequest objects, where 
+        each object represents a neighbour term with its attributes.
 
         Returns:
         - VicinityGraph: A VicinityGraph object, where each neighbour term from the input list is added as a node to the graph.
         """
         graph = VicinityGraph(subquery="new")
         for node in neighbour_terms:
-            graph.add_node(VicinityNode(term=node.term, ponderation=node.ponderation, distance=node.distance))
+            graph.add_node(VicinityNode(term=node.term, ponderation=node.ponderation, distance=1.0, criteria=node.criteria))
         return graph
 
 

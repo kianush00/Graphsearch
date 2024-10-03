@@ -78,7 +78,7 @@ class VicinityGraphConfig:
 
 class VicinityNode:
     
-    def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0):
+    def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0, criteria: str = "proximity"):
         """
         Initialize a new instance of the VicinityNode class.
 
@@ -90,6 +90,7 @@ class VicinityNode:
         self.__term = term
         self.__ponderation = ponderation
         self.__distance = distance
+        self.__criteria = criteria
     
 
     def get_term(self) -> str:
@@ -140,6 +141,20 @@ class VicinityNode:
         distance (float): The new distance value.
         """
         self.__distance = distance
+    
+    
+    def get_criteria(self) -> str:
+        """
+        Returns the criteria used to determine the type of node calculation (it can be: proximity, frequency or exclusion).
+        - 'proximity': The system calculates the distance of the node to get the new ranking.
+        - 'frequency': The system calculates the frequency of the term in the document to get the new ranking.
+        - 'exclusion': The system excludes the term from the ranking, adding a NOT operator in the query string and 
+        making a new query with the term excluded.
+        
+        Returns:
+        str: The criteria used to determine proximity.
+        """
+        return self.__criteria
 
 
     def __str__(self) -> str:
