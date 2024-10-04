@@ -74,7 +74,7 @@ class QueryService:
         """
         try:
             # Initialize parameters
-            include_ponderation = False
+            include_ponderation = True
             
             # Initialize the visible graph
             visible_graph = self.__get_visible_graph_from_pydantic_neighbour_term_list(ranking.visible_neighbour_terms)
@@ -125,7 +125,7 @@ class QueryService:
         Euclidean distance between two graphs, being more similar when the distance is smaller and vice versa.
         
         Parameters:
-        - document_weight_graph_text_tuple_list (list[tuple[float, list[VicinityGraph]]]): A list of tuples, where each tuple contains 
+        - document_weight_graph_text_tuple_list (list[tuple[float, VicinityGraph, str]]): A list of tuples, where each tuple contains 
         a document weight (float) and a list of VicinityGraph objects representing the neighbour terms of the document's sentences.
         - visible_graph (VicinityGraph): A VicinityGraph object representing the neighbour terms of the visible graph.
         - include_ponderation (bool): A flag indicating whether to include ponderation in the cosine similarity calculation.
