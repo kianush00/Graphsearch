@@ -22,6 +22,7 @@ class PydanticDocument(BaseModel):
     doc_id: str
     title: str
     abstract: str
+    preprocessed_text: str
     weight: float
     neighbour_terms: List[PydanticNeighbourTerm]
     sentences: List[PydanticSentence]

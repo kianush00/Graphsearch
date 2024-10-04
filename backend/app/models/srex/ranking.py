@@ -421,12 +421,13 @@ class Sentence(QueryTreeHandler):
 
 class Document(QueryTreeHandler):
     
-    def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", 
+    def __init__(self, ranking: 'Ranking', query: BinaryExpressionTree, abstract: str = "", title: str = "", 
                  doc_id: str = "1", weight: float = 1.0, ranking_position: int = 1):
         """
         Initialize a new Document object.
 
         Parameters:
+        ranking (Ranking): The ranking associated with this document.
         query (BinaryExpressionTree): The query tree for the document.
         abstract (str, optional): The abstract of the document. Default is an empty string.
         title (str, optional): The title of the document. Default is an empty string.
@@ -435,8 +436,10 @@ class Document(QueryTreeHandler):
         ranking_position (int, optional): The position of the document in the ranking. Default is 1.
         """
         super().__init__(query_tree=query)
-        self.__abstract = abstract
+        self.__ranking = ranking
         self.__title = title
+        self.__abstract = abstract
+        self.__preprocessed_text = self.__generate_self_preprocessed_text(title, abstract)
         self.__doc_id = doc_id
         self.__weight = weight
         self.__ranking_position = ranking_position
@@ -506,6 +509,19 @@ class Document(QueryTreeHandler):
         int: The ranking position of the document. The position index is 1-based.
         """
         return self.__ranking_position
+    
+    
+    def get_preprocessed_text(self) -> str:
+        """
+        Retrieve the preprocessed text of the document, which consists of the title and abstract joined.
+        
+        Parameters:
+        None
+
+        Returns:
+        str: The preprocessed text of the document
+        """
+        return self.__preprocessed_text
     
 
     def get_sentence_by_raw_text(self, text: str) -> Sentence | None:
@@ -651,7 +667,28 @@ class Document(QueryTreeHandler):
         query_trees_list = self.get_list_of_query_trees_from_sentences()
         union_of_trees = self.get_query_tree().get_union_of_trees(query_trees_list)
         return union_of_trees
+    
+    
+    def __generate_self_preprocessed_text(self, title: str, abstract: str) -> str:
+        """
+        Generates a preprocessed text by concatenating the title and abstract, and then applying a series of text 
+        transformations defined by the ranking configuration.
 
+        This method combines the provided `title` and `abstract` into a single string, and applies a set of text 
+        transformations based on the configuration retrieved from the `Ranking` object associated with the instance. 
+
+        Args:
+            title (str): The title of the document to be preprocessed.
+            abstract (str): The abstract of the document to be preprocessed.
+
+        Returns:
+            str: The transformed text after applying the necessary preprocessing steps, which may include 
+            operations such as tokenization, stemming, lemmatization, stopword removal, etc., depending on the 
+            transformation configuration.
+        """
+        title_and_abstract = title + " " + abstract
+        transformations_params_tuple = self.__ranking.get_text_transformations_config().get_transformations_params()
+        return TextUtils.get_transformed_text(title_and_abstract, *transformations_params_tuple)
 
 
 class TextTransformationsConfig:
@@ -667,7 +704,7 @@ class TextTransformationsConfig:
         self.__stop_words = stop_words
         self.__lemmatization = lemmatization
         self.__stemming = stemming
-    
+
 
     def get_transformations_params(self) -> tuple[tuple[str], bool, bool]:
         """
@@ -1058,7 +1095,7 @@ class Ranking(QueryTreeHandler):
         _ranking_pos = index + 1
         _weight = MathUtils.calculate_document_weight(results_size, _ranking_pos, self.__ranking_weight_type)
         _query_copy = copy.deepcopy(self.get_query_tree())
-        new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
+        new_doc = Document(ranking=self, query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         
         return new_doc

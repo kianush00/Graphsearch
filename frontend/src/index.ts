@@ -1088,15 +1088,16 @@ interface DocumentObject {
     doc_id: string;
     title: string;
     abstract: string;
+    preprocessed_text: string;
     weight: number;
     neighbour_terms: NTermObject[];
-    sentences: SentenceObject[];
 }
 
 class Document extends TextElement {
     private readonly id: string
     private readonly title: string
     private readonly abstract: string
+    private readonly preprocessed_text: string
     private readonly weight: number
     private readonly sentences: Sentence[] = []
 
@@ -1108,17 +1109,18 @@ class Document extends TextElement {
     ​ * @param responseNeighbourTerms - An array of objects representing neighbour terms retrieved from the response.
     ​ * Each object has properties: term, distance, and ponderation.
     ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
-    ​ * @param idTitleAbstract - An array containing the document's id, title, and abstract.
+    ​ * @param idTitleAbstractPreprcsdtext - An array containing the document's id, title, abstract and preprocessed text.
     ​ * @param weight - The weight of the document.
     ​ * @param responseSentences - An array of objects representing sentences retrieved from the response.
     ​ * Each object has properties: position_in_doc, raw_text, and neighbour_terms.
     ​ */
-    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number, idTitleAbstract: [string, string, string], 
+    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number, idTitleAbstractPreprcsdtext: [string, string, string, string], 
         weight: number, responseSentences: any[]){
         super(queryTermValue, responseNeighbourTerms, hopLimit)
-        this.id = idTitleAbstract[0]
-        this.title = idTitleAbstract[1]
-        this.abstract = idTitleAbstract[2]
+        this.id = idTitleAbstractPreprcsdtext[0]
+        this.title = idTitleAbstractPreprcsdtext[1]
+        this.abstract = idTitleAbstractPreprcsdtext[2]
+        this.preprocessed_text = idTitleAbstractPreprcsdtext[3]
         this.weight = weight
         this.sentences = this.initializeSentencesFromResponse(responseSentences, hopLimit)
     }
@@ -1148,9 +1150,9 @@ class Document extends TextElement {
             doc_id: this.id,
             title: this.title,
             abstract: this.abstract,
+            preprocessed_text: this.preprocessed_text,
             weight: this.weight,
-            neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects(),
-            sentences: this.sentences.map(sentence => sentence.toObject())
+            neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
         }
     }
 
@@ -1482,11 +1484,12 @@ class QueryTermService {
             const doc_id = documentObject['doc_id']
             const title = documentObject['title']
             const abstract = documentObject['abstract']
+            const preprocessed_text = documentObject['preprocessed_text']
             const weight = documentObject['weight']
             const response_neighbour_terms = documentObject['neighbour_terms']
             const sentences = documentObject['sentences']
             let document = new Document(this.ranking.getVisibleQueryTerm().getValue(), response_neighbour_terms, hopLimit, 
-                    [doc_id, title, abstract], weight, sentences)
+                    [doc_id, title, abstract, preprocessed_text], weight, sentences)
             this.addDocument(document)
         }
 
