@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@types/jquery": "^3.5.31",
     "css-loader": "^7.1.2",
     "http-server": "^14.1.1",
     "mini-css-extract-plugin": "^2.9.0",
@@ -12,8 +13,9 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@types/cytoscape": "^3.19.11",
-    "cytoscape": "^3.30.0"
+    "@types/cytoscape": "^3.21.8",
+    "cytoscape": "^3.30.0",
+    "jquery": "^3.7.1"
   },
   "scripts": {
     "start": "npx http-server -p 3000",

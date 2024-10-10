@@ -1,4 +1,5 @@
 import cytoscape from "cytoscape";
+import $ from 'jquery';
 
 class MathUtils {
     /**
@@ -1361,6 +1362,21 @@ class QueryTermService {
     }
 
     /**
+    * Changes the cursor type of the HTML document to the specified newCursorType.
+    * This function is used to update the cursor style when hovering over a neighbour term node in the graph.
+    * 
+    * @param id - The unique identifier of the neighbour term node.
+    * @param newCursorType - The new cursor type to be applied to the HTML document.
+    * 
+    * @returns {void} - This function does not return any value.
+    */
+    public changeCursorType(id: string, newCursorType: string): void {
+        let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
+        if (neighbourTerm === undefined) return
+        $('html,body').css('cursor', newCursorType);
+    }
+
+    /**
      * Adds a neighbour term to the complete query term.
      * 
      * This function takes a NeighbourTerm instance as a parameter and adds it to the complete query term's neighbour terms list.
@@ -2461,18 +2477,31 @@ const cySentence = cytoscape({
     userPanningEnabled: false
 })
 
-
+// When the user drags a node
 cyUser.on('drag', 'node', evt => {
     queryService.getActiveQueryTermService()?.nodeDragged(evt.target.id(), evt.target.position())
 })
 
+// When the user right-clicks a node
 cyUser.on('cxttap', "node", evt => {
     queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id())
 });
 
+// When the user right-clicks a edge
 cyUser.on('cxttap', "edge", evt => {
     queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id().substring(2))
 });
+
+// When the user hovers it's mouse over a node
+cyUser.on('mouseover', 'node', (evt: cytoscape.EventObject) => {
+    queryService.getActiveQueryTermService()?.changeCursorType(evt.target.id(), 'pointer');
+});
+
+// When the user moves it's mouse away from a node
+cyUser.on('mouseout', 'node', (evt: cytoscape.EventObject) => {
+    queryService.getActiveQueryTermService()?.changeCursorType(evt.target.id(), 'default');
+});
+
 
 
 const queryService: QueryService = new QueryService()
