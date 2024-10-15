@@ -142,400 +142,400 @@
         "topology": 1.0
     },
     "text6_leaf_graph_mean_1": {
-        "hierarchical": {"ponderation": 1.778151, "distance": 2.333333}, 
-        "simknn": {"ponderation": 1.30103, "distance": 2.5}, 
-        "dual": {"ponderation": 1.30103, "distance": 1.5}, 
-        "index": {"ponderation": 1.30103, "distance": 1.5}, 
-        "network": {"ponderation": 1.477121, "distance": 3.0}, 
-        "adopt": {"ponderation": 1.69897, "distance": 2.8}, 
-        "rtree": {"ponderation": 1.0, "distance": 1.0}, 
-        "store": {"ponderation": 1.30103, "distance": 2.0}, 
-        "topology": {"ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"ponderation": 1.0, "distance": 2.0}
+        "hierarchical": {"criteria": "proximity", "ponderation": 1.778151, "distance": 2.333333}, 
+        "simknn": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
+        "dual": {"criteria": "proximity", "ponderation": 1.30103, "distance": 1.5}, 
+        "index": {"criteria": "proximity", "ponderation": 1.30103, "distance": 1.5}, 
+        "network": {"criteria": "proximity", "ponderation": 1.477121, "distance": 3.0}, 
+        "adopt": {"criteria": "proximity", "ponderation": 1.69897, "distance": 2.8}, 
+        "rtree": {"criteria": "proximity", "ponderation": 1.0, "distance": 1.0}, 
+        "store": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
+        "topology": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
+        "road": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}
     },
     "text6_leaf_graph_mean_2": {
-        "hierarchical": {"ponderation": 1.778151, "distance": 2.5}, 
-        "driven": {"ponderation": 1.69897, "distance": 2.8}, 
-        "index": {"ponderation": 1.0, "distance": 4.0}, 
-        "network": {"ponderation": 1.477121, "distance": 1.0}, 
-        "rtree": {"ponderation": 1.30103, "distance": 2.5}, 
-        "store": {"ponderation": 1.30103, "distance": 2.5}, 
-        "topology": {"ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"ponderation": 1.30103, "distance": 3.0}
+        "hierarchical": {"criteria": "proximity", "ponderation": 1.778151, "distance": 2.5}, 
+        "driven": {"criteria": "proximity", "ponderation": 1.69897, "distance": 2.8}, 
+        "index": {"criteria": "proximity", "ponderation": 1.0, "distance": 4.0}, 
+        "network": {"criteria": "proximity", "ponderation": 1.477121, "distance": 1.0}, 
+        "rtree": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
+        "store": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
+        "topology": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
+        "road": {"criteria": "proximity", "ponderation": 1.30103, "distance": 3.0}
     },
     "text6_leaf_graph_mean_3": {
-        "hierarchical": {"ponderation": 1.30103, "distance": 3.5}, 
-        "driven": {"ponderation": 1.30103, "distance": 2.0}, 
-        "adopt": {"ponderation": 1.30103, "distance": 2.5}, 
-        "rtree": {"ponderation": 1.0, "distance": 2.0}, 
-        "topology": {"ponderation": 1.0, "distance": 2.0}
+        "hierarchical": {"criteria": "proximity", "ponderation": 1.30103, "distance": 3.5}, 
+        "driven": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
+        "adopt": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
+        "rtree": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}, 
+        "topology": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}
     },
     "text6_leaf_graph_median_1": {
-        "hierarchical": {"ponderation": 1.778151, "distance": 2.0}, 
-        "simknn": {"ponderation": 1.30103, "distance": 2.5}, 
-        "dual": {"ponderation": 1.30103, "distance": 1.5}, 
-        "index": {"ponderation": 1.30103, "distance": 1.5}, 
-        "network": {"ponderation": 1.477121, "distance": 3.0}, 
-        "adopt": {"ponderation": 1.69897, "distance": 3.0}, 
-        "rtree": {"ponderation": 1.0, "distance": 1.0}, 
-        "store": {"ponderation": 1.30103, "distance": 2.0}, 
-        "topology": {"ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"ponderation": 1.0, "distance": 2.0}
+        "hierarchical": {"criteria": "proximity", "ponderation": 1.778151, "distance": 2.0}, 
+        "simknn": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
+        "dual": {"criteria": "proximity", "ponderation": 1.30103, "distance": 1.5}, 
+        "index": {"criteria": "proximity", "ponderation": 1.30103, "distance": 1.5}, 
+        "network": {"criteria": "proximity", "ponderation": 1.477121, "distance": 3.0}, 
+        "adopt": {"criteria": "proximity", "ponderation": 1.69897, "distance": 3.0}, 
+        "rtree": {"criteria": "proximity", "ponderation": 1.0, "distance": 1.0}, 
+        "store": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
+        "topology": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
+        "road": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}
     },
     "text6_leaf_graph_median_2": {
-        "hierarchical": {"ponderation": 1.778151, "distance": 2.5}, 
-        "driven": {"ponderation": 1.69897, "distance": 3.0}, 
-        "index": {"ponderation": 1.0, "distance": 4.0}, 
-        "network": {"ponderation": 1.477121, "distance": 1.0}, 
-        "rtree": {"ponderation": 1.30103, "distance": 2.5}, 
-        "store": {"ponderation": 1.30103, "distance": 2.5}, 
-        "topology": {"ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"ponderation": 1.30103, "distance": 3.0}
+        "hierarchical": {"criteria": "proximity", "ponderation": 1.778151, "distance": 2.5}, 
+        "driven": {"criteria": "proximity", "ponderation": 1.69897, "distance": 3.0}, 
+        "index": {"criteria": "proximity", "ponderation": 1.0, "distance": 4.0}, 
+        "network": {"criteria": "proximity", "ponderation": 1.477121, "distance": 1.0}, 
+        "rtree": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
+        "store": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
+        "topology": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
+        "road": {"criteria": "proximity", "ponderation": 1.30103, "distance": 3.0}
     },
     "text6_leaf_graph_median_3": {
-        "hierarchical": {"ponderation": 1.30103, "distance": 3.5}, 
-        "driven": {"ponderation": 1.30103, "distance": 2.0}, 
-        "adopt": {"ponderation": 1.30103, "distance": 2.5}, 
-        "rtree": {"ponderation": 1.0, "distance": 2.0}, 
-        "topology": {"ponderation": 1.0, "distance": 2.0}
+        "hierarchical": {"criteria": "proximity", "ponderation": 1.30103, "distance": 3.5}, 
+        "driven": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
+        "adopt": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
+        "rtree": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}, 
+        "topology": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}
     },
     "text6_subgraph1": {
         "hierarchical": {
-          "ponderation": 1.778151,
+          "criteria": "proximity", "ponderation": 1.778151,
           "distance": 2.922525
         },
         "driven": {
-          "ponderation": 1.69897,
+          "criteria": "proximity", "ponderation": 1.69897,
           "distance": 2.453059
         },
         "index": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 4.0
         },
         "network": {
-          "ponderation": 1.477121,
+          "criteria": "proximity", "ponderation": 1.477121,
           "distance": 1.0
         },
         "rtree": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.282706
         },
         "store": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.5
         },
         "topology": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.0
         },
         "road": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 3.0
         },
         "adopt": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.5
         }
     },
     "text6_subgraph2": {
         "hierarchical": {
-          "ponderation": 1.778151,
+          "criteria": "proximity", "ponderation": 1.778151,
           "distance": 2.627929
         },
         "simknn": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.5
         },
         "dual": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 1.5
         },
         "index": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.58647
         },
         "network": {
-          "ponderation": 1.477121,
+          "criteria": "proximity", "ponderation": 1.477121,
           "distance": 2.0
         },
         "adopt": {
-          "ponderation": 1.69897,
+          "criteria": "proximity", "ponderation": 1.69897,
           "distance": 2.669897
         },
         "rtree": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 1.725257
         },
         "store": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.25
         },
         "topology": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.0
         },
         "road": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.565412
         },
         "driven": {
-          "ponderation": 1.69897,
+          "criteria": "proximity", "ponderation": 1.69897,
           "distance": 2.453059
         }
       },
     "text6_text2_united_graph_1": {
         "hierarchical": {
-          "ponderation": 2.778151,
+          "criteria": "proximity", "ponderation": 2.778151,
           "distance": 2.933253
         },
         "adopt": {
-          "ponderation": 2.69897,
+          "criteria": "proximity", "ponderation": 2.69897,
           "distance": 3.244614
         },
         "network": {
-          "ponderation": 2.477121,
+          "criteria": "proximity", "ponderation": 2.477121,
           "distance": 2.596306
         },
         "simknn": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 2.717294
         },
         "dual": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 1.717294
         },
         "index": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 1.282706
         },
         "store": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.0
         },
         "topology": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.0
         },
         "rtree": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 1.0
         },
         "road": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 2.0
         },
         "house": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 1.0
         },
         "car": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 3.0
         }
       },
     "text6_text2_united_graph_2": {
         "hierarchical": {
-          "ponderation": 2.778151,
+          "criteria": "proximity", "ponderation": 2.778151,
           "distance": 2.770436
         },
         "driven": {
-          "ponderation": 2.69897,
+          "criteria": "proximity", "ponderation": 2.69897,
           "distance": 3.026219
         },
         "network": {
-          "ponderation": 2.477121,
+          "criteria": "proximity", "ponderation": 2.477121,
           "distance": 1.605542
         },
         "topology": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 1.565412
         },
         "road": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 2.565412
         },
         "rtree": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.282706
         },
         "store": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.5
         },
         "adopt": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.5
         },
         "gato": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.848118
         },
         "index": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 4.0
         },
         "tree": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 2.5
         },
         "r": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 2.5
         },
         "car": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 1.0
         },
         "house": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 3.0
         }
       },
     "text6_text2_united_graph_3": {
         "hierarchical": {
-          "ponderation": 2.778151,
+          "criteria": "proximity", "ponderation": 2.778151,
           "distance": 2.851844
         },
         "adopt": {
-          "ponderation": 2.69897,
+          "criteria": "proximity", "ponderation": 2.69897,
           "distance": 3.162716
         },
         "driven": {
-          "ponderation": 2.69897,
+          "criteria": "proximity", "ponderation": 2.69897,
           "distance": 3.026219
         },
         "network": {
-          "ponderation": 2.477121,
+          "criteria": "proximity", "ponderation": 2.477121,
           "distance": 2.100924
         },
         "simknn": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 2.717294
         },
         "dual": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 1.717294
         },
         "index": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 1.897009
         },
         "topology": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 1.565412
         },
         "road": {
-          "ponderation": 2.30103,
+          "criteria": "proximity", "ponderation": 2.30103,
           "distance": 2.319691
         },
         "rtree": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 1.725257
         },
         "store": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.25
         },
         "gato": {
-          "ponderation": 1.30103,
+          "criteria": "proximity", "ponderation": 1.30103,
           "distance": 2.848118
         },
         "tree": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 2.5
         },
         "r": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 2.5
         },
         "car": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 2.0
         },
         "house": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 2.0
         }
     },
     "text_1_2_3_4_united_root_graph": {
         "hierarchical": {
-          "ponderation": 4.228347,
+          "criteria": "proximity", "ponderation": 4.228347,
           "distance": 2.557692
         },
         "topology": {
-          "ponderation": 4.228347,
+          "criteria": "proximity", "ponderation": 4.228347,
           "distance": 2.711538
         },
         "gato": {
-          "ponderation": 4.040203,
+          "criteria": "proximity", "ponderation": 4.040203,
           "distance": 2.3824
         },
         "dual": {
-          "ponderation": 3.25,
+          "criteria": "proximity", "ponderation": 3.25,
           "distance": 4.0
         },
         "index": {
-          "ponderation": 3.25,
+          "criteria": "proximity", "ponderation": 3.25,
           "distance": 3.0
         },
         "driven": {
-          "ponderation": 3.25,
+          "criteria": "proximity", "ponderation": 3.25,
           "distance": 2.0
         },
         "adopt": {
-          "ponderation": 3.25,
+          "criteria": "proximity", "ponderation": 3.25,
           "distance": 1.692308
         },
         "tree": {
-          "ponderation": 3.25,
+          "criteria": "proximity", "ponderation": 3.25,
           "distance": 4.0
         },
         "road": {
-          "ponderation": 3.25,
+          "criteria": "proximity", "ponderation": 3.25,
           "distance": 1.0
         },
         "store": {
-          "ponderation": 1.875,
+          "criteria": "proximity", "ponderation": 1.875,
           "distance": 3.0
         },
         "grid": {
-          "ponderation": 1.875,
+          "criteria": "proximity", "ponderation": 1.875,
           "distance": 4.0
         },
         "galea": {
-          "ponderation": 1.375,
+          "criteria": "proximity", "ponderation": 1.375,
           "distance": 3.0
         },
         "abel": {
-          "ponderation": 1.375,
+          "criteria": "proximity", "ponderation": 1.375,
           "distance": 1.0
         },
         "echeverria": {
-          "ponderation": 1.375,
+          "criteria": "proximity", "ponderation": 1.375,
           "distance": 1.0
         },
         "child": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 1.0
         },
         "r": {
-          "ponderation": 1.0,
+          "criteria": "proximity", "ponderation": 1.0,
           "distance": 4.0
         },
         "car": {
-          "ponderation": 0.875,
+          "criteria": "proximity", "ponderation": 0.875,
           "distance": 1.0
         },
         "house": {
-          "ponderation": 0.875,
+          "criteria": "proximity", "ponderation": 0.875,
           "distance": 1.0
         },
         "rain": {
-          "ponderation": 0.813144,
+          "criteria": "proximity", "ponderation": 0.813144,
           "distance": 2.5
         },
         "patricio": {
-          "ponderation": 0.75,
+          "criteria": "proximity", "ponderation": 0.75,
           "distance": 1.0
         }
     }

@@ -11,20 +11,23 @@ class QueryTerm(BaseModel):
 
 class PydanticVisibleNeighbourTermRequest(BaseModel):
     term: str
-    ponderation: float
+    proximity_ponderation: float
+    total_ponderation: float
     criteria: str
 
 
 class PydanticNeighbourTermRequest(BaseModel):
     term: str
-    ponderation: float
+    proximity_ponderation: float
+    total_ponderation: float
     distance: float
+    criteria: str
     
 
 class PydanticSentenceRequest(BaseModel):
     position_in_doc: int
     raw_text: str
-    neighbour_terms: List[PydanticNeighbourTermRequest]
+    all_neighbour_terms: List[PydanticNeighbourTermRequest]
 
 
 class PydanticDocumentRequest(BaseModel):
@@ -33,7 +36,7 @@ class PydanticDocumentRequest(BaseModel):
     abstract: str
     preprocessed_text: str
     weight: float
-    neighbour_terms: List[PydanticNeighbourTermRequest]
+    all_neighbour_terms: List[PydanticNeighbourTermRequest]
 
 
 class PydanticRankingRequest(BaseModel):

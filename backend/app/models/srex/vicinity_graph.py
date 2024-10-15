@@ -78,19 +78,23 @@ class VicinityGraphConfig:
 
 class VicinityNode:
     
-    def __init__(self, term: str, ponderation: float = 1.0, distance: float = 1.0, criteria: str = "proximity"):
+    def __init__(self, term: str, total_ponderation: float = 0.0, proximity_ponderation: float = 0.0, 
+                 distance: float = 1.0, criteria: str = "frequency"):
         """
         Initialize a new instance of the VicinityNode class.
 
         Parameters:
         term (str): The term of the node.
-        ponderation (float, optional): The ponderation of the node. Default is 1.0.
-        distance (float, optional): The distance of the node. Default is 1.0.
+        total_ponderation (float, optional): The total ponderation of the node. Default is 0.0.
+        proximity_ponderation (float, optional): The proximity ponderation of the node. Default is 0.0.
+        distance (float, optional): The distance of the node. Default is 0.0.
+        criteria (str, optional): The criteria of the node. Default is proximity.
         """
         self.__term = term
-        self.__ponderation = ponderation
+        self.__total_ponderation = total_ponderation
+        self.__proximity_ponderation = proximity_ponderation
         self.__distance = distance
-        self.__criteria = criteria
+        self.set_criteria(criteria)
     
 
     def get_term(self) -> str:
@@ -103,24 +107,44 @@ class VicinityNode:
         return self.__term
 
 
-    def get_ponderation(self) -> float:
+    def get_total_ponderation(self) -> float:
         """
-        Returns the ponderation of the current node.
+        Returns the total ponderation of the current node.
 
         Returns:
-        float: The ponderation of the current node.
+        float: The total ponderation of the current node.
         """
-        return self.__ponderation
+        return self.__total_ponderation
 
 
-    def set_ponderation(self, ponderation: float) -> None:
+    def set_total_ponderation(self, total_ponderation: float) -> None:
         """
-        Sets the ponderation of the current node.
+        Sets the total ponderation of the current node.
 
         Parameters:
-        ponderation (float): The new ponderation value.
+        ponderation (float): The new total ponderation value.
         """
-        self.__ponderation = ponderation
+        self.__total_ponderation = total_ponderation
+    
+    
+    def get_proximity_ponderation(self) -> float:
+        """
+        Returns the proximity ponderation of the current node.
+
+        Returns:
+        float: The proximity ponderation of the current node.
+        """
+        return self.__proximity_ponderation
+
+
+    def set_proximity_ponderation(self, proximity_ponderation: float) -> None:
+        """
+        Sets the proximity ponderation of the current node.
+
+        Parameters:
+        ponderation (float): The new proximity ponderation value.
+        """
+        self.__proximity_ponderation = proximity_ponderation
 
 
     def get_distance(self) -> float:
@@ -155,6 +179,19 @@ class VicinityNode:
         str: The criteria used to determine proximity.
         """
         return self.__criteria
+    
+    
+    def set_criteria(self, criteria: str) -> None:
+        """
+        Sets the criteria used to determine the type of node calculation.
+        
+        Parameters:
+        criteria (str): The new criteria value.
+        """
+        if criteria == 'proximity' and self.__distance <= 0.0:
+            raise ValueError("Distance cannot be negative or zero when criteria is 'proximity'.")
+        
+        self.__criteria = criteria
 
 
     def __str__(self) -> str:
@@ -165,9 +202,11 @@ class VicinityNode:
         str: A string representation of the current node.
         """
         term = self.__term
-        ponderation = round(self.__ponderation, 1)
+        total_ponderation = round(self.__total_ponderation, 2)
+        proximity_ponderation = round(self.__proximity_ponderation, 2)
         distance = round(self.__distance, 1)
-        string = f"TERM: {term} ; PONDERATION: {ponderation} ; DISTANCE: {distance}"
+        criteria = self.__criteria
+        string = f"TERM: {term} ; TOTAL_PONDERATION: {total_ponderation} ; PROXIMITY_PONDERATION: {proximity_ponderation} ; DISTANCE: {distance} ; CRITERIA: {criteria}"
         return string
 
 
@@ -202,23 +241,27 @@ class VicinityGraph:
         return self.__config
     
 
-    def get_sorted_nodes_optionally_limited(self, limit: int = -1) -> list[VicinityNode]:
+    def get_all_nodes_sorted(self) -> list[VicinityNode]:
         """
-        Return the list of nodes sorted by ponderation in descending order, and limit 
-        the number of nodes in the list obtained.
-
-        Parameters:
-        limit (int): The maximum number of nodes to return. If not provided, all nodes are returned.
+        Return the list of all nodes (all criteria types) sorted by proximity ponderation in descending order.
 
         Returns:
-        list[VicinityNode]: A list of VicinityNode objects sorted by ponderation in descending order. 
-                            The length of the list is limited by the provided limit.
+        list[VicinityNode]: A list of VicinityNode objects sorted by proximity ponderation in descending order.
         """
-        # Sort the nodes in descending order
-        sorted_nodes = sorted(self.__nodes, key=lambda node: node.get_ponderation(), reverse=True)
-        # Limit the number of nodes, if specified
-        if limit > 0: sorted_nodes = sorted_nodes[:limit]
+        sorted_nodes = sorted(self.__nodes, key=lambda node: node.get_proximity_ponderation(), reverse=True)
         return sorted_nodes
+    
+    
+    def get_proximity_nodes_sorted(self) -> list[VicinityNode]:
+        """
+        Return the list of proximity nodes sorted by proximity ponderation in descending order.
+
+        Returns:
+        list[VicinityNode]: A list of proximity VicinityNode objects sorted by proximity ponderation in descending order.
+        """
+        sorted_proximity_nodes = [node for node in self.__nodes if node.get_criteria() == "proximity"]
+        sorted_proximity_nodes = sorted(sorted_proximity_nodes, key=lambda node: node.get_proximity_ponderation(), reverse=True)
+        return sorted_proximity_nodes
     
 
     def get_node_by_term(self, term: str) -> VicinityNode | None:
@@ -239,14 +282,25 @@ class VicinityGraph:
         return None
     
 
-    def get_terms_from_nodes(self) -> list[str]:
+    def get_terms_str_from_all_nodes(self) -> list[str]:
         """
-        Retrieves a list of terms from the nodes of the current graph.
+        Retrieves a list of terms from all the nodes of the current graph.
 
         Returns:
-        list[str]: A list of terms from the nodes of the current graph.
+        list[str]: A list of terms from all the nodes of the current graph.
         """
-        node_terms = [node.get_term() for node in self.get_sorted_nodes_optionally_limited()]
+        node_terms = [node.get_term() for node in self.get_all_nodes_sorted()]
+        return node_terms
+    
+    
+    def get_terms_from_proximity_nodes(self) -> list[str]:
+        """
+        Retrieves a list of terms from the proximity nodes of the current graph.
+
+        Returns:
+        list[str]: A list of terms from the proximity nodes of the current graph.
+        """
+        node_terms = [node.get_term() for node in self.get_proximity_nodes_sorted()]
         return node_terms
 
 
@@ -287,12 +341,12 @@ class VicinityGraph:
         string (str): A string representation of the VicinityGraph object.
         """
         string = "SUBQUERY: " + self.subquery
-        for node in self.get_sorted_nodes_optionally_limited():
+        for node in self.get_all_nodes_sorted():
             string += "\n" + str(node)
         return string
     
 
-    def get_graph_as_dict(self) -> dict[str, dict[str, float]]:
+    def get_graph_as_dict(self) -> dict[str, dict[str, float | str]]:
         """
         Returns the graph as a dictionary.
 
@@ -304,8 +358,10 @@ class VicinityGraph:
         are the terms, and the values are dictionaries containing the 'ponderation' 
         and 'distance' of each term.
         """
-        graph_dict = {n.get_term(): {'ponderation': n.get_ponderation(), 
-                                     'distance': n.get_distance()} for n in self.get_sorted_nodes_optionally_limited()}
+        graph_dict = {n.get_term(): {'total_ponderation': n.get_total_ponderation(),
+                                     'proximity_ponderation': n.get_proximity_ponderation(),
+                                     'distance': n.get_distance(),
+                                     'criteria': n.get_criteria()} for n in self.get_all_nodes_sorted()}
         return graph_dict
 
     
@@ -319,7 +375,7 @@ class VicinityGraph:
         graph_copy (VicinityGraph): A copy of the graph with the specified conditions applied.
         """
         graph_copy = VicinityGraph(self.subquery, *self.__config.get_config_params())
-        for node in self.__get_sorted_nodes_to_visualize():
+        for node in self.__get_limited_sorted_nodes_to_visualize():
             graph_copy.add_node(node)
         return graph_copy
     
@@ -351,9 +407,9 @@ class VicinityGraph:
                           style='filled', fillcolor='azure3', fontcolor='black')
         
         viewable_graph = self.get_viewable_graph_copy()
-        for index, node in enumerate(viewable_graph.get_sorted_nodes_optionally_limited()):
+        for index, node in enumerate(viewable_graph.get_proximity_nodes_sorted()):
             node_distance = round(node.get_distance(), 1)
-            p_with = str(node.get_ponderation())
+            p_with = str(node.get_proximity_ponderation())
             visual_graph.node("'" +str(index+1)+"'", node.get_term(), fixedsize='true', width=node_size, 
                               penwidth=p_with, color=node_color)
             visual_graph.edge('0', "'" +str(index+1)+"'", label=str(node_distance), len=str(node_distance))
@@ -370,7 +426,7 @@ class VicinityGraph:
         """
         Calculate the euclidean distance with another graph. To calculate it, it is proposed to compare 
         the graph using a multidimensional vector space, where the properties of each term define a 
-        dimension of the space, defining the neighboring terms of the current graph as the base vector.
+        dimension of the space, defining the neighbour terms of the current graph as the base vector.
 
         Parameters
         ----------
@@ -404,7 +460,7 @@ class VicinityGraph:
                 external_vector.append(external_value)
         
         # Calculate the base vector with terms from the current graph
-        vector_base = set(self.get_terms_from_nodes())
+        vector_base = set(self.get_terms_str_from_all_nodes())
         
         # Get the dictionaries of normalized nodes from each graph 
         normalized_self_nodes = self.get_normalized_nodes_dict(new_min_normalized_value, new_max_normalized_value)
@@ -458,7 +514,6 @@ class VicinityGraph:
         normalized_self_nodes = self.get_graph_as_dict()
 
         # Get the distance and ponderation vectors from the graph
-        ponderation_vector = [value['ponderation'] for value in normalized_self_nodes.values()]
         distance_vector = [value['distance'] for value in normalized_self_nodes.values()]
 
         # Get the normalized version of the distance vector, in a range of [0.5, 1.0]
@@ -467,7 +522,6 @@ class VicinityGraph:
 
         # Assign the normalized values ​​to the dictionary
         for index, subdict in enumerate(normalized_self_nodes.values()):
-            subdict['ponderation'] = ponderation_vector[index]
             subdict['distance'] = normalized_distance_vector[index]
 
         return normalized_self_nodes
@@ -498,13 +552,15 @@ class VicinityGraph:
         """
         united_graph = self.__get_calculation_of_intersected_terms(external_graph, sum_ponderations)
         
-        node_terms_from_copy_graph = united_graph.get_terms_from_nodes()
-        node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
+        node_terms_from_copy_graph = united_graph.get_terms_str_from_all_nodes()
+        node_terms_from_ext_graph = external_graph.get_terms_str_from_all_nodes()
 
-        #if the external graph has exclusive terms, then it needs to be added to the united graph
+        #if the external graph has exclusive terms, then these need to be added to the united graph
         for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
             node_from_ext_graph = external_graph.get_node_by_term(node_term)
-            united_graph.add_node(node_from_ext_graph)
+            if node_from_ext_graph:    # Double check
+                copy_node_from_ext_graph = copy.deepcopy(node_from_ext_graph)
+                united_graph.add_node(copy_node_from_ext_graph)
 
         return united_graph
     
@@ -535,8 +591,8 @@ class VicinityGraph:
         #if the graph copy term is already in the external graph
         intersected_graph = self.__get_calculation_of_intersected_terms(external_graph, sum_ponderations)
 
-        node_terms_from_copy_graph = intersected_graph.get_terms_from_nodes()
-        node_terms_from_ext_graph = external_graph.get_terms_from_nodes()
+        node_terms_from_copy_graph = intersected_graph.get_terms_str_from_all_nodes()
+        node_terms_from_ext_graph = external_graph.get_terms_str_from_all_nodes()
         #if the graph copy has exclusive terms, then it needs to be deleted
         for node_term in set(node_terms_from_copy_graph) - set(node_terms_from_ext_graph):
             intersected_graph.delete_node_by_term(node_term)
@@ -571,26 +627,43 @@ class VicinityGraph:
         for node_term in copy_graph.__get_terms_from_intersection_between_graphs(external_graph):
             node_from_copy_graph = copy_graph.get_node_by_term(node_term)
             node_from_ext_graph = external_graph.get_node_by_term(node_term)
+            
+            if not node_from_copy_graph or not node_from_ext_graph:   # Double check that nodes are not None values
+                continue
 
-            #then calculate the average distances between the two nodes and the sum of the ponderations
+            # initialize variables
             copy_distance = node_from_copy_graph.get_distance()
-            copy_pond = node_from_copy_graph.get_ponderation()
+            copy_total_pond = node_from_copy_graph.get_total_ponderation()
+            copy_prox_pond = node_from_copy_graph.get_proximity_ponderation()
             ext_distance = node_from_ext_graph.get_distance()
-            ext_pond = node_from_ext_graph.get_ponderation()
+            ext_total_pond = node_from_ext_graph.get_total_ponderation()
+            ext_prox_pond = node_from_ext_graph.get_proximity_ponderation()
 
+            # sum (or get the max value from) the total ponderations and proximity ponderations
             if sum_ponderations:
-                sum_of_ponds = copy_pond + ext_pond
+                sum_of_prox_ponds = copy_prox_pond + ext_prox_pond
+                sum_of_total_ponds = copy_total_pond + ext_total_pond
             else:
-                sum_of_ponds = max(copy_pond, ext_pond)
-            average_distance = ((copy_distance * copy_pond) + (ext_distance * ext_pond)) / (copy_pond + ext_pond)
+                sum_of_prox_ponds = max(copy_prox_pond, ext_prox_pond)
+                sum_of_total_ponds = max(copy_total_pond, ext_total_pond)
+                
+            # calculate the average distance between the two nodes
+            average_distance = self.__calculate_average_distance(
+                copy_distance, ext_distance, copy_prox_pond, ext_prox_pond)
 
             # round ponderation and distance to six decimal places
-            sum_of_ponds = round(sum_of_ponds, 6)
+            sum_of_prox_ponds = round(sum_of_prox_ponds, 6)
+            sum_of_total_ponds = round(sum_of_total_ponds, 6)
             average_distance = round(average_distance, 6)
 
             #set new distance and ponderation to each intersected term
             node_from_copy_graph.set_distance(average_distance)
-            node_from_copy_graph.set_ponderation(sum_of_ponds)
+            node_from_copy_graph.set_total_ponderation(sum_of_total_ponds)
+            node_from_copy_graph.set_proximity_ponderation(sum_of_prox_ponds)
+            
+            # if the distance is obtained from the external node, then set the node criteria as proximity
+            if copy_distance <= 0 and ext_distance > 0:
+                node_from_copy_graph.set_criteria('proximity')
         
         return copy_graph
     
@@ -608,13 +681,51 @@ class VicinityGraph:
         Returns:
         set[str]: A set containing the terms that exist in both the current graph and the external graph.
         """
-        base_terms = set(self.get_terms_from_nodes()) & set(graph_b.get_terms_from_nodes())
+        base_terms = set(self.get_terms_str_from_all_nodes()) & set(graph_b.get_terms_str_from_all_nodes())
         return base_terms
     
-
-    def __get_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
+    
+    def __calculate_average_distance(self, 
+        copy_distance: float, 
+        ext_distance: float, 
+        copy_prox_pond: float, 
+        ext_prox_pond: float
+        ) -> float:
         """
-        Return the list of nodes sorted by ponderation in descending order, and limit 
+        Calculates the average distance from the intersection between two nodes.
+        
+        Parameters:
+        copy_distance (float): The distance of the node from the current graph.
+        ext_distance (float): The distance of the node from the external graph.
+        copy_prox_pond (float): The proximity ponderation of the node from the current graph.
+        ext_prox_pond (float): The proximity ponderation of the node from the external graph.
+        node_from_copy_graph (VicinityNode): The node from the current graph.
+        
+        Returns:
+        float: The average distance of the intersection between the two nodes. If both nodes are of frequency type, 
+        it returns -1.0. If the copy node is of proximity type and the external node is of frequency type, it returns 
+        the copy node's distance. If the copy node is of frequency type and the external node is of proximity type, 
+        it returns the external node's distance and sets the criteria of the copy node to 'proximity'. If both nodes 
+        are of proximity type, it calculates the average distance using the proximity ponderations.
+        """
+        # calculate the average distance
+        if copy_distance <= 0 or ext_distance <= 0:
+            if copy_distance <= 0 and ext_distance <= 0:   # if both nodes are frequency type
+                average_distance = -1.0
+            elif copy_distance > 0:  # if the copy node is proximity type and the external node is frequency type
+                average_distance = copy_distance
+            else:  # if the copy node is frequency type and the external node is proximity type
+                average_distance = ext_distance
+        else:   # if both nodes are proximity type
+            average_distance = ((copy_distance * copy_prox_pond) + (ext_distance * ext_prox_pond)) / (copy_prox_pond + ext_prox_pond)
+
+        return average_distance
+
+    
+
+    def __get_limited_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
+        """
+        Return the list of proximity nodes sorted by ponderation in descending order, and limit 
         its length by the number of graph terms, from the current graph configuration.
         It also ignores the vicinity nodes that include the query terms.
 
@@ -625,7 +736,7 @@ class VicinityGraph:
         list[VicinityNode]: A list of VicinityNode objects, sorted by ponderation in descending order, 
         and limited by the number of graph terms, excluding nodes that contain the query terms.
         """
-        sorted_nodes_to_visualize = self.get_sorted_nodes_optionally_limited()
+        sorted_nodes_to_visualize = self.get_proximity_nodes_sorted()
         subquery = self.subquery
 
         # Removes characters '(', ')' and spaces in subquery variable

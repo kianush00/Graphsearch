@@ -103,9 +103,9 @@ class TestSREX(unittest.TestCase):
 
         # Define expected result
         expected_result = {
-            'x': {'ponderation': 0.5, 'distance': 0.5833333333333334}, 
-            'y': {'ponderation': 0.75, 'distance': 0.75}, 
-            'z': {'ponderation': 1.0, 'distance': 0.6833333333333333}
+            'x': {'criteria': 'proximity', 'ponderation': 0.5, 'distance': 0.5833333333333334}, 
+            'y': {'criteria': 'proximity', 'ponderation': 0.75, 'distance': 0.75}, 
+            'z': {'criteria': 'proximity', 'ponderation': 1.0, 'distance': 0.6833333333333333}
         }
 
         # Assert the dict match the expected output
@@ -390,7 +390,7 @@ class TestSREX(unittest.TestCase):
         self.assertEqual(result, expected_result)
 
 
-    def test_get_terms_frequency_dict(self):
+    def test_get_terms_proximity_frequency_dict(self):
         # Load stopwords from JSON file
         stop_words = DataUtils.load_stopwords()
 
@@ -412,9 +412,9 @@ class TestSREX(unittest.TestCase):
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
         query_terms = sentence.get_query_tree().get_query_terms_str_list_with_underscores()
 
-        result1 = sentence.get_terms_frequency_dict(query_terms[0])
-        result2 = sentence.get_terms_frequency_dict(query_terms[1])
-        result3 = sentence.get_terms_frequency_dict(query_terms[2])
+        result1 = sentence.get_terms_proximity_frequency_dict(query_terms[0])
+        result2 = sentence.get_terms_proximity_frequency_dict(query_terms[1])
+        result3 = sentence.get_terms_proximity_frequency_dict(query_terms[2])
 
         # Assert the result matches the expected output
         self.assertEqual(result1, expected_result1)
@@ -492,7 +492,7 @@ class TestSREX(unittest.TestCase):
         # Generate nodes in all graphs of the query expression tree
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
         sentence.generate_nodes_in_all_leaf_graphs()
-        sentence.get_query_tree().operate_graphs_from_leaves()
+        sentence.get_query_tree().operate_non_leaf_graphs_from_leaves()
 
         # Get vicinity graphs from the subqueries, as dicts
         subquery_list = [

@@ -1,7 +1,6 @@
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict, Counter
 import copy
-import math
 import re
 
 from models.ieee_xplore.xploreapi import XPLORE
@@ -155,14 +154,13 @@ class Sentence(QueryTreeHandler):
         return self.__vicinity_matrix
 
 
-    def do_text_transformations_if_any_query_term(self,
+    def do_text_transformations(self,
             stop_words: tuple[str] = (), 
             lema: bool = True, 
             stem: bool = False
             ) -> None:
         """
-        Apply some text transformations to the sentence and calculate term positions to the 
-        sentence. Also replaces underscores with spaces from the query terms.
+        Apply some text transformations to the sentence. Also replaces spaces in query terms with underscores.
 
         Parameters
         ----------
@@ -177,14 +175,10 @@ class Sentence(QueryTreeHandler):
         self.get_query_tree().remove_graphs_for_each_node()
         
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words, lema, stem)
-        query_terms_with_underscores = self.get_query_tree().get_query_terms_str_list_with_underscores()
-        query_terms_with_spaces = [term.replace('_', ' ') for term in query_terms_with_underscores]
-
-        #If there is any query term in the transformed sentence string
-        if any(query_term in transformed_sentence_str for query_term in query_terms_with_spaces):  
-            transformed_sentence_str = self.__get_transformed_sentence_str_with_underscores_in_query_terms(query_terms_with_underscores, 
-                                                                                                    transformed_sentence_str)
-            self.__preprocessed_text = transformed_sentence_str
+        query_terms_with_underscores = self.get_query_tree().get_query_terms_str_list_with_underscores() 
+        transformed_sentence_str = self.__get_transformed_sentence_str_with_underscores_in_query_terms(query_terms_with_underscores, 
+                                                                                                transformed_sentence_str)
+        self.__preprocessed_text = transformed_sentence_str
     
 
     def calculate_vicinity_matrix(self) -> None:
@@ -232,14 +226,74 @@ class Sentence(QueryTreeHandler):
     def generate_nodes_in_tree_graphs(self) -> None:
         """
         Generate nodes to all the graphs associated with the sentence tree, based 
-        on their isolated query terms as leaves from the query tree.
+        on their isolated query terms as leaves from the query tree. Also, generate
+        frequency criteria VicinityNodes for the root BinaryTreeNode.
         """
         #First, generate nodes to the graphs associated with the leaves from the query tree
         self.generate_nodes_in_all_leaf_graphs()
         
         #Then, generate nodes to the graphs associated with the rest of the nodes in the tree
-        self.get_query_tree().operate_graphs_from_leaves()
+        self.get_query_tree().operate_non_leaf_graphs_from_leaves()
+        
+        #Finally, generate frequency criteria VicinityNodes for the root BinaryTreeNode.
+        self.generate_frequency_criteria_nodes_for_root()
     
+    
+    def generate_frequency_criteria_nodes_for_root(self) -> None:
+        """
+        Generate frequency criteria VicinityNodes for the root BinaryTreeNode.\n
+        This function creates a total frequency dictionary of all the sentence words, to then multiply
+        its frequencies by the document weight and finally create frequency criteria VicinityNodes 
+        for the root BinaryTreeNode and adds them to the graph.
+        """
+        root_graph = self.get_query_tree().get_graph()
+        if not root_graph:
+            return
+        
+        terms_total_freq_dict = self.get_terms_total_frequency_dict()
+        graph_terms_list = root_graph.get_terms_str_from_all_nodes()
+        query_terms_list = self.get_query_tree().get_query_terms_str_list_with_underscores()
+        
+        for term, frequency in terms_total_freq_dict.items():
+            if term in query_terms_list:    # Validate that the term is not a query term
+                continue
+            
+            if term in graph_terms_list:    # If the term is in the graph, modify its total ponderation
+                graph_node = root_graph.get_node_by_term(term)
+                if graph_node:  # Double check
+                    graph_node.set_total_ponderation(frequency * self.__weight)
+            else:   # If the term isn't in the graph, add a new frequency node
+                freq_criteria_node = VicinityNode(
+                    term=term,
+                    total_ponderation = frequency * self.__weight,
+                    proximity_ponderation=0.0,
+                    distance=-1.0,
+                    criteria="frequency"
+                )
+                root_graph.add_node(freq_criteria_node)
+
+
+    def get_terms_total_frequency_dict(self) -> dict[str, int]:
+        """
+        This method calculates the total frequency of terms from the preprocessed sentence
+
+        Returns
+        -------
+        terms_freq_dict : dict[str, int]
+            A dictionary containing the frequency of terms.
+        """
+        # Validate if the preprocessed sentence is not empty
+        if not self.__preprocessed_text:
+            return dict()
+        
+        # Normalize the text by converting it to lowercase and removing punctuation
+        words = re.findall(r'\b\w+\b', self.__preprocessed_text.lower())
+        
+        # Count the frequency of each word using Counter
+        frequencies = Counter(words)
+        
+        return dict(frequencies)
+
 
     def generate_nodes_in_all_leaf_graphs(self):
         """
@@ -322,12 +376,12 @@ class Sentence(QueryTreeHandler):
             A leaf node associated with the sentence tree
         """
         query_term = leaf_node.value  
-        terms_freq_dict = self.get_terms_frequency_dict(query_term)
+        terms_prox_freq_dict = self.get_terms_proximity_frequency_dict(query_term)
 
-        # Iterate over each term in the frequency dictionary
-        for neighbor_term in terms_freq_dict.keys():
+        # Iterate over each term in the proximity frequency dictionary
+        for neighbour_term in terms_prox_freq_dict.keys():
             # Retrieve the list of frequencies by distance for the term
-            list_of_freq_by_distance = self.__vicinity_matrix.get(neighbor_term).get(query_term)
+            list_of_freq_by_distance = self.__vicinity_matrix.get(neighbour_term).get(query_term)
             distance_calculation_list = []
 
             # Construct a list of distances multiplied by its frequencies
@@ -342,39 +396,40 @@ class Sentence(QueryTreeHandler):
                 _distance = np.mean(distance_calculation_list)
             
             # Calculate the ponderation of the term, by the formula:  p = (1 + log(tf)) * w
-            term_frequency: int = terms_freq_dict.get(neighbor_term)
-            _ponderation = MathUtils.calculate_term_ponderation(term_frequency, self.__weight)
+            term_prox_freq: int = terms_prox_freq_dict.get(neighbour_term)
+            _prox_ponderation = MathUtils.calculate_term_ponderation(term_prox_freq, self.__weight)
 
             # Round the values to 6 decimal places for better readability
             _distance = round(_distance, 6)
-            _ponderation = round(_ponderation, 6)
+            _prox_ponderation = round(_prox_ponderation, 6)
             
             # Initialize the new vicinity node and add it to the leaf node graph
-            new_node = VicinityNode(term=neighbor_term, ponderation=_ponderation, distance=_distance)
+            new_node = VicinityNode(term=neighbour_term, proximity_ponderation=_prox_ponderation, 
+                                    distance=_distance, total_ponderation=0.0, criteria="proximity")
             leaf_node.graph.add_node(new_node)
 
     
 
-    def get_terms_frequency_dict(self, 
+    def get_terms_proximity_frequency_dict(self, 
             query_term: str
             ) -> dict[str, int]:
         """
-        This method calculates the frequency of terms from the vicinity matrix 
+        This method calculates the proximity frequency of terms from the vicinity matrix 
         of the sentence, by a specified query term
 
         Parameters
         ----------
         query_term : str
-            The query term of the graph
+            A query term of the graph
 
         Returns
         -------
-        terms_freq_dict : dict[str, int]
-            A dictionary containing the frequency of terms. Each dictionary has keys corresponding 
+        terms_prox_freq_dict : dict[str, int]
+            A dictionary containing the proximity frequency of terms. Each dictionary has keys corresponding 
             to terms, and values represent the frequency of the term within the sentence.
 
         """
-        terms_freq_dict = {}
+        terms_prox_freq_dict = {}
 
         # Iterate over each term and its frequencies in the document
         for neighbor_term, distance_freq_by_query_term in self.__vicinity_matrix.items():
@@ -383,9 +438,9 @@ class Sentence(QueryTreeHandler):
             if (query_term in distance_freq_by_query_term):
                 sum_of_freqs_in_query_term = sum(distance_freq_by_query_term[query_term])
                 if sum_of_freqs_in_query_term > 0:
-                    terms_freq_dict[neighbor_term] = sum_of_freqs_in_query_term
+                    terms_prox_freq_dict[neighbor_term] = sum_of_freqs_in_query_term
             
-        return terms_freq_dict
+        return terms_prox_freq_dict
     
 
     def __get_transformed_sentence_str_with_underscores_in_query_terms(self,
@@ -436,10 +491,9 @@ class Document(QueryTreeHandler):
         ranking_position (int, optional): The position of the document in the ranking. Default is 1.
         """
         super().__init__(query_tree=query)
-        self.__ranking = ranking
         self.__title = title
         self.__abstract = abstract
-        self.__preprocessed_text = self.__generate_self_preprocessed_text(title, abstract)
+        self.__preprocessed_text: str = ""
         self.__doc_id = doc_id
         self.__weight = weight
         self.__ranking_position = ranking_position
@@ -570,14 +624,14 @@ class Document(QueryTreeHandler):
         return list_of_query_trees
     
 
-    def do_text_transformations_by_sentence(self,
+    def do_document_and_sentences_text_transformations(self,
             stop_words: tuple[str] = (), 
             lema: bool = True,
             stem: bool = False
             ) -> None:
         """
-        Apply some text transformations to each sentence of the document 
-        and calculate term positions to the sentence.
+        Apply some text transformations to each sentence of the document and get the 
+        document preprocessed text from the sentences preprocessed text.
 
         Parameters
         ----------
@@ -591,8 +645,18 @@ class Document(QueryTreeHandler):
         # Document query graphs is re-initialized
         self.get_query_tree().remove_graphs_for_each_node()
         
+        # Do text transformations to each sentence
         for sentence in self.__sentences:
-            sentence.do_text_transformations_if_any_query_term(stop_words, lema, stem)
+            sentence.do_text_transformations(stop_words, lema, stem)
+            
+        # Get the document preprocessed text from the sentences preprocessed text
+        preprocessed_text: str = ""
+        for index, sentence in enumerate(self.__sentences):
+            preprocessed_text += sentence.get_preprocessed_text()
+            if index < len(self.__sentences) - 1:
+                preprocessed_text += " "
+        
+        self.__preprocessed_text = preprocessed_text
 
 
     def generate_graph_nodes_of_doc_and_sentences(self) -> None:
@@ -667,28 +731,7 @@ class Document(QueryTreeHandler):
         query_trees_list = self.get_list_of_query_trees_from_sentences()
         union_of_trees = self.get_query_tree().get_union_of_trees(query_trees_list)
         return union_of_trees
-    
-    
-    def __generate_self_preprocessed_text(self, title: str, abstract: str) -> str:
-        """
-        Generates a preprocessed text by concatenating the title and abstract, and then applying a series of text 
-        transformations defined by the ranking configuration.
 
-        This method combines the provided `title` and `abstract` into a single string, and applies a set of text 
-        transformations based on the configuration retrieved from the `Ranking` object associated with the instance. 
-
-        Args:
-            title (str): The title of the document to be preprocessed.
-            abstract (str): The abstract of the document to be preprocessed.
-
-        Returns:
-            str: The transformed text after applying the necessary preprocessing steps, which may include 
-            operations such as tokenization, stemming, lemmatization, stopword removal, etc., depending on the 
-            transformation configuration.
-        """
-        title_and_abstract = title + " " + abstract
-        transformations_params_tuple = self.__ranking.get_text_transformations_config().get_transformations_params()
-        return TextUtils.get_transformed_text(title_and_abstract, *transformations_params_tuple)
 
 
 class TextTransformationsConfig:
@@ -1034,7 +1077,7 @@ class Ranking(QueryTreeHandler):
         """
         Transforms the list of article dictionaries into a list of Document type objects, which have a weight
         associated with their position in the received list. Objects will be appended to the ranking.
-        In addition, pre-processing of the text of the documents is carried out.
+        In addition, text pre-processing of documents is carried out.
         If weighted <> none : the document will be weighted depending on its position in the ranking.  
 
         Parameters
@@ -1049,7 +1092,7 @@ class Ranking(QueryTreeHandler):
         for index, article in enumerate(articles_dicts):
             try:
                 new_doc = self.__get_new_document_by_article(article, index, results_size=len(articles_dicts))
-                new_doc.do_text_transformations_by_sentence(*self.__text_transformations_config.get_transformations_params())
+                new_doc.do_document_and_sentences_text_transformations(*self.__text_transformations_config.get_transformations_params())
                 self.__documents.append(new_doc)
             except Exception as e:  # If a document has errors, ignore it and continue to the next document
                 print(f"An error occurred while processing article at index {index}: {e}")

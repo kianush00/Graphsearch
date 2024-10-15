@@ -8,14 +8,16 @@ class RerankNewPositions(BaseModel):
 
 class PydanticNeighbourTerm(BaseModel):
     term: str
-    ponderation: float
+    proximity_ponderation: float
+    total_ponderation: float
     distance: float
+    criteria: str
 
     
 class PydanticSentence(BaseModel):
     position_in_doc: int
     raw_text: str
-    neighbour_terms: List[PydanticNeighbourTerm]
+    all_neighbour_terms: List[PydanticNeighbourTerm]
     
 
 class PydanticDocument(BaseModel):
@@ -24,7 +26,7 @@ class PydanticDocument(BaseModel):
     abstract: str
     preprocessed_text: str
     weight: float
-    neighbour_terms: List[PydanticNeighbourTerm]
+    all_neighbour_terms: List[PydanticNeighbourTerm]
     sentences: List[PydanticSentence]
 
 

@@ -429,11 +429,11 @@ class BinaryExpressionTree:
         return copy_tree
     
 
-    def operate_graphs_from_leaves(self) -> None:
+    def operate_non_leaf_graphs_from_leaves(self) -> None:
         """
-        Operate the graphs associated with each leaf node in the binary expression tree.
+        Operate the graphs associated with each non-leaf node in the binary expression tree.
 
-        This function iterates through the leaf nodes of the binary expression tree,
+        This function iterates through the non-leaf nodes of the binary expression tree,
         retrieves the associated graph for each leaf node, and performs a specific operation
         on the graph (in this case, it is assumed that the operation is defined in the
         `do_graph_operation_from_subtrees` method of the `BinaryTreeNode` class).
@@ -442,7 +442,7 @@ class BinaryExpressionTree:
         -------
         None
             The function does not return any value. It modifies the graphs associated with 
-            the leaf nodes in-place.
+            the non-leaf nodes in-place.
         """
         self.root.do_graph_operation_from_subtrees()
     
@@ -688,7 +688,7 @@ class BinaryExpressionTree:
         root_node: BinaryTreeNode
             The root node of the constructed binary expression tree.
         """
-        stack = []
+        stack: list[BinaryTreeNode] = []
         for token in postfix_tokens:
             if token in ['AND', 'OR']:
                 # If the token is an operator, create a node and link the subtrees

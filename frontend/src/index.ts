@@ -707,9 +707,10 @@ interface ViewManager {
 
 interface NTermObject {
     term: string;
-    ponderation: number;
+    proximity_ponderation: number;
+    total_ponderation: number;
+    criteria: string;
     distance?: number;
-    criteria?: string;
 }
 
 
@@ -719,7 +720,9 @@ class NeighbourTerm extends Term implements ViewManager {
     private hops: number
     private nodePosition: Position = { x: 0, y: 0 }
     private edge: Edge | undefined
-    private readonly ponderation: number
+    private readonly proximityPonderation: number
+    private readonly totalPonderation: number
+    private criteria: string
     private readonly hopLimit: number
 
     /**
@@ -732,10 +735,13 @@ class NeighbourTerm extends Term implements ViewManager {
      * @param ponderation - The ponderation of this neighbour term.
      * @param hopLimit - The maximum number of hops allowed for the neighbour term.
      */
-    constructor(queryTerm: QueryTerm, value: string, hops: number, ponderation: number, hopLimit: number) {
+    constructor(queryTerm: QueryTerm, value: string, hops: number, proximityPonderation: number, 
+        totalPonderation: number, criteria: string, hopLimit: number) {
         super(value)
         this.queryTerm = queryTerm
-        this.ponderation = ponderation
+        this.proximityPonderation = proximityPonderation
+        this.totalPonderation = totalPonderation
+        this.criteria = criteria
         this.hops = this.queryTerm.getIsUserQuery() ? 1.0 : hops
         this.hopLimit = hopLimit
         this.setLabel(value)
@@ -747,6 +753,10 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     public displayViews(): void {
         const isUserQuery = this.queryTerm.getIsUserQuery()
+        // If the term is from a visible sentence, then the sentence graph doesn't display non proximity neighbour terms
+        if ((!isUserQuery) && (this.criteria !== "proximity")) return
+
+        // Build the outer node and its edge, and display them
         this.node = new OuterNode(TextUtils.getRandomString(24), isUserQuery)
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
@@ -769,19 +779,28 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.hops
     }
 
-    public getPonderation(): number {
-        return this.ponderation
+    public setHops(hops: number): void {
+        this.hops = hops
+        if (this.queryTerm.getIsUserQuery()) {
+            this.updateUserCriteria(hops)
+        }
+    }
+
+    public getProximityPonderation(): number {
+        return this.proximityPonderation
+    }
+
+    public getTotalPonderation(): number {
+        return this.totalPonderation
+    }
+
+    public getCriteria(): string {
+        return this.criteria
     }
 
     public getHopLimit(): number {
         return this.hopLimit
     }
-
-    public getUserCriteria(): string {
-        if (this.hops < 1.7) return "proximity";
-        if (this.hops < 3.2) return "frequency";
-        return "exclusion";
-    } 
 
     /**
      * Converts the NeighbourTerm instance into an object containing term, ponderation, and distance.
@@ -794,21 +813,18 @@ class NeighbourTerm extends Term implements ViewManager {
     public toObject(): NTermObject {
         const baseData = {
             term: this.value,
-            ponderation: this.ponderation
+            proximity_ponderation: this.proximityPonderation,
+            total_ponderation: this.totalPonderation,
+            criteria: this.criteria
         };
 
-        // Add term, ponderation and criteria properties if it's a user neighbour term
-        if (this.queryTerm.getIsUserQuery()) {
+        if (this.queryTerm.getIsUserQuery()) {  // If it's a user neighbour term
+            return baseData
+        } else {    // If it's not a user neighbour term
             return {
                 ...baseData,
-                criteria: this.getUserCriteria()
+                distance: this.hops
             }
-        }
-
-        // Add term, ponderation and distance properties for user queries if it's not a user neighbour term
-        return {
-            ...baseData,
-            distance: this.hops
         }
     }
 
@@ -829,7 +845,8 @@ class NeighbourTerm extends Term implements ViewManager {
         const nodeDistance = this.edge?.getDistance() ?? 0
         this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
         const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
-        this.hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit, this.queryTerm.getIsUserQuery())
+        const hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit, this.queryTerm.getIsUserQuery())
+        this.setHops(hops)
         this.updateNodePosition(distance)
     }
 
@@ -895,6 +912,30 @@ class NeighbourTerm extends Term implements ViewManager {
         this.node?.setPosition(this.nodePosition)
         this.edge?.setDistance(distance)
     }
+
+    /**
+    * Updates the criteria of the neighbour term based on the number of hops.
+    *
+    * @param hops - The number of hops from the central node to the neighbour term.
+    *
+    * @returns {void} - This function does not return any value.
+    *
+    * @remarks
+    * This function checks the number of hops and updates the criteria of the neighbour term accordingly.
+    * If the number of hops is less than 1.7, the criteria is set to "proximity".
+    * If the number of hops is between 1.7 and 3.2 (exclusive), the criteria is set to "frequency".
+    * If the number of hops is greater than or equal to 3.2, the criteria is set to "exclusion".
+    */
+    private updateUserCriteria(hops: number): void {
+        if (hops < 1.7) {
+            this.criteria = "proximity";
+        } else if (hops < 3.2) {
+            this.criteria = "frequency";
+        } else {
+            this.criteria = "exclusion";
+        }
+    }
+
 }
 
 
@@ -1030,8 +1071,8 @@ class TextElement {
     private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[], hopLimit: number): void {
         const neighbourTerms = []
         for (const termObject of responseNeighbourTerms) {
-            let neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, 
-                termObject.distance, termObject.ponderation, hopLimit)
+            let neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, termObject.distance, 
+                termObject.proximity_ponderation, termObject.total_ponderation, termObject.criteria, hopLimit)
             neighbourTerms.push(neighbourTerm)
         }
         this.queryTerm.setNeighbourTerms(neighbourTerms)
@@ -1043,7 +1084,7 @@ class TextElement {
 interface SentenceObject {
     position_in_doc: number;
     raw_text: string;
-    neighbour_terms: NTermObject[];
+    all_neighbour_terms: NTermObject[];
 }
 
 class Sentence extends TextElement {
@@ -1079,7 +1120,7 @@ class Sentence extends TextElement {
         return {
             position_in_doc: this.positionInDoc,
             raw_text: this.rawText,
-            neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
+            all_neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
         }
     }
 }
@@ -1091,7 +1132,7 @@ interface DocumentObject {
     abstract: string;
     preprocessed_text: string;
     weight: number;
-    neighbour_terms: NTermObject[];
+    all_neighbour_terms: NTermObject[];
 }
 
 class Document extends TextElement {
@@ -1153,7 +1194,7 @@ class Document extends TextElement {
             abstract: this.abstract,
             preprocessed_text: this.preprocessed_text,
             weight: this.weight,
-            neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
+            all_neighbour_terms: this.queryTerm.getNeighbourTermsAsObjects()
         }
     }
 
@@ -1171,7 +1212,7 @@ class Document extends TextElement {
     private initializeSentencesFromResponse(responseSentences: any[], hopLimit: number): Sentence[] {
         const sentences = []
         for (const sentenceObject of responseSentences) {
-            let sentence = new Sentence(this.queryTerm.getValue(), sentenceObject.neighbour_terms, 
+            let sentence = new Sentence(this.queryTerm.getValue(), sentenceObject.all_neighbour_terms, 
                     hopLimit, sentenceObject.position_in_doc, sentenceObject.raw_text)
             sentences.push(sentence)
         }
@@ -1237,7 +1278,7 @@ class Ranking {
      */
     public reorderDocuments(positions: number[]): void {
         if (positions.length !== this.documents.length) {
-            console.log('Positions array length must match documents array length.');
+            console.log('Warning: Positions array length must match documents array length.');
             return
         }
         const reorderedDocuments = new Array(this.documents.length);
@@ -1362,6 +1403,20 @@ class QueryTermService {
     }
 
     /**
+     * Adds a neighbour term to the complete query term.
+     * 
+     * This function takes a NeighbourTerm instance as a parameter and adds it to the complete query term's neighbour terms list.
+     * It also updates the add terms table in the QueryService.
+     * 
+     * @param neighbourTerm - The neighbour term to be added.
+     * 
+     * @returns {void} - This function does not return any value.
+     */
+    public addCompleteNeighbourTerm(neighbourTerm: NeighbourTerm): void {
+        this.getCompleteQueryTerm().addNeighbourTerm(neighbourTerm)
+    }
+
+    /**
     * Changes the cursor type of the HTML document to the specified newCursorType.
     * This function is used to update the cursor style when hovering over a neighbour term node in the graph.
     * 
@@ -1374,20 +1429,6 @@ class QueryTermService {
         let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
         if (neighbourTerm === undefined) return
         $('html,body').css('cursor', newCursorType);
-    }
-
-    /**
-     * Adds a neighbour term to the complete query term.
-     * 
-     * This function takes a NeighbourTerm instance as a parameter and adds it to the complete query term's neighbour terms list.
-     * It also updates the add terms table in the QueryService.
-     * 
-     * @param neighbourTerm - The neighbour term to be added.
-     * 
-     * @returns {void} - This function does not return any value.
-     */
-    public addCompleteNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        this.getCompleteQueryTerm().addNeighbourTerm(neighbourTerm)
     }
 
     /**
@@ -1478,8 +1519,8 @@ class QueryTermService {
      * @returns A new NeighbourTerm instance with the provided term value, distance, ponderation, and hop limit.
      */
     private initializeNewNeighbourTerm(queryTerm: QueryTerm, termObject: any, hopLimit: number): NeighbourTerm {
-        return new NeighbourTerm(queryTerm, termObject.term, 
-                    termObject.distance, termObject.ponderation, hopLimit)
+        return new NeighbourTerm(queryTerm, termObject.term, termObject.distance, 
+            termObject.proximity_ponderation, termObject.total_ponderation, termObject.criteria, hopLimit)
     }
 
     /**
@@ -1502,7 +1543,7 @@ class QueryTermService {
             const abstract = documentObject['abstract']
             const preprocessed_text = documentObject['preprocessed_text']
             const weight = documentObject['weight']
-            const response_neighbour_terms = documentObject['neighbour_terms']
+            const response_neighbour_terms = documentObject['all_neighbour_terms']
             const sentences = documentObject['sentences']
             let document = new Document(this.ranking.getVisibleQueryTerm().getValue(), response_neighbour_terms, hopLimit, 
                     [doc_id, title, abstract, preprocessed_text], weight, sentences)
@@ -1712,7 +1753,7 @@ class AddTermsTable {
         // Iterate over the neighbour terms of the active query term
         for(const term of this.activeTermService.getCompleteQueryTerm().getNeighbourTerms()) {
             // Check if the term is not already in the visible neighbour terms list
-            if (!visibleNeighbourTermsValues.includes(term.getValue())) {
+            if ((!visibleNeighbourTermsValues.includes(term.getValue())) && (term.getCriteria() === "proximity")) {
                 // Create a new row in the table
                 const row = tbody.insertRow()
 
@@ -1753,10 +1794,12 @@ class AddTermsTable {
                 const queryTerm = this.activeTermService.getVisibleQueryTerm()
                 const value = neighbourTerm.getValue()
                 const hops = neighbourTerm.getHops()
-                const ponderation = neighbourTerm.getPonderation()
+                const proximityPonderation = neighbourTerm.getProximityPonderation()
+                const totalPonderation = neighbourTerm.getTotalPonderation()
+                const criteria = neighbourTerm.getCriteria()
                 const hopLimit = neighbourTerm.getHopLimit()
 
-                let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, hops, ponderation, hopLimit)
+                let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, hops, proximityPonderation, totalPonderation, criteria, hopLimit)
                 this.activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm)
             }
         }
@@ -1882,7 +1925,7 @@ class NeighbourTermsTable {
 
             // Set the text content of the cells
             cell1.innerHTML = neighbourTerm.getValue()
-            cell2.innerHTML = neighbourTerm.getUserCriteria()
+            cell2.innerHTML = neighbourTerm.getCriteria()
         }
     }
 }
@@ -2017,10 +2060,10 @@ class ResultsList {
         for (let sentenceObject of sentenceObjects) {
             const sentenceText = sentenceObject.getRawText();
             if (sentenceObject.getQueryTerm().getNeighbourTerms().length == 0 || neighbourTermsList.length == 0) {
-                // If there are no neighbour terms, just return the original sentence
+                // If there are no user neighbour terms in the sentence, just return the original sentence
                 highlightedSentences.push([sentenceText, undefined]);
             } else {
-                // Split text by spaces and replace matching words
+                // If there are user neighbour terms in the sentence, split text by spaces and replace matching words
                 const words = sentenceText.split(' ');
                 const highlightedSentenceText = this.getHighlightedSentence(words, queryTermsList, neighbourTermsList);
                 highlightedSentences.push([highlightedSentenceText, sentenceObject]);
