@@ -94,12 +94,12 @@ class TestSREX(unittest.TestCase):
         self.assertDictEqual(result, expected_result)
 
     
-    def test_get_normalized_nodes_dictionary(self):
+    def test_get_proximity_dict_with_normalized_distances(self):
         # Initialize vicinity graph
         graph = self.__get_initialized_graph_config_01()
 
         # Get the graph as a normalized dictionary
-        result = graph.get_normalized_nodes_dict()
+        result = graph.get_proximity_dict_with_normalized_distances()
 
         # Define expected result
         expected_result = {

@@ -247,7 +247,8 @@ class QueryService:
         """
         graph = VicinityGraph(subquery="new")
         for node in neighbour_terms:
-            graph.add_node(VicinityNode(term=node.term, ponderation=node.ponderation, distance=node.distance))
+            graph.add_node(VicinityNode(term=node.term, proximity_ponderation=node.proximity_ponderation, 
+                    total_ponderation=node.total_ponderation, distance=node.distance, criteria=node.criteria))
         return graph
 
 

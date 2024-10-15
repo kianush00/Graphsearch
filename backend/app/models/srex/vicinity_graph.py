@@ -444,15 +444,15 @@ class VicinityGraph:
         distance : float
             The euclidean distance between the current graph and the external graph
         """
-        def append_values_from_term(term: str, key: str, self_dict: dict, external_dict: dict):
+        def append_values_from_term(term: str, key: str, self_dict: dict, external_dict: dict, ponderation_values: bool):
             """Helper function to append values from a term based on a specific key.
             Each term is attached only if it is in both vectors.
             Also normalize the ponderation values, if the include_ponderation flag is set to true."""
             self_value: float = self_dict.get(term, {}).get(key, 0)
             external_value: float = external_dict.get(term, {}).get(key, 0)
             if self_value > 0 and external_value > 0:
-                if include_ponderation:
-                    # If include_ponderation is true, then normalize the ponderation values to the new range [0.5, 1.0]
+                # If include_ponderation is true, then normalize the ponderation values to the new range [0.5, 1.0]
+                if ponderation_values:
                     old_max = max(self_value, external_value)
                     self_value = new_min_normalized_value + (self_value * (new_max_normalized_value - new_min_normalized_value) / old_max)
                     external_value = new_min_normalized_value + (external_value * (new_max_normalized_value - new_min_normalized_value) / old_max)
@@ -463,21 +463,25 @@ class VicinityGraph:
         vector_base = set(self.get_terms_str_from_all_nodes())
         
         # Get the dictionaries of normalized nodes from each graph 
-        normalized_self_nodes = self.get_normalized_nodes_dict(new_min_normalized_value, new_max_normalized_value)
-        normalized_external_nodes = external_graph.get_normalized_nodes_dict(new_min_normalized_value, new_max_normalized_value)
-
+        normalized_proximity_self_nodes = self.get_proximity_dict_with_normalized_distances(new_min_normalized_value, new_max_normalized_value)
+        normalized_proximity_external_nodes = external_graph.get_proximity_dict_with_normalized_distances(new_min_normalized_value, new_max_normalized_value)
+        default_frequency_self_nodes = self.get_graph_as_dict()
+        default_all_external_nodes = {key: value for key, value in external_graph.get_graph_as_dict().items() if value.get('criteria') == 'frequency'}
+        
         # Initialize the vectors
         self_vector: list[float] = [] 
         external_vector: list[float] = []
 
         # Calculate the two vectors in the multidimensional space, i.e. generate the vector space
         for term in vector_base: 
-            append_values_from_term(term, 'distance', normalized_self_nodes, normalized_external_nodes)
+            append_values_from_term(term, 'distance', normalized_proximity_self_nodes, normalized_proximity_external_nodes, False)
         
         # Add ponderation values to the two vectors if include ponderation is True
-        if include_ponderation:
-            for term in vector_base:
-                append_values_from_term(term, 'ponderation', normalized_self_nodes, normalized_external_nodes)
+        for term in vector_base:
+            append_values_from_term(term, 'proximity_ponderation', normalized_proximity_self_nodes, normalized_proximity_external_nodes, True)
+        
+        for term in vector_base:
+            append_values_from_term(term, 'total_ponderation', default_frequency_self_nodes, default_all_external_nodes, True)
 
         # Calculate the euclidean distance between the vectors if their lenghts are greater than 0, otherwise pass a big value
         if len(self_vector) > 0 and len(external_vector) > 0:
@@ -488,10 +492,10 @@ class VicinityGraph:
         return distance
     
 
-    def get_normalized_nodes_dict(self, 
+    def get_proximity_dict_with_normalized_distances(self, 
             new_min_normalized_value: float = 0.5,
             new_max_normalized_value: float = 1.0
-            ) -> dict[str, dict[str, float]]:
+            ) -> dict[str, dict[str, float | str]]:
         """
         Return a dictionary with the normalized distances, and unchanged ponderations, of each node in the graph.
         Normalized distance values will be between the parameter values (by default between 0.5 and 1.0).
@@ -505,13 +509,14 @@ class VicinityGraph:
 
         Returns
         -------
-        normalized_self_nodes : dict[str, dict[str, float]]
+        normalized_self_nodes : dict[str, dict[str, float | str]]
             A dictionary with unchanged ponderations and normalized distances of each node in the graph
             e.g.   {'v_term1': {'ponderation': 1.4, 'distance': 0.57}, 
                     'v_term2': {'ponderation': 2.35, 'distance': 0.82}, ...}
         """
         # Get the ponderations and distances from the graph 
         normalized_self_nodes = self.get_graph_as_dict()
+        normalized_self_nodes = {key: value for key, value in normalized_self_nodes.items() if value.get('criteria') == 'proximity'}
 
         # Get the distance and ponderation vectors from the graph
         distance_vector = [value['distance'] for value in normalized_self_nodes.values()]
