@@ -229,10 +229,10 @@ class Sentence(QueryTreeHandler):
         on their isolated query terms as leaves from the query tree. Also, generate
         frequency criteria VicinityNodes for the root BinaryTreeNode.
         """
-        #First, generate nodes to the graphs associated with the leaves from the query tree
-        self.generate_nodes_in_all_leaf_graphs()
+        #First, generate proximity nodes to the graphs associated with the leaves from the query tree
+        self.generate_proximity_nodes_in_all_leaf_graphs()
         
-        #Then, generate nodes to the graphs associated with the rest of the nodes in the tree
+        #Then, generate proximity nodes to the graphs associated with the rest of the nodes in the tree
         self.get_query_tree().operate_non_leaf_graphs_from_leaves()
         
         #Finally, generate frequency criteria VicinityNodes for the root BinaryTreeNode.
@@ -242,7 +242,7 @@ class Sentence(QueryTreeHandler):
     def generate_frequency_criteria_nodes_for_root(self) -> None:
         """
         Generate frequency criteria VicinityNodes for the root BinaryTreeNode.\n
-        This function creates a total frequency dictionary of all the sentence words, to then multiply
+        This function creates a frequency dictionary of all the sentence words, to then multiply
         its frequencies by the document weight and finally create frequency criteria VicinityNodes 
         for the root BinaryTreeNode and adds them to the graph.
         """
@@ -250,32 +250,34 @@ class Sentence(QueryTreeHandler):
         if not root_graph:
             return
         
-        terms_total_freq_dict = self.get_terms_total_frequency_dict()
+        terms_freq_dict = self.get_terms_frequency_dict()
         graph_terms_list = root_graph.get_terms_str_from_all_nodes()
         query_terms_list = self.get_query_tree().get_query_terms_str_list_with_underscores()
+        query_terms_list_without_underscores = VectorUtils.split_and_extend_from_underscore_values(query_terms_list)
         
-        for term, frequency in terms_total_freq_dict.items():
-            if term in query_terms_list:    # Validate that the term is not a query term
+        for term, frequency in terms_freq_dict.items():
+            if term in query_terms_list_without_underscores:    # Validate that the term is not a query term
                 continue
             
-            if term in graph_terms_list:    # If the term is in the graph, modify its total ponderation
+            freq_score: float = frequency * self.__weight
+            
+            if term in graph_terms_list:    # If the term is in the graph, modify its frequency score
                 graph_node = root_graph.get_node_by_term(term)
                 if graph_node:  # Double check
-                    graph_node.set_total_ponderation(frequency * self.__weight)
+                    graph_node.set_frequency_score(freq_score)
             else:   # If the term isn't in the graph, add a new frequency node
                 freq_criteria_node = VicinityNode(
                     term=term,
-                    total_ponderation = frequency * self.__weight,
-                    proximity_ponderation=0.0,
-                    distance=-1.0,
+                    frequency_score = freq_score,
+                    proximity_score=0.0,
                     criteria="frequency"
                 )
                 root_graph.add_node(freq_criteria_node)
 
 
-    def get_terms_total_frequency_dict(self) -> dict[str, int]:
+    def get_terms_frequency_dict(self) -> dict[str, int]:
         """
-        This method calculates the total frequency of terms from the preprocessed sentence
+        This method calculates the frequency of terms from the preprocessed sentence
 
         Returns
         -------
@@ -295,15 +297,15 @@ class Sentence(QueryTreeHandler):
         return dict(frequencies)
 
 
-    def generate_nodes_in_all_leaf_graphs(self):
+    def generate_proximity_nodes_in_all_leaf_graphs(self):
         """
-        Generate nodes to the graphs associated with the leaves from the query tree.\n
+        Generate proximity nodes to the graphs associated with the leaves from the query tree.\n
         This function iterates over all the leaf nodes in the query tree and calls the 
-        `generate_nodes_in_leaf_graph` method for each leaf node. This method is responsible 
-        for generating nodes to the graph associated with the leaf node.
+        `generate_proximity_nodes_in_leaf_graph` method for each leaf node. This method is responsible 
+        for generating proximity nodes to the graph associated with the leaf node.
         """
         for leaf_node in self.get_query_tree().get_query_terms_as_leaves():
-            self.generate_nodes_in_leaf_graph(leaf_node)
+            self.generate_proximity_nodes_in_leaf_graph(leaf_node)
     
 
     def get_term_positions_dict(self, 
@@ -362,50 +364,50 @@ class Sentence(QueryTreeHandler):
         return query_term_positions_dict
     
 
-    def generate_nodes_in_leaf_graph(self, 
+    def generate_proximity_nodes_in_leaf_graph(self, 
             leaf_node: BinaryTreeNode,
             ) -> None:
         """
-        Generate nodes for the graph associated with the sentence, based on the isolated query term of 
-        the leaf from the query tree. This method calculates the ponderations of the terms associated 
-        with the query term of the graph, and adds each of them to their respective node.
+        Generate proximity nodes for the graph associated with the sentence, based on the isolated query 
+        term of the leaf from the query tree. This method calculates the proximity scores of the terms 
+        associated with the query term of the graph, and adds each of them to their respective node.
 
         Parameters
         ----------
         leaf_node : BinaryTreeNode
             A leaf node associated with the sentence tree
         """
-        query_term = leaf_node.value  
-        terms_prox_freq_dict = self.get_terms_proximity_frequency_dict(query_term)
+        query_term: str = leaf_node.value
+        terms_prox_freq_dict: dict[str, int] = self.get_terms_proximity_frequency_dict(query_term)
 
         # Iterate over each term in the proximity frequency dictionary
         for neighbour_term in terms_prox_freq_dict.keys():
             # Retrieve the list of frequencies by distance for the term
-            list_of_freq_by_distance = self.__vicinity_matrix.get(neighbour_term).get(query_term)
-            distance_calculation_list = []
+            freq_by_distance_list: list[int] = self.__vicinity_matrix.get(neighbour_term).get(query_term)
+            distance_occurrence_list: list[int] = []
 
-            # Construct a list of distances multiplied by its frequencies
+            # Construct a list of occurrence of distances
             # E.g.  [1, 0, 2, 0] -> [1, 3, 3]
-            for idx, frequency in enumerate(list_of_freq_by_distance):
-                distance_calculation_list.extend([idx+1] * frequency)
+            for idx, frequency in enumerate(freq_by_distance_list):
+                distance_occurrence_list.extend([idx+1] * frequency)
             
-            #Summarize the list of distances based on the graph settings (it can be: mean or median)
-            if self.get_graph().get_config().get_summarize() == 'median':
-                _distance = np.median(distance_calculation_list)
-            else:
-                _distance = np.mean(distance_calculation_list)
+            # Transform the values ​​in the list to the following formula: 1 / (4 ^ (distance - 1) )
+            distance_score_calculation_list = VectorUtils.calculate_distance_score_list(distance_occurrence_list)
             
-            # Calculate the ponderation of the term, by the formula:  p = (1 + log(tf)) * w
-            term_prox_freq: int = terms_prox_freq_dict.get(neighbour_term)
-            _prox_ponderation = MathUtils.calculate_term_ponderation(term_prox_freq, self.__weight)
+            # Normalize the transformed list from [0, 1] range to [1, 10] range
+            normalized_distance_score_list = VectorUtils.normalize_vector(distance_score_calculation_list, 1, 10, 0, 1)
+            
+            # Calculate the proximity score of the term, by the formula:  p = (1 + log(score_list_sum)) * weight
+            score_list_sum: float = sum(normalized_distance_score_list)
+            prox_score = MathUtils.calculate_term_proximity_score(score_list_sum, self.__weight)
 
             # Round the values to 6 decimal places for better readability
-            _distance = round(_distance, 6)
-            _prox_ponderation = round(_prox_ponderation, 6)
+            prox_score = round(prox_score, 6)
             
             # Initialize the new vicinity node and add it to the leaf node graph
-            new_node = VicinityNode(term=neighbour_term, proximity_ponderation=_prox_ponderation, 
-                                    distance=_distance, total_ponderation=0.0, criteria="proximity")
+            new_node = VicinityNode(term=neighbour_term, proximity_score=prox_score, 
+                                    frequency_score=0.0, criteria="proximity")
+            
             leaf_node.graph.add_node(new_node)
 
     
@@ -437,7 +439,7 @@ class Sentence(QueryTreeHandler):
             # dictionary keys and if the neighbor term isn't a query term
             if (query_term in distance_freq_by_query_term):
                 sum_of_freqs_in_query_term = sum(distance_freq_by_query_term[query_term])
-                if sum_of_freqs_in_query_term > 0:
+                if sum_of_freqs_in_query_term > 0:   # Double check
                     terms_prox_freq_dict[neighbor_term] = sum_of_freqs_in_query_term
             
         return terms_prox_freq_dict
@@ -467,7 +469,7 @@ class Sentence(QueryTreeHandler):
         for query_term_with_underscores in query_terms_with_underscores:
             query_term_with_spaces = query_term_with_underscores.replace('_', ' ')
             #If the query term is in the transformed sentence string and the query term contains more than a word
-            if (query_term_with_spaces in transformed_sentence_str) and ("_" in query_term_with_underscores): 
+            if (query_term_with_spaces in transformed_sentence_str) and ('_' in query_term_with_underscores): 
                 sentence_str_with_underscores_in_query_terms = transformed_sentence_str.replace(query_term_with_spaces, 
                                                                                                 query_term_with_underscores)
         return sentence_str_with_underscores_in_query_terms
@@ -476,7 +478,7 @@ class Sentence(QueryTreeHandler):
 
 class Document(QueryTreeHandler):
     
-    def __init__(self, ranking: 'Ranking', query: BinaryExpressionTree, abstract: str = "", title: str = "", 
+    def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", 
                  doc_id: str = "1", weight: float = 1.0, ranking_position: int = 1):
         """
         Initialize a new Document object.
@@ -1138,7 +1140,7 @@ class Ranking(QueryTreeHandler):
         _ranking_pos = index + 1
         _weight = MathUtils.calculate_document_weight(results_size, _ranking_pos, self.__ranking_weight_type)
         _query_copy = copy.deepcopy(self.get_query_tree())
-        new_doc = Document(ranking=self, query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
+        new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         
         return new_doc

@@ -9,18 +9,10 @@ class QueryTerm(BaseModel):
     graph_terms: int
 
 
-class PydanticVisibleNeighbourTermRequest(BaseModel):
-    term: str
-    proximity_ponderation: float
-    total_ponderation: float
-    criteria: str
-
-
 class PydanticNeighbourTermRequest(BaseModel):
     term: str
-    proximity_ponderation: float
-    total_ponderation: float
-    distance: float
+    proximity_score: float
+    frequency_score: float
     criteria: str
     
 
@@ -40,5 +32,5 @@ class PydanticDocumentRequest(BaseModel):
 
 
 class PydanticRankingRequest(BaseModel):
-    visible_neighbour_terms: List[PydanticVisibleNeighbourTermRequest]
+    visible_neighbour_terms: List[PydanticNeighbourTermRequest]
     documents: List[PydanticDocumentRequest]

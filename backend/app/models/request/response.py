@@ -8,9 +8,8 @@ class RerankNewPositions(BaseModel):
 
 class PydanticNeighbourTerm(BaseModel):
     term: str
-    proximity_ponderation: float
-    total_ponderation: float
-    distance: float
+    proximity_score: float
+    frequency_score: float
     criteria: str
 
     

@@ -1,4 +1,4 @@
-from models.request.request import PydanticRankingRequest, PydanticVisibleNeighbourTermRequest, PydanticNeighbourTermRequest
+from models.request.request import PydanticRankingRequest, PydanticNeighbourTermRequest
 from models.request.response import PydanticRanking, PydanticDocument, PydanticSentence, PydanticNeighbourTerm, RerankNewPositions
 from models.srex.ranking import Ranking
 from models.srex.vicinity_graph import VicinityGraph, VicinityNode
@@ -76,17 +76,14 @@ class QueryService:
         - HTTPException: If there is a bad request (status code 400).
         """
         try:
-            # Initialize parameters
-            include_ponderation = True
-            
             # Initialize the visible graph
-            visible_graph = self.__get_visible_graph_from_pydantic_neighbour_term_list(ranking.visible_neighbour_terms)
+            visible_graph = self.__get_graph_from_pydantic_neighbour_term_list(ranking.visible_neighbour_terms)
             
             # Initialize a tuple list of graphs, weights and preprocessed text from each document of the ranking
             document_weight_graph_tuple_list = self.__get_doc_weight_and_sentence_graphs_from_documents(ranking)
             
             # Create similarity scores list
-            similarity_scores: list[float] = self.__calculate_similarity_scores(document_weight_graph_tuple_list, visible_graph, include_ponderation)
+            similarity_scores: list[float] = self.__calculate_similarity_scores(document_weight_graph_tuple_list, visible_graph)
             
             # Get sorted similarity list in ascending order (shortest distance between vectors of the graphs)
             rank_new_positions = VectorUtils.get_positions_sorted_asc(similarity_scores)
@@ -104,7 +101,7 @@ class QueryService:
         has a weight and neighbour terms.
     
         Returns:
-        - list[tuple[float, VicinityGraph]]: A list of tuples. Each tuple contains a document weight (float), a
+        - list[tuple[float, VicinityGraph]]: A list of tuples. Each tuple contains a document weight (float), and a
         VicinityGraph object representing all the neighbour terms of the document.
         """
         document_weight_graph_tuple_list = []
@@ -118,8 +115,7 @@ class QueryService:
     
     def __calculate_similarity_scores(self, 
         document_weight_graph_tuple_list: list[tuple[float, VicinityGraph]], 
-        visible_graph: VicinityGraph, 
-        include_ponderation: bool
+        visible_graph: VicinityGraph
         ) -> list[float]:
         """
         Calculates the similarity scores between the visible neighbour terms and the neighbour terms of each document, until 
@@ -130,7 +126,6 @@ class QueryService:
         - document_weight_graph_tuple_list (list[tuple[float, VicinityGraph]]): A list of tuples, where each tuple contains 
         a document weight (float) and a VicinityGraph object representing the neighbour terms of the document.
         - visible_graph (VicinityGraph): A VicinityGraph object representing the neighbour terms of the visible graph.
-        - include_ponderation (bool): A flag indicating whether to include ponderation in the cosine similarity calculation.
     
         Returns:
         - list[float]: A list of similarity scores representing the ranking of the documents based on their similarity 
@@ -141,12 +136,30 @@ class QueryService:
 
         for doc_weight, doc_graph in document_weight_graph_tuple_list:
             # Calculate the euclidean distance between the visible graph and the document graph
-            euclidean_distance_between_graphs = - (doc_weight * 0.01) + visible_graph.get_euclidean_distance_as_base_graph(doc_graph, include_ponderation)
-                
+            euclidean_distance_between_graphs = - (doc_weight * 0.01) + visible_graph.get_euclidean_distance_as_base_graph(doc_graph)
             # Add the first similarity score to the ranking list
             similarity_ranking.append(euclidean_distance_between_graphs)
             
         return similarity_ranking
+    
+    
+    def __get_graph_from_pydantic_neighbour_term_list(self, neighbour_terms: List[PydanticNeighbourTermRequest]) -> VicinityGraph:
+        """
+        This function converts a list of PydanticNeighbourTermRequest objects into a VicinityGraph object.
+        Each node contains the following attributes: term, ponderation and distance.
+
+        Parameters:
+        - neighbour_terms (List[PydanticNeighbourTermRequest]): A list of PydanticNeighbourTermRequest objects, where 
+        each object represents a neighbour term with its attributes.
+
+        Returns:
+        - VicinityGraph: A VicinityGraph object, where each neighbour term from the input list is added as a node to the graph.
+        """
+        graph = VicinityGraph(subquery="new")
+        for node in neighbour_terms:
+            graph.add_node(VicinityNode(term=node.term, proximity_score=node.proximity_score, 
+                                        frequency_score=node.frequency_score, criteria=node.criteria))
+        return graph
     
     
     def __get_pydantic_documents_from_ranking(self, ranking: Ranking) -> list[PydanticDocument]:
@@ -187,14 +200,14 @@ class QueryService:
         return documents
     
     
-    
     def __get_pydantic_neighbour_term_list(self, graph_dict: dict[str, dict[str, float | str]]) -> list[PydanticNeighbourTerm]:
         """
         Converts a dictionary of neighbour terms and their attributes into a list of PydanticNeighbourTerm objects.
 
         Parameters:
-        - graph_dict (dict[str, dict[str, float]]): A dictionary where the keys are neighbour terms and the values are 
-        dictionaries containing the term's attributes. Each attribute dictionary contains 'ponderation' and 'distance' keys.
+        - graph_dict (dict[str, dict[str, float | str]]): A dictionary where the keys are neighbour terms and the values are 
+        dictionaries containing the term's attributes. Each attribute dictionary contains 'proximity_score',
+        'frequency_score' and 'criteria' keys.
 
         Returns:
         - list[PydanticNeighbourTerm]: A list of PydanticNeighbourTerm objects, where each object represents a 
@@ -203,53 +216,12 @@ class QueryService:
         return [
             PydanticNeighbourTerm(
             term=k, 
-            proximity_ponderation=v.get('proximity_ponderation'),
-            total_ponderation=v.get('total_ponderation'),
-            distance=v.get('distance'),
+            proximity_score=v.get('proximity_score'),
+            frequency_score=v.get('frequency_score'),
             criteria=v.get('criteria')
             ) for k, v in graph_dict.items()
         ]
-    
-    
-    def __get_visible_graph_from_pydantic_neighbour_term_list(self, neighbour_terms: List[PydanticVisibleNeighbourTermRequest]) -> VicinityGraph:
-        """
-        This function converts a list of PydanticVisibleNeighbourTermRequest objects into a VicinityGraph object.
-        A distance of 1 is added to the nodes since the nodes with the "proximity" criterion will be compared 
-        with the ranking documents.
-        Each node contains the following attributes: term, ponderation, distance of 1.0 and criteria.
 
-        Parameters:
-        - neighbour_terms (List[PydanticVisibleNeighbourTermRequest]): A list of PydanticVisibleNeighbourTermRequest 
-        objects, where each object represents a neighbour term with its attributes.
-
-        Returns:
-        - VicinityGraph: A VicinityGraph object, where each neighbour term from the input list is added as a node to the graph.
-        """
-        graph = VicinityGraph(subquery="new")
-        for node in neighbour_terms:
-            graph.add_node(VicinityNode(
-                term=node.term, proximity_ponderation=node.proximity_ponderation, total_ponderation=node.total_ponderation, 
-                distance=1.0, criteria=node.criteria))
-        return graph
-    
-    
-    def __get_graph_from_pydantic_neighbour_term_list(self, neighbour_terms: List[PydanticNeighbourTermRequest]) -> VicinityGraph:
-        """
-        This function converts a list of PydanticNeighbourTermRequest objects into a VicinityGraph object.
-        Each node contains the following attributes: term, ponderation and distance.
-
-        Parameters:
-        - neighbour_terms (List[PydanticNeighbourTermRequest]): A list of PydanticNeighbourTermRequest objects, where 
-        each object represents a neighbour term with its attributes.
-
-        Returns:
-        - VicinityGraph: A VicinityGraph object, where each neighbour term from the input list is added as a node to the graph.
-        """
-        graph = VicinityGraph(subquery="new")
-        for node in neighbour_terms:
-            graph.add_node(VicinityNode(term=node.term, proximity_ponderation=node.proximity_ponderation, 
-                    total_ponderation=node.total_ponderation, distance=node.distance, criteria=node.criteria))
-        return graph
 
 
 

@@ -38,19 +38,23 @@ class MathUtils:
     
     
     @staticmethod
-    def calculate_term_ponderation(
-            term_frequency: int,
+    def calculate_term_proximity_score(
+            score_list_sum: float,
             document_weight: float
             ) -> float:
         """
-        Calculate the term ponderation based on the term frequency and document weight.
+        Calculate the term proximity score based on the score list sum and document weight.
 
         Parameters:
-        term_frequency (int): The frequency of the term in the document.
-        document_weight (float): The weight factor of the document, calculated using the MathUtils.calculate_document_weight method.
+        score_list_sum (float): The sum of the list of distance scores calculated previously.
+        document_weight (float): The weight factor of the document, calculated previously.
 
         Returns:
-        float: The term ponderation, calculated as (1 + log10(term_frequency)) * document_weight.
+        float: The term proximity score, calculated as (1 + log10(score_list_sum)) * document_weight.
         """
-        ponderation = (1 + math.log10(term_frequency)) * document_weight
-        return ponderation
+        # Validate the score list sum parameter
+        if score_list_sum < 1.0:
+            return -1.0
+        
+        prox_score = (1 + math.log10(score_list_sum)) * document_weight
+        return prox_score

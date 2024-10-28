@@ -707,10 +707,9 @@ interface ViewManager {
 
 interface NTermObject {
     term: string;
-    proximity_ponderation: number;
-    total_ponderation: number;
+    proximity_score: number;
+    frequency_score: number;
     criteria: string;
-    distance?: number;
 }
 
 
@@ -720,8 +719,8 @@ class NeighbourTerm extends Term implements ViewManager {
     private hops: number
     private nodePosition: Position = { x: 0, y: 0 }
     private edge: Edge | undefined
-    private readonly proximityPonderation: number
-    private readonly totalPonderation: number
+    private readonly proximityScore: number
+    private readonly frequencyScore: number
     private criteria: string
     private readonly hopLimit: number
 
@@ -735,14 +734,14 @@ class NeighbourTerm extends Term implements ViewManager {
      * @param ponderation - The ponderation of this neighbour term.
      * @param hopLimit - The maximum number of hops allowed for the neighbour term.
      */
-    constructor(queryTerm: QueryTerm, value: string, hops: number, proximityPonderation: number, 
-        totalPonderation: number, criteria: string, hopLimit: number) {
+    constructor(queryTerm: QueryTerm, value: string, proximityScore: number, frequencyScore: number, 
+        criteria: string, hopLimit: number) {
         super(value)
         this.queryTerm = queryTerm
-        this.proximityPonderation = proximityPonderation
-        this.totalPonderation = totalPonderation
+        this.proximityScore = proximityScore
+        this.frequencyScore = frequencyScore
         this.criteria = criteria
-        this.hops = this.queryTerm.getIsUserQuery() ? 1.0 : hops
+        this.hops = 1.0
         this.hopLimit = hopLimit
         this.setLabel(value)
     }
@@ -786,12 +785,12 @@ class NeighbourTerm extends Term implements ViewManager {
         }
     }
 
-    public getProximityPonderation(): number {
-        return this.proximityPonderation
+    public getProximityScore(): number {
+        return this.proximityScore
     }
 
-    public getTotalPonderation(): number {
-        return this.totalPonderation
+    public getFrequencyScore(): number {
+        return this.frequencyScore
     }
 
     public getCriteria(): string {
@@ -813,19 +812,12 @@ class NeighbourTerm extends Term implements ViewManager {
     public toObject(): NTermObject {
         const baseData = {
             term: this.value,
-            proximity_ponderation: this.proximityPonderation,
-            total_ponderation: this.totalPonderation,
+            proximity_score: this.proximityScore,
+            frequency_score: this.frequencyScore,
             criteria: this.criteria
         };
 
-        if (this.queryTerm.getIsUserQuery()) {  // If it's a user neighbour term
-            return baseData
-        } else {    // If it's not a user neighbour term
-            return {
-                ...baseData,
-                distance: this.hops
-            }
-        }
+        return baseData;
     }
 
     /**
@@ -1071,8 +1063,8 @@ class TextElement {
     private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[], hopLimit: number): void {
         const neighbourTerms = []
         for (const termObject of responseNeighbourTerms) {
-            let neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, termObject.distance, 
-                termObject.proximity_ponderation, termObject.total_ponderation, termObject.criteria, hopLimit)
+            let neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, termObject.proximity_score, 
+                termObject.frequency_score, termObject.criteria, hopLimit)
             neighbourTerms.push(neighbourTerm)
         }
         this.queryTerm.setNeighbourTerms(neighbourTerms)
@@ -1519,8 +1511,8 @@ class QueryTermService {
      * @returns A new NeighbourTerm instance with the provided term value, distance, ponderation, and hop limit.
      */
     private initializeNewNeighbourTerm(queryTerm: QueryTerm, termObject: any, hopLimit: number): NeighbourTerm {
-        return new NeighbourTerm(queryTerm, termObject.term, termObject.distance, 
-            termObject.proximity_ponderation, termObject.total_ponderation, termObject.criteria, hopLimit)
+        return new NeighbourTerm(queryTerm, termObject.term, termObject.proximity_score, 
+            termObject.frequency_score, termObject.criteria, hopLimit)
     }
 
     /**
@@ -1793,13 +1785,12 @@ class AddTermsTable {
                 // Add the neighbour term to the active query term's visible neighbour terms
                 const queryTerm = this.activeTermService.getVisibleQueryTerm()
                 const value = neighbourTerm.getValue()
-                const hops = neighbourTerm.getHops()
-                const proximityPonderation = neighbourTerm.getProximityPonderation()
-                const totalPonderation = neighbourTerm.getTotalPonderation()
+                const proximityScore = neighbourTerm.getProximityScore()
+                const frequencyScore = neighbourTerm.getFrequencyScore()
                 const criteria = neighbourTerm.getCriteria()
                 const hopLimit = neighbourTerm.getHopLimit()
 
-                let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, hops, proximityPonderation, totalPonderation, criteria, hopLimit)
+                let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria, hopLimit)
                 this.activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm)
             }
         }

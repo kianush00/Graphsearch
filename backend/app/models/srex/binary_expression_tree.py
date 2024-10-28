@@ -92,8 +92,8 @@ class BinaryTreeNode:
         """
         Gets the union between an external subtree and the own subtree, then obtains 
         a new subtree. The merging process involves iterating through the nodes of both 
-        subtrees, calculating  the sum of weights and the average distances between 
-        each one, that is, the union between each graph (tree node) of both subtrees.
+        subtrees, calculating the sum of proximity ponderations and frequency ponderations, 
+        that is, the union between each graph (tree node) of both subtrees.
         
         Parameters:
         external_subtree (BinaryTreeNode): The external subtree to be united
@@ -166,7 +166,8 @@ class BinaryTreeNode:
         #Checks if both nodes have a non-null graph attribute, to then join them and set 
         #them in the copy attribute
         if self.graph and external_peer_node.graph:
-            current_node_united_graph = self.graph.get_union_to_graph(external_peer_node.graph, True)
+            sum_scores = True   # Sum the proximity scores of both graphs, for intersected graph nodes
+            current_node_united_graph = self.graph.get_union_to_graph(external_peer_node.graph, sum_scores)
             self.graph = current_node_united_graph
         
         #Checks if both nodes have a left node, to continue the recursion
@@ -194,7 +195,9 @@ class BinaryTreeNode:
             graph = left_graph
         # If the boolean operator is 'AND' or 'OR', it returns the union of the left and right graphs.
         elif self.value in ['AND', 'OR']:
-            graph = left_graph.get_union_to_graph(right_graph, False)
+            # The resulting proximity ponderation value is the max value between the left and right graphs.
+            sum_scores = False  # Get the maximum proximity score between both graphs, for intersected graph nodes
+            graph = left_graph.get_union_to_graph(right_graph, sum_scores)
         # If the boolean operator is neither 'AND' nor 'OR', it raises a ValueError.
         else:
             raise ValueError(f"Invalid operator value: {self.value}")

@@ -146,3 +146,49 @@ class VectorUtils:
                     frequencies_per_distance[absolute_distance-1] += 1
 
         return frequencies_per_distance
+    
+    
+    @staticmethod
+    def calculate_distance_score_list(
+            distance_occurrence_list: list[int]
+            ) -> list[float]:
+        """
+        Calculate a distance score list from a list of distance occurrences, using the following
+        formula:  1 / (4 ^ (distance - 1) )
+
+        Parameters:
+        distance_occurrence_list (list[int]): A list of distance occurrences (E.g. [1, 3, 3] list obtained
+        from [1, 0, 2, 0] vicinity matrix value)
+
+        Returns:
+        list[float]: A list of transformed distance values.
+        """
+        distance_score_calculation_list: list[float] = [1 / (4 ** (distance - 1)) for distance in distance_occurrence_list]
+        return distance_score_calculation_list
+    
+    
+    @staticmethod
+    def split_and_extend_from_underscore_values(strings_array: list[str]) -> list[str]:
+        """
+        This function takes an array of strings as input and splits each string at underscores.
+        It then extends the result array with the split parts, excluding any empty strings.
+        If a string does not contain underscores, it is appended directly to the result array.
+        
+        Parameters:
+        array (list[str]): A list of strings to be processed.
+        
+        Returns:
+        list[str]: A new list of strings, where each string from the input array is either split at underscores
+                   and extended into the result array, or appended directly if it does not contain underscores.
+        """
+        result = []
+        for word in strings_array:
+            # Check if the word contains underscores
+            if '_' in word:
+                # Split the word by underscores, filter out empty strings, and extend the result array
+                result.extend([part for part in word.split('_') if part != ''])
+            else:
+                # Append the word directly if it has no underscores
+                result.append(word)
+        return result
+
