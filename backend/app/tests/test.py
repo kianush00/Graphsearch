@@ -125,13 +125,13 @@ class TestSREX(unittest.TestCase):
         self.assertListEqual(result, expected_result)
     
 
-    def test_get_euclidean_distance_between_vectors(self):
+    def test_get_cosine_between_vectors(self):
         # Initialize vectors values
         vector1 = [1.2, 2.3, 3.5, 3.0]
         vector2 = [3.1, 2.4, 1.1, 1.8]
 
         # Get the euclidean distance between vectors and assert the results
-        result = VectorUtils.get_euclidean_distance(vector1, vector2)
+        result = VectorUtils.get_cosine_between_vectors(vector1, vector2)
         expected_result = 3.2893768406797053
         
         self.assertAlmostEqual(result, expected_result, delta=1e-13)
@@ -585,10 +585,10 @@ class TestSREX(unittest.TestCase):
         graph3 = ranking.get_document_by_ranking_position(3).get_graph()
         graph4 = ranking.get_document_by_ranking_position(4).get_graph()
 
-        result1 = graph1.get_euclidean_distance_as_base_graph(graph1)
-        result2 = graph1.get_euclidean_distance_as_base_graph(graph2)
-        result3 = graph1.get_euclidean_distance_as_base_graph(graph3)
-        result4 = graph1.get_euclidean_distance_as_base_graph(graph4)
+        result1 = graph1.get_similarity_score_as_base_graph(graph1)
+        result2 = graph1.get_similarity_score_as_base_graph(graph2)
+        result3 = graph1.get_similarity_score_as_base_graph(graph3)
+        result4 = graph1.get_similarity_score_as_base_graph(graph4)
 
         # Create expected results
         expected_result1 = 0.0
@@ -619,10 +619,10 @@ class TestSREX(unittest.TestCase):
         graph3 = ranking.get_document_by_ranking_position(3).get_graph()
         graph4 = ranking.get_document_by_ranking_position(4).get_graph()
 
-        result1 = graph1.get_euclidean_distance_as_base_graph(graph1, True)
-        result2 = graph1.get_euclidean_distance_as_base_graph(graph2, True)
-        result3 = graph1.get_euclidean_distance_as_base_graph(graph3, True)
-        result4 = graph1.get_euclidean_distance_as_base_graph(graph4, True)
+        result1 = graph1.get_similarity_score_as_base_graph(graph1, True)
+        result2 = graph1.get_similarity_score_as_base_graph(graph2, True)
+        result3 = graph1.get_similarity_score_as_base_graph(graph3, True)
+        result4 = graph1.get_similarity_score_as_base_graph(graph4, True)
 
         # Create expected results
         expected_result1 = 0.0

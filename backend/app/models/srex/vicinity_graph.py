@@ -87,7 +87,8 @@ class VicinityNode:
         term (str): The term of the node.
         frequency_score (float, optional): The frequency score of the node. Default is 0.0.
         proximity_score (float, optional): The proximity score of the node. Default is 0.0.
-        criteria (str, optional): The criteria of the node. Default is proximity.
+        criteria (str, optional): The criteria of the node. It can be: 'proximity', 'frequency' or 
+        'exclusion'. Default is 'proximity'.
         """
         self.__term = term
         self.__frequency_score = frequency_score
@@ -166,6 +167,8 @@ class VicinityNode:
         Parameters:
         criteria (str): The new criteria value.
         """
+        if criteria not in ['proximity', 'frequency', 'exclusion']:
+            raise ValueError("Invalid criteria. Criteria can be: proximity, frequency or exclusion.")
         if criteria == 'proximity' and self.__proximity_score <= 0.0:
             raise ValueError("Proximity score cannot be negative or zero when criteria is 'proximity'.")
         
@@ -395,119 +398,69 @@ class VicinityGraph:
         return visual_graph
     
 
-    def get_euclidean_distance_as_base_graph(self,
-            external_graph: 'VicinityGraph',
-            new_min_normalized_value: float = 0.5,
-            new_max_normalized_value: float = 1.0
-            ) -> float:
+    def get_similarity_score_as_base_graph(self, external_graph: 'VicinityGraph') -> float:
         """
-        Calculate the euclidean distance with another graph. To calculate it, it is proposed to compare 
-        the graph using a multidimensional vector space, where the properties of each term define a 
-        dimension of the space, defining the neighbour terms of the current graph as the base vector.
+        Calculate the similarity score between the self graph and another graph. To calculate it, it is 
+        proposed to compare the graph using a multidimensional vector space, where the properties of 
+        each term define a dimension of the space, defining the neighbour terms of the current graph 
+        as the base vector.
 
         Parameters
         ----------
         external_graph : VicinityGraph
             The external graph to be compared
-        new_min_normalized_value : float, optional
-            New minimum normalized value for distance and ponderation vectors
-        new_max_normalized_value : float, optional
-            New maximum normalized value for distance and ponderation vectors
 
         Returns
         -------
-        distance : float
-            The euclidean distance between the current graph and the external graph
+        cosine_of_angle : float
+            The cosine similarity between the current graph and the external graph
         """
-        def append_values_from_term(term: str, key: str, self_dict: dict, external_dict: dict, ponderation_values: bool):
-            """Helper function to append values from a term based on a specific key.
-            Each term is attached only if it is in both vectors.
-            Also normalize the ponderation values, if the include_frequency_score flag is set to true."""
-            self_value: float = self_dict.get(term, {}).get(key, 0)
-            external_value: float = external_dict.get(term, {}).get(key, 0)
-            if self_value > 0 and external_value > 0:
-                # If include_frequency_score is true, then normalize the ponderation values to the new range [0.5, 1.0]
-                if ponderation_values:
-                    old_max = max(self_value, external_value)
-                    self_value = new_min_normalized_value + (self_value * (new_max_normalized_value - new_min_normalized_value) / old_max)
-                    external_value = new_min_normalized_value + (external_value * (new_max_normalized_value - new_min_normalized_value) / old_max)
-                self_vector.append(self_value)
-                external_vector.append(external_value)
+        # Get the dictionaries from each graph
+        self_graph_dict = self.get_graph_as_dict()
+        external_graph_dict = external_graph.get_graph_as_dict()
+        
+        # Divide the dicts into two types: proximity nodes dict and frequency nodes dict
+        proximity_nodes_self_dict = {key: value for key, value in self_graph_dict.items() if value.get('criteria') == 'proximity'}
+        proximity_nodes_external_dict = {key: value for key, value in external_graph_dict.items() if value.get('proximity_score') > 0}
+        frequency_nodes_self_dict = {key: value for key, value in self_graph_dict.items() if value.get('criteria') == 'frequency'}
+        frequency_nodes_external_dict = external_graph_dict
+        
+        # Validate the proximity and frequency vector lengths
+        prox_nodes_length = len(proximity_nodes_self_dict.keys())
+        freq_nodes_length = len(frequency_nodes_self_dict.keys())
+        
+        if prox_nodes_length == 0 and freq_nodes_length == 0:
+            print("Warning: The base graph doesn't have proximity or frequency nodes.")
+            return -1.0
         
         # Calculate the base vector with terms from the current graph
-        vector_base = set(self.get_terms_str_from_all_nodes())
-        #print(f'vector_base: {vector_base}')
-        #print(f'self_graph: {self}')
-        #print(f'external_graph: {external_graph}')
-        
-        # Get the dictionaries of normalized nodes from each graph 
-        normalized_proximity_self_nodes = self.get_proximity_dict_with_normalized_distances(new_min_normalized_value, new_max_normalized_value)
-        normalized_proximity_external_nodes = external_graph.get_proximity_dict_with_normalized_distances(new_min_normalized_value, new_max_normalized_value)
-        default_frequency_self_nodes = {key: value for key, value in self.get_graph_as_dict().items() if value.get('criteria') == 'frequency'}
-        default_all_external_nodes = external_graph.get_graph_as_dict()
+        proximity_vector_base = set(proximity_nodes_self_dict.keys()) | set(proximity_nodes_external_dict.keys())
+        frequency_vector_base = set(frequency_nodes_self_dict.keys()) | set(frequency_nodes_external_dict.keys())
         
         # Initialize the vectors
-        self_vector: list[float] = [] 
-        external_vector: list[float] = []
-
-        # Calculate the two vectors in the multidimensional space, i.e. generate the vector space
-        for term in vector_base: 
-            append_values_from_term(term, 'distance', normalized_proximity_self_nodes, normalized_proximity_external_nodes, False)
+        self_proximity_vector: list[float] = [] 
+        external_proximity_vector: list[float] = []
+        self_frequency_vector: list[float] = [] 
+        external_frequency_vector: list[float] = []
         
-        # Add score values to the two vectors if include score is True
-        for term in vector_base:
-            append_values_from_term(term, 'proximity_score', normalized_proximity_self_nodes, normalized_proximity_external_nodes, True)
+        # Calculate the proximity vectors in the multidimensional space, i.e. generate the vector space
+        for term in proximity_vector_base: 
+            self_proximity_vector.append(proximity_nodes_self_dict.get(term, {}).get('proximity_score', 0))
+            external_proximity_vector.append(proximity_nodes_external_dict.get(term, {}).get('proximity_score', 0))
         
-        for term in vector_base:
-            append_values_from_term(term, 'frequency_score', default_frequency_self_nodes, default_all_external_nodes, True)
-
-        # Calculate the euclidean distance between the vectors if their lenghts are greater than 0, otherwise pass a big value
-        if len(self_vector) > 0 and len(external_vector) > 0:
-            distance = VectorUtils.get_euclidean_distance(self_vector, external_vector)
-        else:
-            distance = 1000000000.0
+        # Calculate the frequency vectors in the multidimensional space, i.e. generate the vector space
+        for term in frequency_vector_base: 
+            self_frequency_vector.append(frequency_nodes_self_dict.get(term, {}).get('frequency_score', 0))
+            external_frequency_vector.append(frequency_nodes_external_dict.get(term, {}).get('frequency_score', 0))
         
-        return distance
-    
-
-    def get_proximity_dict_with_normalized_distances(self, 
-            new_min_normalized_value: float = 0.5,
-            new_max_normalized_value: float = 1.0
-            ) -> dict[str, dict[str, float | str]]:
-        """
-        Return a dictionary with the normalized distances, and unchanged scores, of each node in the graph.
-        Normalized distance values will be between the parameter values (by default between 0.5 and 1.0).
+        # Calculate the cosine of the angle between the vectors
+        cosine_of_prox_angle = VectorUtils.get_cosine_between_vectors(self_proximity_vector, external_proximity_vector)
+        cosine_of_freq_angle = VectorUtils.get_cosine_between_vectors(self_frequency_vector, external_frequency_vector)
         
-        Parameters
-        ----------
-        new_min_normalized_value : float, optional
-            New minimum normalized value for distance and ponderation vectors
-        new_max_normalized_value : float, optional
-            New maximum normalized value for distance and ponderation vectors
-
-        Returns
-        -------
-        normalized_self_nodes : dict[str, dict[str, float | str]]
-            A dictionary with unchanged ponderations and normalized distances of each node in the graph
-            e.g.   {'v_term1': {'ponderation': 1.4, 'distance': 0.57}, 
-                    'v_term2': {'ponderation': 2.35, 'distance': 0.82}, ...}
-        """
-        # Get the ponderations and distances from the graph 
-        normalized_self_nodes = self.get_graph_as_dict()
-        normalized_self_nodes = {key: value for key, value in normalized_self_nodes.items() if value.get('criteria') == 'proximity'}
-
-        # Get the distance and ponderation vectors from the graph
-        distance_vector = [value['distance'] for value in normalized_self_nodes.values()]
-
-        # Get the normalized version of the distance vector, in a range of [0.5, 1.0]
-        normalized_distance_vector = VectorUtils.normalize_vector(distance_vector, new_min_normalized_value, 
-                                            new_max_normalized_value, 1.0, self.__config.get_limit_distance())
-
-        # Assign the normalized values ​​to the dictionary
-        for index, subdict in enumerate(normalized_self_nodes.values()):
-            subdict['distance'] = normalized_distance_vector[index]
-
-        return normalized_self_nodes
+        cosine_of_angle = cosine_of_prox_angle * prox_nodes_length + cosine_of_freq_angle * freq_nodes_length
+        cosine_of_angle /= (prox_nodes_length + freq_nodes_length)
+        
+        return cosine_of_angle
     
 
     def get_union_to_graph(self,

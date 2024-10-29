@@ -1,4 +1,5 @@
-import math
+from numpy.linalg import norm
+from numpy import dot
 
 
 
@@ -57,38 +58,44 @@ class VectorUtils:
     
     
     @staticmethod
-    def get_euclidean_distance(vector1: list[float], vector2: list[float]) -> float:
+    def get_cosine_between_vectors(
+            vector1: list[float], 
+            vector2: list[float]
+            ) -> float:
         """
-        Calculates the Euclidean distance between two vectors.
-        
+        Calculate and return the cosine of the angle between the two given vectors
+
         Parameters
         ----------
         vector1 : list[float]
-            First vector.
-        vector2 : list[float] 
-            Second vector.
-
+            First vector to calculate
+        vector2 : list[float]
+            Second vector to calculate
+        
         Returns
         -------
-        distance : float
-            Euclidean distance between the two vectors.
+        cosine_of_angle : float
+            The cosine of the angle between the two vectors
         """
-        if len(vector1) != len(vector2):
-            raise ValueError("Vectors must have the same length.")
+        cosine_of_angle: float = 0.0
+        
+        # Avoid division by zero if the norm of any vector equals zero
+        if norm(vector1) > 0 and norm(vector2) > 0:
+            cosine_of_angle = dot(vector1, vector2) / norm(vector1) / norm(vector2)
+        
+        return cosine_of_angle
 
-        distance = math.sqrt(sum((a - b) ** 2 for a, b in zip(vector1, vector2)))
-        return distance
     
     
     @staticmethod
-    def get_positions_sorted_asc(values: list[float]) -> list[int]:
+    def get_positions_sorted_desc(values: list[float]) -> list[int]:
         """
-        Sort the given list of values in ascending order and return a list of their indices.
+        Sort the given list of values in descending order and return a list of their indices.
 
         Parameters:
         ----------
         values : list[float]
-            A list of float values to be sorted.
+            A list of float values to be sorted in descending order.
 
         Returns:
         -------
@@ -98,8 +105,8 @@ class VectorUtils:
         # Enumerate the original list to keep track of the original indices
         indexed_values = list(enumerate(values))
         
-        # Sort the list of tuples (index, value) by the value in ascending order
-        sorted_indexed_values = sorted(indexed_values, key=lambda x: x[1], reverse=False)
+        # Sort the list of tuples (index, value) by the value in descending order
+        sorted_indexed_values = sorted(indexed_values, key=lambda x: x[1], reverse=True)
         
         # Extract the sorted indices
         sorted_positions = [index for index, value in sorted_indexed_values]

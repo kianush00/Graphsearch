@@ -85,8 +85,8 @@ class QueryService:
             # Create similarity scores list
             similarity_scores: list[float] = self.__calculate_similarity_scores(document_weight_graph_tuple_list, visible_graph)
             
-            # Get sorted similarity list in ascending order (shortest distance between vectors of the graphs)
-            rank_new_positions = VectorUtils.get_positions_sorted_asc(similarity_scores)
+            # Get sorted similarity list in descending order (top proximity and frequency scores)
+            rank_new_positions = VectorUtils.get_positions_sorted_desc(similarity_scores)
             return RerankNewPositions(ranking_new_positions=rank_new_positions)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Bad request: {e}")
@@ -119,8 +119,8 @@ class QueryService:
         ) -> list[float]:
         """
         Calculates the similarity scores between the visible neighbour terms and the neighbour terms of each document, until 
-        obtaining the documents with the closest neighbour terms to the query terms. Similarity scores correspond to the 
-        Euclidean distance between two graphs, being more similar when the distance between is smaller and vice versa.
+        obtaining a score similarity list for each document. Similarity scores correspond to the top proximity and 
+        frequency scores associated with the user graph terms.
         
         Parameters:
         - document_weight_graph_tuple_list (list[tuple[float, VicinityGraph]]): A list of tuples, where each tuple contains 
@@ -135,10 +135,10 @@ class QueryService:
         similarity_ranking: list[float] = []
 
         for doc_weight, doc_graph in document_weight_graph_tuple_list:
-            # Calculate the euclidean distance between the visible graph and the document graph
-            euclidean_distance_between_graphs = - (doc_weight * 0.01) + visible_graph.get_euclidean_distance_as_base_graph(doc_graph)
-            # Add the first similarity score to the ranking list
-            similarity_ranking.append(euclidean_distance_between_graphs)
+            # Calculate the similarity score between the visible graph and the document graph
+            similarity_score_between_graphs = (doc_weight * 0.0000000001) + visible_graph.get_similarity_score_as_base_graph(doc_graph)
+            # Add the similarity score to the ranking list
+            similarity_ranking.append(similarity_score_between_graphs)
             
         return similarity_ranking
     
