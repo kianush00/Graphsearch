@@ -190,7 +190,7 @@ class Sentence(QueryTreeHandler):
         E.g. {'v_term_1': {'query_term_1': [0.0, 1.8, 0.0, 0.9]}, 
         'v_term_2': {'query_term_1': [0.0, 0.0, 0.9, 0.0], 'query_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
         """
-        term_positions_dict = self.get_term_positions_dict(self.__preprocessed_text)
+        term_positions_dict = self.get_term_positions_dict()
         query_terms = self.get_query_tree().get_query_terms_str_list_with_underscores()
         query_term_positions_dict = self.get_query_term_positions_dict(term_positions_dict, query_terms)
         vicinity_matrix = {}   # Create the empty dictionary
@@ -308,16 +308,9 @@ class Sentence(QueryTreeHandler):
             self.generate_proximity_nodes_in_leaf_graph(leaf_node)
     
 
-    def get_term_positions_dict(self, 
-            text: str
-            ) -> defaultdict[str, list[int]]:
+    def get_term_positions_dict(self) -> defaultdict[str, list[int]]:
         """
         Calculate a dictionary to store the list of positions for each text term.
-
-        Parameters
-        ----------
-        text : str
-            The text to calculate its positions by term
 
         Returns
         -------
@@ -326,7 +319,7 @@ class Sentence(QueryTreeHandler):
         """
         term_positions_dict = defaultdict(list)
         # Tokenize and normalize the text
-        terms = re.findall(r'\w+', text.lower())
+        terms = re.findall(r'\w+', self.__preprocessed_text.lower())
         for i, term in enumerate(terms):
             term_positions_dict[term].append(i)
         return term_positions_dict
@@ -383,23 +376,23 @@ class Sentence(QueryTreeHandler):
         # Iterate over each term in the proximity frequency dictionary
         for neighbour_term in terms_prox_freq_dict.keys():
             # Retrieve the list of frequencies by distance for the term
+            # E.g.   {device: {iot: [1, 0, 2, 0]}}  ->  [1, 0, 2, 0]
             freq_by_distance_list: list[int] = self.__vicinity_matrix.get(neighbour_term).get(query_term)
-            distance_occurrence_list: list[int] = []
 
             # Construct a list of occurrence of distances
             # E.g.  [1, 0, 2, 0] -> [1, 3, 3]
+            distance_occurrence_list: list[int] = []
             for idx, frequency in enumerate(freq_by_distance_list):
                 distance_occurrence_list.extend([idx+1] * frequency)
             
-            # Transform the values ​​in the list to the following formula: 1 / (4 ^ (distance - 1) )
+            # Transform the values ​​in the list to the following formula: 1 / (2 ^ (distance - 1) )
+            # E.g.  [1, 3, 3] -> [1, 0.25, 0.25]
             distance_score_calculation_list = VectorUtils.calculate_distance_score_list(distance_occurrence_list)
             
-            # Normalize the transformed list from [0, 1] range to [1, 10] range
-            normalized_distance_score_list = VectorUtils.normalize_vector(distance_score_calculation_list, 1, 10, 0, 1)
-            
-            # Calculate the proximity score of the term, by the formula:  p = (1 + log(score_list_sum)) * weight
-            score_list_sum: float = sum(normalized_distance_score_list)
-            prox_score = MathUtils.calculate_term_proximity_score(score_list_sum, self.__weight)
+            # Calculate the proximity score of the term, multiplying the score list sum by the document weight
+            # E.g.  sum([1, 0.25, 0.25]) * doc_weight  ->  1.5 * doc_weight
+            score_list_sum: float = sum(distance_score_calculation_list)
+            prox_score = score_list_sum * self.__weight
 
             # Round the values to 6 decimal places for better readability
             prox_score = round(prox_score, 6)
@@ -884,8 +877,8 @@ class Ranking(QueryTreeHandler):
 
         Parameters
         ----------
-        nr_of_graph_terms : int
-            Configured number of terms in the graph
+        articles_dicts : list[dict]
+            A list of dictionaries containing the attributes 'title', 'abstract' and 'article_number'.
         """
         self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(articles_dicts)
     

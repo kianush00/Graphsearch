@@ -1133,6 +1133,7 @@ class Document extends TextElement {
     private readonly abstract: string
     private readonly preprocessed_text: string
     private readonly weight: number
+    private excluded: boolean
     private readonly sentences: Sentence[] = []
 
     /**
@@ -1156,6 +1157,7 @@ class Document extends TextElement {
         this.abstract = idTitleAbstractPreprcsdtext[2]
         this.preprocessed_text = idTitleAbstractPreprcsdtext[3]
         this.weight = weight
+        this.excluded = false
         this.sentences = this.initializeSentencesFromResponse(responseSentences, hopLimit)
     }
 
@@ -1177,6 +1179,14 @@ class Document extends TextElement {
 
     public getSentences(): Sentence[] {
         return this.sentences
+    }
+
+    public isExcluded(): boolean {
+        return this.excluded
+    }
+
+    public setExcluded(excluded: boolean): void {
+        this.excluded = excluded
     }
 
     public toObject(): DocumentObject {
@@ -1239,6 +1249,10 @@ class Ranking {
 
     public getDocuments(): Document[] {
         return this.documents
+    }
+
+    public getNotExcludedDocuments(): Document[] {
+        return this.documents.filter(doc => !doc.isExcluded())
     }
 
     public addDocument(document: Document): void {
@@ -1952,13 +1966,13 @@ class ResultsList {
         if (this.activeTermService === undefined) return
 
         // Get the ranking of the active query term
-        let documents = this.activeTermService.getRanking().getDocuments()
+        let notExcludedDocuments = this.activeTermService.getRanking().getNotExcludedDocuments()
     
-        for (let i = 0; i < documents.length; i++) {
+        for (let i = 0; i < notExcludedDocuments.length; i++) {
             // Create a new list item, title and abstract elements
             const listItem = document.createElement('li');
-            const titleElement = this.createTitleElement(i, documents[i])
-            const abstractElement = this.createAbstractElement(documents[i])
+            const titleElement = this.createTitleElement(i, notExcludedDocuments[i])
+            const abstractElement = this.createAbstractElement(notExcludedDocuments[i])
     
             // Add a click event listener and mouse event listeners to the title element
             this.addEventListenersToTitleElement(titleElement, abstractElement)
@@ -2144,7 +2158,7 @@ class ResultsList {
      * it is a query term. If it is not a query term, the original word is returned.
      */
     private getHighlightedWordIfNeighbourTerm(word: string, words: string[], index: number, queryTermsList: string[]): string {
-        const stopwords = ["a", "about", "above", "accordingly", "after", "against", "ain", "all", "also", "although", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "besides", "between", "both", "but", "by", "can", "can't", "cannot", "consequently", "could", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "due", "during", "each", "etc", "every", "few", "for", "from", "further", "furthermore", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "however", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "let's", "likewise", "ll", "m", "ma", "me", "might", "mightn", "mightn't", "more", "moreover", "most", "must", "mustn", "mustn't", "my", "myself", "needn", "needn't", "nevertheless", "no", "nonetheless", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she'd", "she'll", "she's", "should", "should've", "shouldn", "shouldn't", "similarly", "since", "so", "some", "such", "t", "than", "that", "that'll", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "therefore", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "though", "through", "thus", "to", "too", "under", "unless", "until", "up", "using", "ve", "very", "was", "wasn", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren", "weren't", "what", "what's", "when", "when's", "where", "where's", "whereas", "whether", "which", "while", "who", "who's", "whom", "whose", "why", "why's", "will", "with", "won", "won't", "would", "wouldn", "wouldn't", "y", "yet", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"]
+        const stopwords = ["a", "about", "above", "accordingly", "after", "against", "ain", "all", "also", "although", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "besides", "between", "both", "but", "by", "can", "can't", "cannot", "consequently", "could", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "due", "during", "each", "etc", "every", "few", "for", "from", "further", "furthermore", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "however", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "let's", "likewise", "ll", "m", "ma", "me", "might", "mightn", "mightn't", "more", "moreover", "most", "must", "mustn", "mustn't", "my", "myself", "needn", "needn't", "nevertheless", "no", "nonetheless", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she'd", "she'll", "she's", "should", "should've", "shouldn", "shouldn't", "similarly", "since", "so", "some", "such", "t", "than", "that", "that'll", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "therefore", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "though", "through", "thus", "to", "too", "under", "unless", "until", "up", "using", "ve", "very", "was", "wasn", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren", "weren't", "what", "what's", "when", "when's", "where", "where's", "whereas", "whether", "which", "while", "who", "who's", "whom", "whose", "why", "why's", "will", "with", "won", "won't", "would", "wouldn", "wouldn't", "y", "yet", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves",  "arent", "cant", "couldnt", "didnt", "doesnt", "dont", "hadnt", "hasnt", "havent", "hed", "hes", "im", "ive", "isnt", "its", "lets", "mightnt", "mustnt", "shant", "shed", "shes", "shouldve", "shouldnt", "theyd", "theyll", "theyre", "theyve", "wasnt", "wed", "well", "were", "weve", "werent", "whats", "whens", "wheres", "whos", "whys", "wont", "wouldnt", "youd", "youll", "youre", "youve"]
         const hopLimit = this.activeTermService?.getVisibleQueryTerm().getNeighbourTerms()[0].getHopLimit() ?? 0
         let foundQueryTerm = false;
 

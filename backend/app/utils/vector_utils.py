@@ -170,7 +170,7 @@ class VectorUtils:
         Returns:
         list[float]: A list of transformed distance values.
         """
-        distance_score_calculation_list: list[float] = [1 / (4 ** (distance - 1)) for distance in distance_occurrence_list]
+        distance_score_calculation_list: list[float] = [1 / (2 ** (distance - 1)) for distance in distance_occurrence_list]
         return distance_score_calculation_list
     
     

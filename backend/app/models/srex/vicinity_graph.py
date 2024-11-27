@@ -183,10 +183,10 @@ class VicinityNode:
         str: A string representation of the current node.
         """
         term = self.__term
-        frequency_score = round(self.__frequency_score, 2)
-        proximity_score = round(self.__proximity_score, 2)
+        freq_score = self.__frequency_score
+        prox_score = self.__proximity_score
         criteria = self.__criteria
-        string = f"TERM: {term} ; FREQUENCY_SCORE: {frequency_score} ; PROXIMITY_SCORE: {proximity_score} ; CRITERIA: {criteria}"
+        string = f"TERM: {term} ; FREQUENCY_SCORE: {freq_score} ; PROXIMITY_SCORE: {prox_score} ; CRITERIA: {criteria}"
         return string
 
 
