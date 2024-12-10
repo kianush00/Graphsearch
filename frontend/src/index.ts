@@ -500,6 +500,11 @@ class GraphNode {
         this.cyElement.getElementById(this.id).data('label', label)
     }
 
+
+    public setBackgroundColor(hexColor: string): void {
+        this.cyElement.getElementById(this.id).style('background-color', hexColor);
+    }
+
     /**
      * Removes the visual node from the graph interface.
      *
@@ -779,9 +784,10 @@ class NeighbourTerm extends Term implements ViewManager {
     }
 
     public setHops(hops: number): void {
+        let previousHops = this.hops
         this.hops = hops
         if (this.queryTerm.getIsUserQuery()) {
-            this.updateUserCriteria(hops)
+            this.updateUserCriteria(previousHops, hops)
         }
     }
 
@@ -918,13 +924,16 @@ class NeighbourTerm extends Term implements ViewManager {
     * If the number of hops is between 1.7 and 3.2 (exclusive), the criteria is set to "frequency".
     * If the number of hops is greater than or equal to 3.2, the criteria is set to "exclusion".
     */
-    private updateUserCriteria(hops: number): void {
-        if (hops < 1.7) {
+    private updateUserCriteria(previousHops: number, hops: number): void {
+        if (previousHops >= 1.7 && hops < 1.7) {
             this.criteria = "proximity";
-        } else if (hops < 3.2) {
+            this.node?.setBackgroundColor("#73b201");
+        } else if ((previousHops < 1.7 || previousHops >= 3.2) && (hops >= 1.7 && hops < 3.2)) {
             this.criteria = "frequency";
-        } else {
+            this.node?.setBackgroundColor("#2750db");
+        } else if (previousHops < 3.2 && hops >= 3.2) {
             this.criteria = "exclusion";
+            this.node?.setBackgroundColor("#FF0000");
         }
     }
 
@@ -2136,7 +2145,7 @@ class ResultsList {
             if (neighbourTermsRegex.test(word)) {
                 return this.getHighlightedWordIfNeighbourTerm(word, words, index, queryTermsList);
             } else if (queryTermsRegex.test(word)) {
-                return `<span style="background-color: #98EE98;">${word}</span>`;
+                return `<span style="background-color: #EEF373;">${word}</span>`;
             } else {
                 return word;
             }
@@ -2173,7 +2182,7 @@ class ResultsList {
         }
 
         if (foundQueryTerm) {
-            return `<span style="background-color: #D8D8EE;">${word}</span>`;
+            return `<span style="background-color: #98EE98;">${word}</span>`;
         } else {
             return word;
         }
@@ -2446,7 +2455,7 @@ const cyUser = cytoscape({
         {
             selector: '.' + NodeType.central_node,
             style: {
-            "background-color": '#ff8000',
+            "background-color": '#e3c600',
             'width': '20px',
             'height': '20px',
             'label': "data(id)",
@@ -2467,7 +2476,7 @@ const cyUser = cytoscape({
         {
             selector: '.' + NodeType.outer_node,
             style: {
-              'background-color': '#8080EE',
+              'background-color': '#73b201',
               'width': '15px',
               'height': '15px',
               'label': 'data(label)',
@@ -2490,7 +2499,7 @@ const cySentence = cytoscape({
         {
             selector: '.' + NodeType.central_node,
             style: {
-            "background-color": '#70CC70',
+            "background-color": '#e3c600',
             'width': '16px',
             'height': '16px',
             'label': "data(id)",
@@ -2512,7 +2521,7 @@ const cySentence = cytoscape({
         {
             selector: '.' + NodeType.outer_node,
             style: {
-                'background-color': '#A0A0EE',
+                'background-color': '#73b201',
                 'width': '12px',
                 'height': '12px',
                 'label': 'data(label)',
