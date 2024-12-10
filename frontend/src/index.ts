@@ -1011,6 +1011,18 @@ class QueryTerm extends Term implements ViewManager {
         return this.neighbourTerms.map(term => term.getValue())
     }
 
+    public getNeighbourProximityTermsValues(): string[] {
+        return this.neighbourTerms
+            .filter(term => term.getCriteria() === 'proximity')
+            .map(term => term.getValue());
+    }
+
+    public getNeighbourFrequencyTermsValues(): string[] {
+        return this.neighbourTerms
+            .filter(term => term.getCriteria() === 'frequency')
+            .map(term => term.getValue());
+    }
+
     public getNeighbourTermsAsObjects(): NTermObject[] {
         return this.neighbourTerms.map(term => term.toObject())
     }
@@ -2063,10 +2075,13 @@ class ResultsList {
      * The highlighting is applied using different colors for the query terms and neighbour terms.
      */
     private applyHighlightingToSentences(sentenceObjects: Sentence[]): HTMLSpanElement {
-        const queryTerms = this.activeTermService?.getVisibleQueryTerm().getValue() as string
+        const visibleQueryTerm = this.activeTermService?.getVisibleQueryTerm();
+
+        const queryTerms = visibleQueryTerm?.getValue() as string
         const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
-        const neighbourTermsList = this.activeTermService?.getVisibleQueryTerm().getNeighbourTermsValues() as string[]
-        return this.getHighlightedText(sentenceObjects, queryTermsList, neighbourTermsList);
+        const userProximityTermsList = visibleQueryTerm?.getNeighbourProximityTermsValues() as string[]
+        const userFrequencyTermsList = visibleQueryTerm?.getNeighbourFrequencyTermsValues() as string[]
+        return this.getHighlightedText(sentenceObjects, queryTermsList, userProximityTermsList, userFrequencyTermsList);
     }
 
     /**
@@ -2074,7 +2089,7 @@ class ResultsList {
      *
      * @param sentenceObjects - An array of Sentence objects to apply highlighting to.
      * @param queryTermsList - An array of strings representing the query terms.
-     * @param neighbourTermsList - An array of strings representing the neighbour terms.
+     * @param neighbourTermsList - An array of strings representing the user neighbour terms.
      *
      * @returns A span element containing the highlighted sentences.
      *
@@ -2085,19 +2100,20 @@ class ResultsList {
      * The highlighted words are wrapped in HTML span tags with a specific background color.
      * The function then joins the highlighted words back into sentences and returns the result.
      */
-    private getHighlightedText(sentenceObjects: Sentence[], queryTermsList: string[], neighbourTermsList: string[]): HTMLSpanElement {
+    private getHighlightedText(sentenceObjects: Sentence[], queryTermsList: string[], userProximityTermsList: string[], 
+                                userFrequencyTermsList: string[]): HTMLSpanElement {
         if (sentenceObjects.length == 0) return document.createElement('span');
         let highlightedSentences: [string, Sentence | undefined][] = []
 
         for (let sentenceObject of sentenceObjects) {
             const sentenceText = sentenceObject.getRawText();
-            if (sentenceObject.getQueryTerm().getNeighbourTerms().length == 0 || neighbourTermsList.length == 0) {
-                // If there are no user neighbour terms in the sentence, just return the original sentence
+            if (sentenceObject.getQueryTerm().getNeighbourTerms().length == 0 || (userProximityTermsList.length == 0 && userFrequencyTermsList.length == 0)) {
+                // If there are no user neighbour terms in the sentence, or no proximity/frequency terms in the user graph, then return the original sentence
                 highlightedSentences.push([sentenceText, undefined]);
             } else {
-                // If there are user neighbour terms in the sentence, split text by spaces and replace matching words
+                // Else, split text by spaces and replace matching words
                 const words = sentenceText.split(' ');
-                const highlightedSentenceText = this.getHighlightedSentence(words, queryTermsList, neighbourTermsList);
+                const highlightedSentenceText = this.getHighlightedSentence(words, queryTermsList, userProximityTermsList, userFrequencyTermsList);
                 highlightedSentences.push([highlightedSentenceText, sentenceObject]);
             }
         }
@@ -2154,14 +2170,22 @@ class ResultsList {
      * @returns A string representing the highlighted sentence. Each query term and neighbour term is highlighted
      * with a different background color. Non-matching words are returned as is.
      */
-    private getHighlightedSentence(words: string[], queryTermsList: string[], neighbourTermsList: string[]): string {
+    private getHighlightedSentence(words: string[], queryTermsList: string[], userProximityTermsList: string[], 
+                                    userFrequencyTermsList: string[]): string {
         const highlightedSentence = words.map((word, index) => {
             // Recreate regex objects in each iteration to avoid state issues with global regex
             const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
-            const neighbourTermsRegex = new RegExp(neighbourTermsList.join('|'), 'gi');
+            const userProximityTermsRegex = userProximityTermsList.length > 0 
+                    ? new RegExp(userProximityTermsList.join('|'), 'gi') 
+                    : null;
+            const userFrequencyTermsRegex = userFrequencyTermsList.length > 0 
+                    ? new RegExp(userFrequencyTermsList.join('|'), 'gi')
+                    : null;
 
-            if (neighbourTermsRegex.test(word)) {
+            if (userProximityTermsRegex?.test(word)) {
                 return this.getHighlightedWordIfNeighbourTerm(word, words, index, queryTermsList);
+            } else if (userFrequencyTermsRegex?.test(word)) {
+                return `<span style="background-color: #b5bef1;">${word}</span>`;
             } else if (queryTermsRegex.test(word)) {
                 return `<span style="background-color: #EEF373;">${word}</span>`;
             } else {
@@ -2473,7 +2497,7 @@ const cyUser = cytoscape({
         {
             selector: '.' + NodeType.central_node,
             style: {
-            "background-color": '#e3c600',
+            "background-color": '#f0d200',
             'width': '20px',
             'height': '20px',
             'label': "data(id)",
@@ -2517,7 +2541,7 @@ const cySentence = cytoscape({
         {
             selector: '.' + NodeType.central_node,
             style: {
-            "background-color": '#e3c600',
+            "background-color": '#f0d200',
             'width': '16px',
             'height': '16px',
             'label': "data(id)",
