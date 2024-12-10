@@ -364,11 +364,6 @@ class Edge {
      */
     public setDistance(distance: number): void {
         this.distance = distance;
-        let cyEdge = this.cyElement.edges(`[source = "${this.sourceNode.getId()}"][target = "${this.targetNode.getId()}"]`)
-        const hops = ConversionUtils.convertDistanceToHops(this.distance, this.hopLimit, this.isUserGraphEdge)
-        if (!this.isUserGraphEdge) {
-            cyEdge.data('distance', hops)
-        }
     }
 
     /**
@@ -721,7 +716,7 @@ interface NTermObject {
 class NeighbourTerm extends Term implements ViewManager {
     protected node: OuterNode | undefined
     private readonly queryTerm: QueryTerm
-    private hops: number
+    private hops: number = 0.0
     private nodePosition: Position = { x: 0, y: 0 }
     private edge: Edge | undefined
     private readonly proximityScore: number
@@ -746,7 +741,7 @@ class NeighbourTerm extends Term implements ViewManager {
         this.proximityScore = proximityScore
         this.frequencyScore = frequencyScore
         this.criteria = criteria
-        this.hops = 1.0
+        this.setInitialHops()
         this.hopLimit = hopLimit
         this.setLabel(value)
     }
@@ -756,16 +751,22 @@ class NeighbourTerm extends Term implements ViewManager {
      * This includes creating and positioning the OuterNode and Edge.
      */
     public displayViews(): void {
-        const isUserQuery = this.queryTerm.getIsUserQuery()
-        // If the term is from a visible sentence, then the sentence graph doesn't display non proximity neighbour terms
-        if ((!isUserQuery) && (this.criteria !== "proximity")) return
-
+        const isUserGraph = this.queryTerm.getIsUserGraph()
         // Build the outer node and its edge, and display them
-        this.node = new OuterNode(TextUtils.getRandomString(24), isUserQuery)
+        this.node = new OuterNode(TextUtils.getRandomString(28), isUserGraph)
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
         if (this.queryTerm.getNode() === undefined) return 
-        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node, this.hopLimit, isUserQuery)
+        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node, this.hopLimit, isUserGraph)
+
+        // Set term criteria, which includes changing the node color based on the criteria.
+        if (this.criteria === 'proximity') {
+            this.setProximityCriteria();
+        } else if (this.criteria === 'frequency') {
+            this.setFrequnecyCriteria();
+        } else {
+            this.setExclusionCriteria();
+        }
     }
 
     /**
@@ -783,10 +784,10 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.hops
     }
 
-    public setHops(hops: number): void {
-        let previousHops = this.hops
-        this.hops = hops
-        if (this.queryTerm.getIsUserQuery()) {
+    public updateHops(hops: number): void {
+        if (this.queryTerm.getIsUserGraph()) {
+            let previousHops = this.hops
+            this.hops = hops
             this.updateUserCriteria(previousHops, hops)
         }
     }
@@ -843,8 +844,8 @@ class NeighbourTerm extends Term implements ViewManager {
         const nodeDistance = this.edge?.getDistance() ?? 0
         this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
         const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
-        const hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit, this.queryTerm.getIsUserQuery())
-        this.setHops(hops)
+        const hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit, this.queryTerm.getIsUserGraph())
+        this.updateHops(hops)
         this.updateNodePosition(distance)
     }
 
@@ -864,7 +865,7 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2 + 0.25
-        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.hopLimit, this.queryTerm.getIsUserQuery())
+        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.hopLimit, this.queryTerm.getIsUserGraph())
         this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this.updateNodePosition(nodeDistance)
     }
@@ -911,6 +912,11 @@ class NeighbourTerm extends Term implements ViewManager {
         this.edge?.setDistance(distance)
     }
 
+    private setInitialHops(): void {
+        let initialHops = this.queryTerm.getIsUserGraph() ? 1.0 : 4.0
+        this.hops = initialHops
+    }
+
     /**
     * Updates the criteria of the neighbour term based on the number of hops.
     *
@@ -926,15 +932,27 @@ class NeighbourTerm extends Term implements ViewManager {
     */
     private updateUserCriteria(previousHops: number, hops: number): void {
         if (previousHops >= 1.7 && hops < 1.7) {
-            this.criteria = "proximity";
-            this.node?.setBackgroundColor("#73b201");
+            this.setProximityCriteria();
         } else if ((previousHops < 1.7 || previousHops >= 3.2) && (hops >= 1.7 && hops < 3.2)) {
-            this.criteria = "frequency";
-            this.node?.setBackgroundColor("#2750db");
+            this.setFrequnecyCriteria();
         } else if (previousHops < 3.2 && hops >= 3.2) {
-            this.criteria = "exclusion";
-            this.node?.setBackgroundColor("#FF0000");
+            this.setExclusionCriteria();
         }
+    }
+
+    private setProximityCriteria(): void {
+        this.criteria = "proximity";
+        this.node?.setBackgroundColor("#73b201");
+    }
+
+    private setFrequnecyCriteria(): void {
+        this.criteria = "frequency";
+        this.node?.setBackgroundColor("#2750db");
+    }
+
+    private setExclusionCriteria(): void {
+        this.criteria = "exclusion";
+        this.node?.setBackgroundColor("#FF0000");
     }
 
 }
@@ -947,15 +965,15 @@ class NeighbourTerm extends Term implements ViewManager {
 class QueryTerm extends Term implements ViewManager {
     protected node: CentralNode | undefined
     private neighbourTerms: NeighbourTerm[] = []
-    private readonly isUserQuery: boolean
+    private readonly isUserGraph: boolean
 
-    constructor(value: string, isUserQuery: boolean) {
+    constructor(value: string, isUserGraph: boolean) {
         super(value);
-        this.isUserQuery = isUserQuery;
+        this.isUserGraph = isUserGraph;
     }
 
-    public getIsUserQuery(): boolean {
-        return this.isUserQuery;
+    public getIsUserGraph(): boolean {
+        return this.isUserGraph;
     }
 
     /**
@@ -963,7 +981,7 @@ class QueryTerm extends Term implements ViewManager {
      * This includes creating and positioning the CentralNode and OuterNodes.
      */
     public displayViews(): void {
-        this.node = new CentralNode(this.value, 0, 0, this.isUserQuery)
+        this.node = new CentralNode(this.value, 0, 0, this.isUserGraph)
         for (let neighbourTerm of this.neighbourTerms) {
             neighbourTerm.displayViews();
         }
@@ -1030,7 +1048,7 @@ class QueryTerm extends Term implements ViewManager {
      * If the node exists and is a CentralNode, it centers the graph on the node.
      */
     private centerNode(): void {
-        const cyElement = this.isUserQuery ? cyUser : cySentence
+        const cyElement = this.isUserGraph ? cyUser : cySentence
         cyElement.zoom(1.2)
         if (this.node === undefined) return
         cyElement.center(cyElement.getElementById(this.node.getId()))
@@ -2513,7 +2531,6 @@ const cySentence = cytoscape({
             "curve-style": "bezier",
             "target-arrow-shape": "triangle",
             "line-color": "#ccc",
-            label: "data(distance)",
             "width": "2px", // set the width of the edge
             "font-size": "11px" // set the font size of the label            
             },
@@ -2530,8 +2547,8 @@ const cySentence = cytoscape({
             }
         }
     ],
-    userZoomingEnabled: false,
-    userPanningEnabled: false
+    userZoomingEnabled: true,
+    userPanningEnabled: true
 })
 
 // When the user drags a node
