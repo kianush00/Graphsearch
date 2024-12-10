@@ -43,19 +43,108 @@ class QueryService:
             ranking.calculate_ieee_xplore_ranking()
             ranking.generate_all_graphs(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
             
-            # Get visible neighbour terms and complete neighbour terms as PydanticNeighbourTerm objects.
-            visible_graph_dict = ranking.get_graph().get_viewable_graph_copy().get_graph_as_dict()
-            complete_graph_dict = ranking.get_graph().get_graph_as_dict()
-            
-            visible_neighbour_terms = self.__get_pydantic_neighbour_term_list(visible_graph_dict)
-            complete_neighbour_terms = self.__get_pydantic_neighbour_term_list(complete_graph_dict)
-            
-            # Get documents and its neighbour terms
-            documents: list[PydanticDocument] = self.__get_pydantic_documents_from_ranking(ranking)
+            # Return the Pydantic ranking
+            return self.__get_pydantic_ranking(ranking)
+        except Exception as e:
+            raise HTTPException(status_code=404, detail=f"Results not found: {e}")
+    
+    
+    def process_query_example_1(self) -> PydanticRanking:
+        """
+        Processes a query and generates a PydanticRanking object containing visible neighbour terms, complete neighbour terms,
+        and documents with their neighbour terms.
 
-            return PydanticRanking(visible_neighbour_terms=visible_neighbour_terms, 
-                                   complete_neighbour_terms=complete_neighbour_terms,
-                                   documents=documents)
+        Parameters:
+        - query_text (str): The input query text.
+        - nr_search_results (int): The number of search results to retrieve.
+        - limit_distance (int): The maximum distance for neighbour terms.
+        - nr_of_graph_terms (int): The number of neighbour terms to include in the user graph.
+
+        Returns:
+        - PydanticRanking: An object containing the processed ranking information.
+
+        Raises:
+        - HTTPException: If the results are not found (status code 404).
+        """
+        # Initialize parameters
+        query_text               = 'iot'
+        nr_search_results        = 3
+        ranking_weight_type      = 'linear' # it can be: 'none', 'linear' or 'inverse'
+        lema                     = True
+        stem                     = False
+        summarize                = 'mean'   # it can be: 'mean' or 'median'
+        nr_of_graph_terms        = 5
+        limit_distance           = 4 
+        include_query_terms      = False
+        
+        try:
+            # Generate ranking graphs from the results of the search
+            document_1 = 'Securing IoT Devices and Connecting the Dots Using REST API and Middleware'
+            document_2 = 'Therefore it is required to introduce a secure IoT system which doesnt allow attackers infiltration in the network through IoT devices and also to secure data in transit from IoT devices to cloud.'
+            document_3 = 'Internet of Things (IoT) is a fairly disruptive technology with inconceivable growth, impact, and capability.'
+
+            articles_list = [
+                {'title': document_1, 'article_number': '1'}, 
+                {'title': document_2, 'article_number': '2'}, 
+                {'title': document_3, 'article_number': '3'}
+            ]
+
+            ranking = Ranking(query_text, nr_search_results, ranking_weight_type, stop_words_list, lema, stem)
+            ranking.calculate_article_dictionaries_list(articles_list)
+            ranking.generate_all_graphs(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
+            
+            # Return the Pydantic ranking
+            return self.__get_pydantic_ranking(ranking)
+        except Exception as e:
+            raise HTTPException(status_code=404, detail=f"Results not found: {e}")
+    
+    
+    def process_query_example_2(self) -> PydanticRanking:
+        """
+        Processes a query and generates a PydanticRanking object containing visible neighbour terms, complete neighbour terms,
+        and documents with their neighbour terms.
+
+        Parameters:
+        - query_text (str): The input query text.
+        - nr_search_results (int): The number of search results to retrieve.
+        - limit_distance (int): The maximum distance for neighbour terms.
+        - nr_of_graph_terms (int): The number of neighbour terms to include in the user graph.
+
+        Returns:
+        - PydanticRanking: An object containing the processed ranking information.
+
+        Raises:
+        - HTTPException: If the results are not found (status code 404).
+        """
+        # Initialize parameters
+        query_text               = 'iot OR sensor'
+        nr_search_results        = 3
+        ranking_weight_type      = 'linear' # it can be: 'none', 'linear' or 'inverse'
+        lema                     = True
+        stem                     = False
+        summarize                = 'mean'   # it can be: 'mean' or 'median'
+        nr_of_graph_terms        = 5
+        limit_distance           = 4
+        include_query_terms      = False
+        
+        try:
+            # Generate ranking graphs from the results of the search
+            document_1 = 'In scientific research, sensors are considered as a prospective field for innovation.'
+            document_2 = 'IoT sensors are efficiently used in various IoT applications for creating a smart environment by collecting real time data.'
+            document_3 = 'Internet of Things (IoT) is revolutionizing our world with trillions of sensors and actuators by creating a smart environment around us.'
+
+            articles_list = [
+                {'title': document_1, 'article_number': '1'}, 
+                {'title': document_2, 'article_number': '2'}, 
+                {'title': document_3, 'article_number': '3'}
+            ]
+
+            ranking = Ranking(query_text, nr_search_results, ranking_weight_type, stop_words_list, lema, stem)
+            ranking.calculate_article_dictionaries_list(articles_list)
+            ranking.generate_all_graphs(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
+            
+            # Return the Pydantic ranking
+            return self.__get_pydantic_ranking(ranking)
         except Exception as e:
             raise HTTPException(status_code=404, detail=f"Results not found: {e}")
     
@@ -239,6 +328,35 @@ class QueryService:
             criteria=v.get('criteria')
             ) for k, v in graph_dict.items()
         ]
+    
+    
+    def __get_pydantic_ranking(self, ranking: Ranking) -> PydanticRanking:
+        """
+        This function converts a Ranking object into a PydanticRanking object.
+        Each PydanticRanking object represents a ranking with its visible neighbour terms,
+        complete neighbour terms, and documents.
+        
+        Parameters:
+        - ranking (Ranking): An instance of the Ranking class, which contains a list of documents.
+        
+        Returns:
+        - PydanticRanking: A PydanticRanking object, where each object represents a ranking.
+        The object contains visible neighbour terms, complete neighbour terms, and documents.
+        """
+        # Get visible neighbour terms and complete neighbour terms as PydanticNeighbourTerm objects.
+        visible_graph_dict = ranking.get_graph().get_viewable_graph_copy().get_graph_as_dict()
+        complete_graph_dict = ranking.get_graph().get_graph_as_dict()
+
+        visible_neighbour_terms = self.__get_pydantic_neighbour_term_list(visible_graph_dict)
+        complete_neighbour_terms = self.__get_pydantic_neighbour_term_list(complete_graph_dict)
+
+        # Get documents and its neighbour terms
+        documents: list[PydanticDocument] = self.__get_pydantic_documents_from_ranking(ranking)
+
+        return PydanticRanking(visible_neighbour_terms=visible_neighbour_terms, 
+                                complete_neighbour_terms=complete_neighbour_terms,
+                                documents=documents)
+
 
 
 

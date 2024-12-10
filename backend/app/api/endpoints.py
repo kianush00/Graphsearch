@@ -11,6 +11,16 @@ async def get_neighbour_terms(query_term: QueryTerm) -> PydanticRanking:
     return queryService.process_query(query_term.query, query_term.search_results, query_term.limit_distance, query_term.graph_terms)
 
 
+@router.post("/get-ranking-example-1")
+async def get_neighbour_terms_example_1(query_term: QueryTerm) -> PydanticRanking:
+    return queryService.process_query_example_1()
+
+
+@router.post("/get-ranking-example-2")
+async def get_neighbour_terms_example_2(query_term: QueryTerm) -> PydanticRanking:
+    return queryService.process_query_example_2()
+
+
 @router.post("/rerank")
 async def get_new_ranking_order(ranking: PydanticRankingRequest) -> RerankNewPositions:
     return queryService.get_new_ranking_positions(ranking)
