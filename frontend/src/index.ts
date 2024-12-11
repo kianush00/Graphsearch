@@ -1313,7 +1313,7 @@ class Ranking {
      * If the lengths of the positions array and the documents array do not match,
      * logs an error message to the console and returns without modifying the documents.
      *
-     * @param positions - An array of integers representing the new order of the documents.
+     * @param newPositions - An array of integers representing the new order of the documents.
      * Each integer corresponds to the index of a document in the documents array.
      *
      * @remarks
@@ -1321,17 +1321,59 @@ class Ranking {
      * in the new order specified by the positions array.
      * It then assigns the reorderedDocuments array back to the documents property of the Ranking instance.
      */
-    public reorderDocuments(positions: number[]): void {
-        if (positions.length !== this.documents.length) {
+    public reorderDocuments(newPositions: number[]): void {
+        const excludedDocuments: Document[] = this.documents.filter(doc => doc.isExcluded());
+        const notExcludedDocuments: Document[] = this.documents.filter(doc => !doc.isExcluded());
+
+        // Validate the positions array length (it must be equal to the length of the not excluded documents array)
+        if (newPositions.length !== notExcludedDocuments.length) {
             console.log('Warning: Positions array length must match documents array length.');
+            alert('Something went wrong with the "Rerank" function.');
             return
         }
-        const reorderedDocuments = new Array(this.documents.length);
-        for (let i = 0; i < positions.length; i++) {
-            reorderedDocuments[i] = this.documents[positions[i]];
+
+        // Reorder the not excluded documents
+        const reorderedDocuments: Document[] = new Array(this.documents.length);
+        for (let i = 0; i < newPositions.length; i++) {
+            reorderedDocuments[i] = notExcludedDocuments[newPositions[i]];
         }
+
+        // Add the excluded documents to the last positions
+        let j = 0;
+        for (let i = newPositions.length; i < this.documents.length; i++) {
+            reorderedDocuments[i] = excludedDocuments[j];
+            j++;
+        }
+
         this.documents = reorderedDocuments;
     }
+
+
+    public refreshDocumentsExclusion(): void {
+        this.documents.forEach(doc => doc.setExcluded(false));
+    }
+
+    /**
+     * Sets the indices of the documents to be excluded in the ranking.
+     * This function iterates over the provided excludedDocuments array,
+     * checks if a document exists at each index, and sets its excluded property to true.
+     * If a document does not exist at an index, logs a warning message to the console.
+     *
+     * @param excludedDocuments - An array of integers representing the indices of the documents to be excluded.
+     *
+     * @returns {void} - This function does not return any value.
+     */
+    public setExcludedDocuments(excludedDocuments: number[]): void {
+        for (const docIndex of excludedDocuments) {
+            if (this.documents[docIndex] !== undefined) {
+                this.documents[docIndex].setExcluded(true);
+            } else {
+                console.log(`Warning: Document at index ${docIndex} does not exist.`);
+            }
+        }
+    }
+
+
 
     public toObject(): RankingObject {
         return {
@@ -2476,7 +2518,10 @@ class RerankComponent {
             
             if (response) {
                 // Handle the response accordingly
-                const ranking_new_positions: number[] = response['ranking_new_positions'] 
+                const ranking_new_positions: number[] = response['ranking_new_positions']
+                const ranking_excluded_documents: number[] = response['ranking_excluded_documents']
+                this.queryService.getActiveQueryTermService()?.getRanking().refreshDocumentsExclusion() 
+                this.queryService.getActiveQueryTermService()?.getRanking().setExcludedDocuments(ranking_excluded_documents)  
                 this.queryService.getActiveQueryTermService()?.getRanking().reorderDocuments(ranking_new_positions)
                 this.queryService.updateResultsList()
             }

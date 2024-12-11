@@ -4,6 +4,7 @@ from typing import List
 
 class RerankNewPositions(BaseModel):
     ranking_new_positions: list[int]
+    ranking_excluded_documents: list[int]
 
 
 class PydanticNeighbourTerm(BaseModel):

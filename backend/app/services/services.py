@@ -54,12 +54,6 @@ class QueryService:
         Processes a query and generates a PydanticRanking object containing visible neighbour terms, complete neighbour terms,
         and documents with their neighbour terms.
 
-        Parameters:
-        - query_text (str): The input query text.
-        - nr_search_results (int): The number of search results to retrieve.
-        - limit_distance (int): The maximum distance for neighbour terms.
-        - nr_of_graph_terms (int): The number of neighbour terms to include in the user graph.
-
         Returns:
         - PydanticRanking: An object containing the processed ranking information.
 
@@ -103,12 +97,6 @@ class QueryService:
         """
         Processes a query and generates a PydanticRanking object containing visible neighbour terms, complete neighbour terms,
         and documents with their neighbour terms.
-
-        Parameters:
-        - query_text (str): The input query text.
-        - nr_search_results (int): The number of search results to retrieve.
-        - limit_distance (int): The maximum distance for neighbour terms.
-        - nr_of_graph_terms (int): The number of neighbour terms to include in the user graph.
 
         Returns:
         - PydanticRanking: An object containing the processed ranking information.
@@ -168,20 +156,31 @@ class QueryService:
             # Initialize the visible graph
             visible_graph = self.__get_graph_from_pydantic_visible_neighbour_term_list(ranking.visible_neighbour_terms)
             
+            # Get the vicinity terms with 'exclusion' criteria from the user graph
+            excluded_vicinity_terms: list[str] = [
+                node.get_term() for node in visible_graph.get_all_nodes_sorted() if node.get_criteria() == 'exclusion'
+            ]
+            
             # Initialize a tuple list of graphs, weights and preprocessed text from each document of the ranking
-            document_weight_graph_tuple_list = self.__get_doc_weight_and_sentence_graphs_from_documents(ranking)
+            document_weight_graph_excluded_tuple_list = self.__get_doc_weight_graph_excluded_tuple_list(ranking, excluded_vicinity_terms)
             
             # Create similarity scores list
-            similarity_scores: list[float] = self.__calculate_similarity_scores(document_weight_graph_tuple_list, visible_graph)
+            similarity_scores: list[float] = self.__calculate_similarity_scores(document_weight_graph_excluded_tuple_list, visible_graph)
+            
+            # Get excluded documents 0-index list
+            rank_excluded_documents: list[int] = [index for index, doc in enumerate(document_weight_graph_excluded_tuple_list) if doc[2]]
             
             # Get sorted similarity list in descending order (top proximity and frequency scores)
-            rank_new_positions = VectorUtils.get_positions_sorted_desc(similarity_scores)
-            return RerankNewPositions(ranking_new_positions=rank_new_positions)
+            rank_new_positions: list[int] = VectorUtils.get_positions_sorted_desc(similarity_scores)
+            return RerankNewPositions(ranking_new_positions=rank_new_positions, ranking_excluded_documents=rank_excluded_documents)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Bad request: {e}")
     
     
-    def __get_doc_weight_and_sentence_graphs_from_documents(self, ranking: PydanticRankingRequest) -> list[tuple[float, VicinityGraph]]:
+    def __get_doc_weight_graph_excluded_tuple_list(self, 
+        ranking: PydanticRankingRequest, 
+        excluded_vicinity_terms: list[str]
+        ) -> list[tuple[float, VicinityGraph, bool]]:
         """
         This function extracts the document weight and all its neighbour terms from a PydanticRankingRequest object.
 
@@ -190,20 +189,21 @@ class QueryService:
         has a weight and neighbour terms.
     
         Returns:
-        - list[tuple[float, VicinityGraph]]: A list of tuples. Each tuple contains a document weight (float), and a
+        - list[tuple[float, VicinityGraph, bool]]: A list of tuples. Each tuple contains a document weight (float), and a
         VicinityGraph object representing all the neighbour terms of the document.
         """
         document_weight_graph_tuple_list = []
         for document in ranking.documents:
             # Get the document weight and all its neighbour terms
             document_graph = self.__get_graph_from_pydantic_neighbour_term_list(document.all_neighbour_terms)
-            document_weight_graph_tuple_list.append( (document.weight, document_graph) )
+            document_is_excluded: bool = any(term in excluded_vicinity_terms for term in document_graph.get_terms_str_from_all_nodes())
+            document_weight_graph_tuple_list.append( (document.weight, document_graph, document_is_excluded) )
         
         return document_weight_graph_tuple_list
     
     
     def __calculate_similarity_scores(self, 
-        document_weight_graph_tuple_list: list[tuple[float, VicinityGraph]], 
+        document_weight_graph_tuple_list: list[tuple[float, VicinityGraph, bool]], 
         visible_graph: VicinityGraph
         ) -> list[float]:
         """
@@ -212,7 +212,7 @@ class QueryService:
         frequency scores associated with the user graph terms.
         
         Parameters:
-        - document_weight_graph_tuple_list (list[tuple[float, VicinityGraph]]): A list of tuples, where each tuple contains 
+        - document_weight_graph_tuple_list (list[tuple[float, VicinityGraph, bool]]): A list of tuples, where each tuple contains 
         a document weight (float) and a VicinityGraph object representing the neighbour terms of the document.
         - visible_graph (VicinityGraph): A VicinityGraph object representing the neighbour terms of the visible graph.
     
@@ -223,11 +223,12 @@ class QueryService:
         # Initialize the similarity scores
         similarity_ranking: list[float] = []
 
-        for doc_weight, doc_graph in document_weight_graph_tuple_list:
-            # Calculate the similarity score between the visible graph and the document graph
-            similarity_score_between_graphs = (doc_weight * 0.0000000001) + visible_graph.get_similarity_score_as_base_graph(doc_graph)
-            # Add the similarity score to the ranking list
-            similarity_ranking.append(similarity_score_between_graphs)
+        for doc_weight, doc_graph, doc_is_excluded in document_weight_graph_tuple_list:
+            if (not doc_is_excluded):
+                # Calculate the similarity score between the visible graph and the document graph
+                similarity_score_between_graphs = (doc_weight * 0.0000000001) + visible_graph.get_similarity_score_as_base_graph(doc_graph)
+                # Add the similarity score to the ranking list
+                similarity_ranking.append(similarity_score_between_graphs)
             
         return similarity_ranking
     
