@@ -34,3 +34,4 @@ class PydanticRanking(BaseModel):
     visible_neighbour_terms: List[PydanticNeighbourTerm]
     complete_neighbour_terms: List[PydanticNeighbourTerm]
     documents: List[PydanticDocument]
+    individual_query_terms_list: List[str]

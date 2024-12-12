@@ -330,6 +330,26 @@ class BinaryExpressionTree:
         """
         return self.root.get_values_from_leaves()
     
+    
+    def get_individual_query_terms_str_list(self) -> list[str]:
+        """
+        Get a list of query terms from the binary expression tree, without underscores.
+        This function retrieves the values from the leaves of the binary expression tree,
+        which represent the query terms. The values are returned as a list of strings.
+
+        Returns:
+        list[str]: A list of query terms from the binary expression tree, without underscores.
+        """
+        query_terms_with_underscores = self.root.get_values_from_leaves()
+        
+        individual_query_terms = []
+        for string in query_terms_with_underscores:
+            if "_" in string:
+                individual_query_terms.extend(string.split("_"))  # Dividimos y añadimos los sub-elementos a la lista final
+            else:
+                individual_query_terms.append(string)  # Si no tiene underscores, lo añadimos tal cual
+        return individual_query_terms
+    
 
     def get_query_terms_as_leaves(self) -> list[BinaryTreeNode]:
         """

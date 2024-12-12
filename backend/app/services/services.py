@@ -350,13 +350,16 @@ class QueryService:
 
         visible_neighbour_terms = self.__get_pydantic_neighbour_term_list(visible_graph_dict)
         complete_neighbour_terms = self.__get_pydantic_neighbour_term_list(complete_graph_dict)
+        
+        # Get the individual query terms list from the ranking
+        individual_query_terms_list = ranking.get_query_tree().get_individual_query_terms_str_list()
 
         # Get documents and its neighbour terms
         documents: list[PydanticDocument] = self.__get_pydantic_documents_from_ranking(ranking)
 
         return PydanticRanking(visible_neighbour_terms=visible_neighbour_terms, 
                                 complete_neighbour_terms=complete_neighbour_terms,
-                                documents=documents)
+                                documents=documents, individual_query_terms_list=individual_query_terms_list)
 
 
 

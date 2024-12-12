@@ -138,35 +138,6 @@ class TextUtils {
         }
         return result
     }
-
-    /**
-     * Separates a boolean query into individual terms.
-     *
-     * @param query - The boolean query to be separated.
-     * @returns An array of strings representing the separated terms.
-     *
-     * @remarks
-     * This function uses a regular expression to match boolean operators, parentheses, colons, and terms.
-     * It then filters the matches, removing specified elements such as parentheses and boolean operators.
-     * If no matches are found, an empty array is returned.
-     */
-    public static separateBooleanQuery(query: string): string[] {
-        // Defines a regular expression to match boolean operators, parentheses, colons, and terms
-        const pattern = /\bAND\b|\bOR\b|\bNOT\b|\(|\)|\w+|:/g;
-        
-        // Finds all matches using the regular expression
-        let tokens = query.match(pattern);
-
-        // Defines a set of elements to remove
-        const elementsToRemove = new Set(['(', ')', 'AND', 'OR', 'NOT']);
-
-        // Filters the array, removing the specified elements
-        if (tokens !== null) {
-            return tokens.filter(item => !elementsToRemove.has(item));
-        }
-
-        return []
-    }
 }
 
 
@@ -966,14 +937,24 @@ class QueryTerm extends Term implements ViewManager {
     protected node: CentralNode | undefined
     private neighbourTerms: NeighbourTerm[] = []
     private readonly isUserGraph: boolean
+    private individualQueryTermsList: string[] = []
 
-    constructor(value: string, isUserGraph: boolean) {
+    constructor(value: string, isUserGraph: boolean, individualQueryTermsList?: string[]) {
         super(value);
         this.isUserGraph = isUserGraph;
+        if (individualQueryTermsList) this.individualQueryTermsList = individualQueryTermsList
     }
 
     public getIsUserGraph(): boolean {
         return this.isUserGraph;
+    }
+
+    public getIndividualQueryTermsList(): string[] {
+        return this.individualQueryTermsList
+    }
+
+    public setIndividualQueryTermsList(queryTermsList: string[]): void {
+        this.individualQueryTermsList = queryTermsList
     }
 
     /**
@@ -1540,9 +1521,12 @@ class QueryTermService {
 
         // Check if the result is not null
         if (result) {
+            this.ranking.getVisibleQueryTerm().setIndividualQueryTermsList(result['individual_query_terms_list'])
             this.generateVisibleNeighbourTerms(result, limitDistance)
             this.generateCompleteNeighbourTerms(result, limitDistance)
             this.generateRankingDocuments(result, limitDistance)
+        } else {
+            console.log("Warning: null API response");
         }
     }
 
@@ -2119,11 +2103,15 @@ class ResultsList {
     private applyHighlightingToSentences(sentenceObjects: Sentence[]): HTMLSpanElement {
         const visibleQueryTerm = this.activeTermService?.getVisibleQueryTerm();
 
-        const queryTerms = visibleQueryTerm?.getValue() as string
-        const queryTermsList = TextUtils.separateBooleanQuery(queryTerms)
-        const userProximityTermsList = visibleQueryTerm?.getNeighbourProximityTermsValues() as string[]
-        const userFrequencyTermsList = visibleQueryTerm?.getNeighbourFrequencyTermsValues() as string[]
-        return this.getHighlightedText(sentenceObjects, queryTermsList, userProximityTermsList, userFrequencyTermsList);
+        if (visibleQueryTerm) {
+            const queryTermsList = visibleQueryTerm?.getIndividualQueryTermsList()
+            const userProximityTermsList = visibleQueryTerm?.getNeighbourProximityTermsValues()
+            const userFrequencyTermsList = visibleQueryTerm?.getNeighbourFrequencyTermsValues()
+            return this.getHighlightedText(sentenceObjects, queryTermsList, userProximityTermsList, userFrequencyTermsList);
+        } else {
+            console.log("Warning: No active term service found");
+            return document.createElement('span');
+        }
     }
 
     /**
