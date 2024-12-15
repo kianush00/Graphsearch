@@ -283,20 +283,20 @@ class QueryService:
        """
         documents: list[PydanticDocument] = []
         
-        for d in ranking.get_documents():
+        for d in ranking.documents:
             # Get each document and its neighbour terms
             doc_neighbour_terms = self.__get_pydantic_neighbour_term_list(d.get_graph().get_graph_as_dict())
-            _doc_id = d.get_doc_id()
-            _title = d.get_title()
-            _abstract = d.get_abstract()
-            _preprocessed_text = d.get_preprocessed_text()
-            _weight = d.get_weight()
+            _doc_id = d.doc_id
+            _title = d.title
+            _abstract = d.abstract
+            _preprocessed_text = d.preprocessed_text
+            _weight = d.weight
             
             # Get the document sentences and their neighbour terms
             _sentences: list[PydanticSentence] = []
-            for s in d.get_sentences():
-                _position_in_doc = s.get_position_in_doc()
-                _raw_text = s.get_raw_text()
+            for s in d.sentences:
+                _position_in_doc = s.position_in_doc
+                _raw_text = s.raw_text
                 sentence_neighbour_terms = self.__get_pydantic_neighbour_term_list(s.get_graph().get_graph_as_dict())
                 _sentences.append(PydanticSentence(position_in_doc=_position_in_doc, raw_text=_raw_text, 
                                                     all_neighbour_terms=sentence_neighbour_terms))
@@ -352,7 +352,7 @@ class QueryService:
         complete_neighbour_terms = self.__get_pydantic_neighbour_term_list(complete_graph_dict)
         
         # Get the individual query terms list from the ranking
-        individual_query_terms_list = ranking.get_query_tree().get_individual_query_terms_str_list()
+        individual_query_terms_list = ranking.query_tree.get_individual_query_terms_str_list()
 
         # Get documents and its neighbour terms
         documents: list[PydanticDocument] = self.__get_pydantic_documents_from_ranking(ranking)

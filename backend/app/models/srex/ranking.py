@@ -26,7 +26,8 @@ class QueryTreeHandler:
         self.__query_tree: BinaryExpressionTree = query_tree
 
 
-    def get_query_tree(self) -> BinaryExpressionTree:
+    @property
+    def query_tree(self) -> BinaryExpressionTree:
         """
         Retrieve the query tree associated with the handler.
 
@@ -36,7 +37,8 @@ class QueryTreeHandler:
         return self.__query_tree
 
 
-    def set_query_tree(self, query_tree) -> None:
+    @query_tree.setter
+    def query_tree(self, query_tree: BinaryExpressionTree) -> None:
         """
         Set a new query tree for the handler.
 
@@ -90,7 +92,8 @@ class Sentence(QueryTreeHandler):
         self.__vicinity_matrix: dict[str, dict[str, list[int]]] = {}
 
 
-    def get_raw_text(self) -> str:
+    @property
+    def raw_text(self) -> str:
         """
         Retrieve the raw text of the current sentence.
 
@@ -100,7 +103,8 @@ class Sentence(QueryTreeHandler):
         return self.__raw_text
 
 
-    def get_position_in_doc(self) -> int:
+    @property
+    def position_in_doc(self) -> int:
         """
         Retrieve the position of the sentence in the document.
 
@@ -108,19 +112,10 @@ class Sentence(QueryTreeHandler):
         int: The position of the sentence in the document. The position index is 0-based.
         """
         return self.__position_in_doc
-    
-
-    def get_weight(self) -> float:
-        """
-        Retrieve the weight of the current sentence, obtained by its document position in the ranking.
-
-        Returns:
-        float: The weight of the sentence.
-        """
-        return self.__weight
 
 
-    def get_preprocessed_text(self) -> str:
+    @property
+    def preprocessed_text(self) -> str:
         """
         Retrieve the preprocessed text after applying text transformations.
 
@@ -130,17 +125,8 @@ class Sentence(QueryTreeHandler):
         return self.__preprocessed_text
     
 
-    def set_preprocessed_text(self, value: str) -> None:
-        """
-        Set the preprocessed text for the current object.
-
-        Parameters:
-        value (str): The preprocessed text to be set. This text should be ready for further processing.
-        """
-        self.__preprocessed_text = value
-    
-
-    def get_vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
+    @property
+    def vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
         """
         Retrieve the vicinity matrix of the current Document object. The vicinity matrix is a dictionary 
         where the keys are the terms and the values are dictionaries. Each inner dictionary contains 
@@ -172,10 +158,10 @@ class Sentence(QueryTreeHandler):
             If True, stemming is applied
         """
         # Sentence query graphs is re-initialized
-        self.get_query_tree().remove_graphs_for_each_node()
+        self.query_tree.remove_graphs_for_each_node()
         
         transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words, lema, stem)
-        query_terms_with_underscores = self.get_query_tree().get_query_terms_str_list_with_underscores() 
+        query_terms_with_underscores = self.query_tree.get_query_terms_str_list_with_underscores() 
         transformed_sentence_str = self.__get_transformed_sentence_str_with_underscores_in_query_terms(query_terms_with_underscores, 
                                                                                                 transformed_sentence_str)
         self.__preprocessed_text = transformed_sentence_str
@@ -191,7 +177,7 @@ class Sentence(QueryTreeHandler):
         'v_term_2': {'query_term_1': [0.0, 0.0, 0.9, 0.0], 'query_term_2': [2.7, 0.0, 0.0, 0.9]}, ... }
         """
         term_positions_dict = self.get_term_positions_dict()
-        query_terms = self.get_query_tree().get_query_terms_str_list_with_underscores()
+        query_terms = self.query_tree.get_query_terms_str_list_with_underscores()
         query_term_positions_dict = self.get_query_term_positions_dict(term_positions_dict, query_terms)
         vicinity_matrix = {}   # Create the empty dictionary
         
@@ -233,7 +219,7 @@ class Sentence(QueryTreeHandler):
         self.generate_proximity_nodes_in_all_leaf_graphs()
         
         #Then, generate proximity nodes to the graphs associated with the rest of the nodes in the tree
-        self.get_query_tree().operate_non_leaf_graphs_from_leaves()
+        self.query_tree.operate_non_leaf_graphs_from_leaves()
         
         #Finally, generate frequency criteria VicinityNodes for the root BinaryTreeNode.
         self.generate_frequency_criteria_nodes_for_root()
@@ -246,13 +232,13 @@ class Sentence(QueryTreeHandler):
         its frequencies by the document weight and finally create frequency criteria VicinityNodes 
         for the root BinaryTreeNode and adds them to the graph.
         """
-        root_graph = self.get_query_tree().get_graph()
+        root_graph = self.query_tree.get_graph()
         if not root_graph:
             return
         
         terms_freq_dict = self.get_terms_frequency_dict()
         graph_terms_list = root_graph.get_terms_str_from_all_nodes()
-        query_terms_list = self.get_query_tree().get_query_terms_str_list_with_underscores()
+        query_terms_list = self.query_tree.get_query_terms_str_list_with_underscores()
         query_terms_list_without_underscores = VectorUtils.split_and_extend_from_underscore_values(query_terms_list)
         
         for term, frequency in terms_freq_dict.items():
@@ -304,7 +290,7 @@ class Sentence(QueryTreeHandler):
         `generate_proximity_nodes_in_leaf_graph` method for each leaf node. This method is responsible 
         for generating proximity nodes to the graph associated with the leaf node.
         """
-        for leaf_node in self.get_query_tree().get_query_terms_as_leaves():
+        for leaf_node in self.query_tree.get_query_terms_as_leaves():
             self.generate_proximity_nodes_in_leaf_graph(leaf_node)
     
 
@@ -497,7 +483,8 @@ class Document(QueryTreeHandler):
         self.__calculate_sentences_list_from_documents()
     
 
-    def get_abstract(self) -> str:
+    @property
+    def abstract(self) -> str:
         """
         Retrieve the abstract of the current Document object.
 
@@ -507,7 +494,8 @@ class Document(QueryTreeHandler):
         return self.__abstract
     
 
-    def get_title(self) -> str:
+    @property
+    def title(self) -> str:
         """
         Retrieve the title of the current Document object.
 
@@ -517,7 +505,8 @@ class Document(QueryTreeHandler):
         return self.__title
     
 
-    def get_doc_id(self) -> str:
+    @property
+    def doc_id(self) -> str:
         """
         Retrieve the unique identifier of the current document.
 
@@ -527,7 +516,8 @@ class Document(QueryTreeHandler):
         return self.__doc_id
     
 
-    def get_sentences(self) -> list[Sentence]:
+    @property
+    def sentences(self) -> list[Sentence]:
         """
         Retrieve a list of Sentence objects from the current Document object.
 
@@ -537,7 +527,8 @@ class Document(QueryTreeHandler):
         return self.__sentences
     
 
-    def get_weight(self) -> float:
+    @property
+    def weight(self) -> float:
         """
         Retrieve the weight of the current document, obtained by its position in the ranking.
 
@@ -547,7 +538,8 @@ class Document(QueryTreeHandler):
         return self.__weight
 
 
-    def get_ranking_position(self) -> int:
+    @property
+    def ranking_position(self) -> int:
         """
         Retrieve the ranking position of the current document.
 
@@ -560,7 +552,8 @@ class Document(QueryTreeHandler):
         return self.__ranking_position
     
     
-    def get_preprocessed_text(self) -> str:
+    @property
+    def preprocessed_text(self) -> str:
         """
         Retrieve the preprocessed text of the document, which consists of the title and abstract joined.
         
@@ -584,7 +577,7 @@ class Document(QueryTreeHandler):
         Sentence | None: The Sentence object with the specified raw text, or None if no such sentence is found.
         """
         for sentence in self.__sentences:
-            if sentence.get_raw_text() == text:
+            if sentence.raw_text == text:
                 return sentence
         print(f'No sentence with raw text: {text}')
         return None
@@ -615,7 +608,7 @@ class Document(QueryTreeHandler):
         list[BinaryExpressionTree]: A list of BinaryExpressionTree objects representing 
         the query trees of the sentences in the document.
         """
-        list_of_query_trees = [sentence.get_query_tree() for sentence in self.__sentences]
+        list_of_query_trees = [sentence.query_tree for sentence in self.__sentences]
         return list_of_query_trees
     
 
@@ -638,7 +631,7 @@ class Document(QueryTreeHandler):
             If True, stemming is applied
         """
         # Document query graphs is re-initialized
-        self.get_query_tree().remove_graphs_for_each_node()
+        self.query_tree.remove_graphs_for_each_node()
         
         # Do text transformations to each sentence
         for sentence in self.__sentences:
@@ -647,7 +640,7 @@ class Document(QueryTreeHandler):
         # Get the document preprocessed text from the sentences preprocessed text
         preprocessed_text: str = ""
         for index, sentence in enumerate(self.__sentences):
-            preprocessed_text += sentence.get_preprocessed_text()
+            preprocessed_text += sentence.preprocessed_text
             if index < len(self.__sentences) - 1:
                 preprocessed_text += " "
         
@@ -666,7 +659,7 @@ class Document(QueryTreeHandler):
         #Generate graph nodes in the current document
         union_of_trees = self.__get_union_of_sentences_trees()
         if union_of_trees:
-            self.set_query_tree(union_of_trees)
+            self.query_tree = union_of_trees
     
 
     def calculate_vicinity_matrix_of_sentences(self) -> None:
@@ -688,7 +681,7 @@ class Document(QueryTreeHandler):
         self.__sentences = []
         list_of_sentence_str = self.__get_list_of_sentence_strings()
         for index, sentence_str in enumerate(list_of_sentence_str):
-            query_copy = copy.deepcopy(self.get_query_tree())
+            query_copy = copy.deepcopy(self.query_tree)
             sentence_obj = Sentence(raw_text=sentence_str, query=query_copy, 
                                     position_in_doc=index, weight=self.__weight)
             self.__sentences.append(sentence_obj)
@@ -724,7 +717,7 @@ class Document(QueryTreeHandler):
             The union between the sentence query trees.
         """
         query_trees_list = self.get_list_of_query_trees_from_sentences()
-        union_of_trees = self.get_query_tree().get_union_of_trees(query_trees_list)
+        union_of_trees = self.query_tree.get_union_of_trees(query_trees_list)
         return union_of_trees
 
 
@@ -779,7 +772,8 @@ class Ranking(QueryTreeHandler):
         self.__do_text_transformations_to_query_terms()
 
 
-    def get_documents(self) -> list[Document]:
+    @property
+    def documents(self) -> list[Document]:
         """
         Retrieve a list of documents from the ranking.
 
@@ -789,7 +783,8 @@ class Ranking(QueryTreeHandler):
         return self.__documents 
     
 
-    def get_text_transformations_config(self) -> TextTransformationsConfig:
+    @property
+    def text_transformations_config(self) -> TextTransformationsConfig:
         """
         Retrieve the text transformations configuration used in the ranking.
 
@@ -810,7 +805,7 @@ class Ranking(QueryTreeHandler):
         Document | None: The document with the specified title, or None if the title is not found.
         """
         for document in self.__documents:
-            if document.get_title() == title:
+            if document.title == title:
                 return document
         print(f'No document with title: {title}')
         return None
@@ -827,7 +822,7 @@ class Ranking(QueryTreeHandler):
         Document | None: The document with the specified id, or None if the id is not found.
         """
         for document in self.__documents:
-            if document.get_doc_id() == id:
+            if document.doc_id == id:
                 return document
         print(f'No document with id: {id}')
         return None
@@ -858,7 +853,7 @@ class Ranking(QueryTreeHandler):
         list[BinaryExpressionTree]: A list of BinaryExpressionTree objects representing 
         the query trees of the documents in the ranking.
         """
-        list_of_query_trees = [document.get_query_tree() for document in self.__documents]
+        list_of_query_trees = [document.query_tree for document in self.__documents]
         return list_of_query_trees
     
 
@@ -985,16 +980,16 @@ class Ranking(QueryTreeHandler):
         parameters_tuple = (nr_of_graph_terms, limit_distance, include_query_terms, summarize)
 
         #Initialize the graphs of the query tree associated with the ranking
-        self.get_query_tree().initialize_graph_for_each_node(*parameters_tuple)
+        self.query_tree.initialize_graph_for_each_node(*parameters_tuple)
 
         #Initialize the graphs of the query trees associated with the documents of the ranking
         for document in self.__documents:
-            document.get_query_tree().initialize_graph_for_each_node(*parameters_tuple)
+            document.query_tree.initialize_graph_for_each_node(*parameters_tuple)
         
         #Initialize the graphs of the query trees associated with the sentences from the documents of the ranking
         for document in self.__documents:
-            for sentence in document.get_sentences():
-                sentence.get_query_tree().initialize_graph_for_each_node(*parameters_tuple)
+            for sentence in document.sentences:
+                sentence.query_tree.initialize_graph_for_each_node(*parameters_tuple)
     
 
     def calculate_vicinity_matrix_of_sentences_by_doc(self) -> None:
@@ -1019,7 +1014,7 @@ class Ranking(QueryTreeHandler):
         #Then, generate nodes of the ranking class query tree
         union_of_trees = self.__get_union_of_documents_trees()
         if union_of_trees:
-            self.set_query_tree(union_of_trees)
+            self.query_tree = union_of_trees
     
 
     def __get_union_of_documents_trees(self) -> BinaryExpressionTree | None:
@@ -1033,7 +1028,7 @@ class Ranking(QueryTreeHandler):
             The union between the document query trees.
         """
         query_trees_list = self.get_list_of_query_trees_from_documents()
-        union_of_trees = self.get_query_tree().get_union_of_trees(query_trees_list)
+        union_of_trees = self.query_tree.get_union_of_trees(query_trees_list)
         return union_of_trees
 
 
@@ -1042,7 +1037,7 @@ class Ranking(QueryTreeHandler):
         Apply text transformations to the query terms of the ranking. Lower the text, tokenize, remove 
         punctuation, stopwords, finally do stemming and lemmatization if specified.
         """
-        self.get_query_tree().do_text_transformations_to_query_terms(*self.__text_transformations_config.get_transformations_params())
+        self.query_tree.do_text_transformations_to_query_terms(*self.__text_transformations_config.get_transformations_params())
 
 
     def __get_ieee_xplore_ranking(self) -> list[dict]:
@@ -1059,7 +1054,7 @@ class Ranking(QueryTreeHandler):
         query = XPLORE(xplore_id)
         query.outputDataFormat='object'
         query.maximumResults(self.__nr_search_results)
-        query.queryText(self.get_query_tree().get_raw_query())
+        query.queryText(self.query_tree.get_raw_query())
         data = query.callAPI()
         results = data.get('articles', [{}])
         
@@ -1082,7 +1077,7 @@ class Ranking(QueryTreeHandler):
         """
         # Ranking documents and ranking query graphs are re-initialized
         self.__documents = []
-        self.get_query_tree().remove_graphs_for_each_node()
+        self.query_tree.remove_graphs_for_each_node()
 
         for index, article in enumerate(articles_dicts):
             try:
@@ -1132,7 +1127,7 @@ class Ranking(QueryTreeHandler):
 
         _ranking_pos = index + 1
         _weight = MathUtils.calculate_document_weight(results_size, _ranking_pos, self.__ranking_weight_type)
-        _query_copy = copy.deepcopy(self.get_query_tree())
+        _query_copy = copy.deepcopy(self.query_tree)
         new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         

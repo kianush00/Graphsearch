@@ -313,7 +313,7 @@ class TestSREX(unittest.TestCase):
         ranking.calculate_article_dictionaries_list([{'title': 'test'}])
 
         # Get term positions dictionary from ranking object
-        result = ranking.get_documents()[0].get_sentences()[0].get_term_positions_dict(text)
+        result = ranking.documents[0].sentences[0].get_term_positions_dict(text)
         
         # Create expected result as defaultdict
         expected_result = defaultdict(list, dict_result)
@@ -336,7 +336,7 @@ class TestSREX(unittest.TestCase):
         query_terms = ["driven", "adopt", "store"]
 
         # Get query term positions dictionary from ranking object
-        result = ranking.get_documents()[0].get_sentences()[0].get_query_term_positions_dict(term_positions_dict, query_terms)
+        result = ranking.documents[0].sentences[0].get_query_term_positions_dict(term_positions_dict, query_terms)
         
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -360,7 +360,7 @@ class TestSREX(unittest.TestCase):
         #Calculate the vicinity matrix for the sentence
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
         sentence.calculate_vicinity_matrix()
-        result = sentence.get_vicinity_matrix()
+        result = sentence.vicinity_matrix
 
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -384,7 +384,7 @@ class TestSREX(unittest.TestCase):
         #Calculate the vicinity matrix for the sentence
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
         sentence.calculate_vicinity_matrix()
-        result = sentence.get_vicinity_matrix()
+        result = sentence.vicinity_matrix
 
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
@@ -410,7 +410,7 @@ class TestSREX(unittest.TestCase):
         
         #Calculate the terms frequency dict for the sentence, by each query term
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
-        query_terms = sentence.get_query_tree().get_query_terms_str_list_with_underscores()
+        query_terms = sentence.query_tree.get_query_terms_str_list_with_underscores()
 
         result1 = sentence.get_terms_proximity_frequency_dict(query_terms[0])
         result2 = sentence.get_terms_proximity_frequency_dict(query_terms[1])
@@ -492,7 +492,7 @@ class TestSREX(unittest.TestCase):
         # Generate nodes in all graphs of the query expression tree
         sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
         sentence.generate_nodes_in_all_leaf_graphs()
-        sentence.get_query_tree().operate_non_leaf_graphs_from_leaves()
+        sentence.query_tree.operate_non_leaf_graphs_from_leaves()
 
         # Get vicinity graphs from the subqueries, as dicts
         subquery_list = [
@@ -528,7 +528,7 @@ class TestSREX(unittest.TestCase):
         
         # Generate nodes in all graphs of the query expression tree, in the sentences
         document = ranking.get_document_by_ranking_position(1)
-        for sentence in document.get_sentences():
+        for sentence in document.sentences:
             sentence.generate_nodes_in_tree_graphs()
 
         # Get union between two trees
@@ -808,7 +808,7 @@ class TestSREX(unittest.TestCase):
         sentence.generate_nodes_in_all_leaf_graphs()
 
         # Get vicinity graphs from the sentence, as dicts
-        query_terms = sentence.get_query_tree().get_query_terms_str_list_with_underscores()
+        query_terms = sentence.query_tree.get_query_terms_str_list_with_underscores()
         result1 = sentence.get_graph_by_subquery(query_terms[0]).get_graph_as_dict()
         result2 = sentence.get_graph_by_subquery(query_terms[1]).get_graph_as_dict()
         result3 = sentence.get_graph_by_subquery(query_terms[2]).get_graph_as_dict()
