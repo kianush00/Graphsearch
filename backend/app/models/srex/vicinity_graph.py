@@ -24,7 +24,8 @@ class VicinityGraphConfig:
         self.__summarize = summarize    # it can be: 'mean' or 'median'
     
 
-    def get_number_of_graph_terms(self) -> int:
+    @property
+    def number_of_graph_terms(self) -> int:
         """
         Returns the number of graph terms to be displayed.
 
@@ -34,7 +35,8 @@ class VicinityGraphConfig:
         return self.__number_of_graph_terms
 
 
-    def get_limit_distance(self) -> int:
+    @property
+    def limit_distance(self) -> int:
         """
         Returns the limit distance for the vicinity nodes.
 
@@ -44,7 +46,8 @@ class VicinityGraphConfig:
         return self.__limit_distance
 
 
-    def get_include_query_terms(self) -> bool:
+    @property
+    def include_query_terms(self) -> bool:
         """
         Returns whether the query terms should be included in the graph.
 
@@ -54,7 +57,8 @@ class VicinityGraphConfig:
         return self.__include_query_terms
 
 
-    def get_summarize(self) -> str:
+    @property
+    def summarize(self) -> str:
         """
         Returns the method used to summarize the graph.
 
@@ -93,10 +97,11 @@ class VicinityNode:
         self.__term = term
         self.__frequency_score = frequency_score
         self.__proximity_score = proximity_score
-        self.set_criteria(criteria)
+        self.criteria = criteria
     
 
-    def get_term(self) -> str:
+    @property
+    def term(self) -> str:
         """
         Returns the term of the current node.
 
@@ -106,7 +111,8 @@ class VicinityNode:
         return self.__term
 
 
-    def get_frequency_score(self) -> float:
+    @property
+    def frequency_score(self) -> float:
         """
         Returns the frequency score of the current node.
 
@@ -116,17 +122,19 @@ class VicinityNode:
         return self.__frequency_score
 
 
-    def set_frequency_score(self, frequency_score: float) -> None:
+    @frequency_score.setter
+    def frequency_score(self, freq_score: float) -> None:
         """
         Sets the frequency score of the current node.
 
         Parameters:
         frequency_score (float): The new frequency score value.
         """
-        self.__frequency_score = frequency_score
+        self.__frequency_score = freq_score
     
     
-    def get_proximity_score(self) -> float:
+    @property
+    def proximity_score(self) -> float:
         """
         Returns the proximity score of the current node.
 
@@ -136,17 +144,19 @@ class VicinityNode:
         return self.__proximity_score
 
 
-    def set_proximity_score(self, proximity_score: float) -> None:
+    @proximity_score.setter
+    def proximity_score(self, prox_score: float) -> None:
         """
         Sets the proximity score of the current node.
 
         Parameters:
         proximity_score (float): The new proximity score value.
         """
-        self.__proximity_score = proximity_score
+        self.__proximity_score = prox_score
     
     
-    def get_criteria(self) -> str:
+    @property
+    def criteria(self) -> str:
         """
         Returns the criteria used to determine the type of node calculation (it can be: proximity, frequency or exclusion).
         - 'proximity': The system calculates the proximity of the term to the query in the document, to get the new ranking.
@@ -160,7 +170,8 @@ class VicinityNode:
         return self.__criteria
     
     
-    def set_criteria(self, criteria: str) -> None:
+    @criteria.setter
+    def criteria(self, criteria: str) -> None:
         """
         Sets the criteria used to determine the type of node calculation.
         
@@ -211,7 +222,8 @@ class VicinityGraph:
         self.__nodes: list[VicinityNode] = []
 
 
-    def get_config(self) -> VicinityGraphConfig:
+    @property
+    def config(self) -> VicinityGraphConfig:
         """
         Returns the configuration object of the VicinityGraph.
 
@@ -228,7 +240,7 @@ class VicinityGraph:
         Returns:
         list[VicinityNode]: A list of VicinityNode objects sorted by proximity score in descending order.
         """
-        sorted_nodes = sorted(self.__nodes, key=lambda node: node.get_proximity_score(), reverse=True)
+        sorted_nodes = sorted(self.__nodes, key=lambda node: node.proximity_score, reverse=True)
         return sorted_nodes
     
     
@@ -239,8 +251,8 @@ class VicinityGraph:
         Returns:
         list[VicinityNode]: A list of proximity VicinityNode objects sorted by proximity score in descending order.
         """
-        sorted_proximity_nodes = [node for node in self.__nodes if node.get_criteria() == "proximity"]
-        sorted_proximity_nodes = sorted(sorted_proximity_nodes, key=lambda node: node.get_proximity_score(), reverse=True)
+        sorted_proximity_nodes = [node for node in self.__nodes if node.criteria == "proximity"]
+        sorted_proximity_nodes = sorted(sorted_proximity_nodes, key=lambda node: node.proximity_score, reverse=True)
         return sorted_proximity_nodes
     
 
@@ -256,20 +268,20 @@ class VicinityGraph:
         If a node with the given term is not found, it prints "No node with term".
         """
         for node in self.__nodes:
-            if node.get_term() == term:
+            if node.term == term:
                 return node
         print(f"No node with term {term}")
         return None
     
 
-    def get_terms_str_from_all_nodes(self) -> list[str]:
+    def get_terms_from_all_nodes(self) -> list[str]:
         """
         Retrieves a list of terms from all the nodes of the current graph.
 
         Returns:
         list[str]: A list of terms from all the nodes of the current graph.
         """
-        node_terms = [node.get_term() for node in self.get_all_nodes_sorted()]
+        node_terms = [node.term for node in self.get_all_nodes_sorted()]
         return node_terms
     
     
@@ -280,7 +292,18 @@ class VicinityGraph:
         Returns:
         list[str]: A list of terms from the proximity nodes of the current graph.
         """
-        node_terms = [node.get_term() for node in self.get_proximity_nodes_sorted()]
+        node_terms = [node.term for node in self.get_proximity_nodes_sorted()]
+        return node_terms
+    
+    
+    def get_terms_from_exclusion_nodes(self) -> list[str]:
+        """
+        Retrieves a list of terms from the exclusion nodes of the current graph.
+
+        Returns:
+        list[str]: A list of terms from the exclusion nodes of the current graph.
+        """
+        node_terms = [node.term for node in self.__nodes if node.criteria == 'exclusion']
         return node_terms
 
 
@@ -304,7 +327,7 @@ class VicinityGraph:
         term (str): The term of the node to be deleted.
         """
         for node in self.__nodes:
-            if node.get_term() == term:
+            if node.term == term:
                 self.__nodes.remove(node)
                 return
         print(f"No node with term {term}")
@@ -340,9 +363,9 @@ class VicinityGraph:
         are the terms, and the values are dictionaries containing the 'frequency_score', 
         'proximity_score' and 'criteria' of each term.
         """
-        graph_dict = {n.get_term(): {'frequency_score': n.get_frequency_score(),
-                                     'proximity_score': n.get_proximity_score(),
-                                     'criteria': n.get_criteria()} for n in self.get_all_nodes_sorted()}
+        graph_dict = {n.term: {'frequency_score': n.frequency_score,
+                                     'proximity_score': n.proximity_score,
+                                     'criteria': n.criteria} for n in self.get_all_nodes_sorted()}
         return graph_dict
 
     
@@ -389,9 +412,9 @@ class VicinityGraph:
         
         viewable_graph = self.get_viewable_graph_copy()
         for index, node in enumerate(viewable_graph.get_proximity_nodes_sorted()):
-            node_proximity_score = round(node.get_proximity_score(), 1)
-            p_with = str(node.get_proximity_score())
-            visual_graph.node("'" +str(index+1)+"'", node.get_term(), fixedsize='true', width=node_size, 
+            node_proximity_score = round(node.proximity_score, 1)
+            p_with = str(node.proximity_score)
+            visual_graph.node("'" +str(index+1)+"'", node.term, fixedsize='true', width=node_size, 
                               penwidth=p_with, color=node_color)
             visual_graph.edge('0', "'" +str(index+1)+"'", label=str(node_proximity_score), len=str(node_proximity_score))
             
@@ -488,8 +511,8 @@ class VicinityGraph:
         """
         united_graph = self.__get_calculation_of_intersected_terms(external_graph, sum_scores)
         
-        node_terms_from_copy_graph = united_graph.get_terms_str_from_all_nodes()
-        node_terms_from_ext_graph = external_graph.get_terms_str_from_all_nodes()
+        node_terms_from_copy_graph = united_graph.get_terms_from_all_nodes()
+        node_terms_from_ext_graph = external_graph.get_terms_from_all_nodes()
 
         #if the external graph has exclusive terms, then these need to be added to the united graph
         for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
@@ -527,8 +550,8 @@ class VicinityGraph:
         #if the graph copy term is already in the external graph
         intersected_graph = self.__get_calculation_of_intersected_terms(external_graph, sum_scores)
 
-        node_terms_from_copy_graph = intersected_graph.get_terms_str_from_all_nodes()
-        node_terms_from_ext_graph = external_graph.get_terms_str_from_all_nodes()
+        node_terms_from_copy_graph = intersected_graph.get_terms_from_all_nodes()
+        node_terms_from_ext_graph = external_graph.get_terms_from_all_nodes()
         #if the graph copy has exclusive terms, then it needs to be deleted
         for node_term in set(node_terms_from_copy_graph) - set(node_terms_from_ext_graph):
             intersected_graph.delete_node_by_term(node_term)
@@ -568,10 +591,10 @@ class VicinityGraph:
                 continue
 
             # initialize variables
-            copy_frequency_score = node_from_copy_graph.get_frequency_score()
-            copy_prox_score = node_from_copy_graph.get_proximity_score()
-            ext_frequency_score = node_from_ext_graph.get_frequency_score()
-            ext_prox_score = node_from_ext_graph.get_proximity_score()
+            copy_frequency_score = node_from_copy_graph.frequency_score
+            copy_prox_score = node_from_copy_graph.proximity_score
+            ext_frequency_score = node_from_ext_graph.frequency_score
+            ext_prox_score = node_from_ext_graph.proximity_score
 
             # sum (or get the max value from) the frequency scores and proximity scores
             if sum_scores:
@@ -586,12 +609,12 @@ class VicinityGraph:
             sum_of_frequency_scores = round(sum_of_frequency_scores, 6)
 
             #set new frequency score and proximity score to each intersected term
-            node_from_copy_graph.set_frequency_score(sum_of_frequency_scores)
-            node_from_copy_graph.set_proximity_score(sum_of_prox_scores)
+            node_from_copy_graph.frequency_score = sum_of_frequency_scores
+            node_from_copy_graph.proximity_score = sum_of_prox_scores
             
             # if the proximity score is obtained from the external node, then set the node criteria as proximity
             if copy_prox_score <= 0 and ext_prox_score > 0:
-                node_from_copy_graph.set_criteria('proximity')
+                node_from_copy_graph.criteria = 'proximity'
         
         return copy_graph
     
@@ -609,7 +632,7 @@ class VicinityGraph:
         Returns:
         set[str]: A set containing the terms that exist in both the current graph and the external graph.
         """
-        base_terms = set(self.get_terms_str_from_all_nodes()) & set(graph_b.get_terms_str_from_all_nodes())
+        base_terms = set(self.get_terms_from_all_nodes()) & set(graph_b.get_terms_from_all_nodes())
         return base_terms
     
 
@@ -637,10 +660,10 @@ class VicinityGraph:
 
         # Ignores the nodes that contain a subquery in its term
         sorted_nodes_to_visualize = [
-            node for node in sorted_nodes_to_visualize if node.get_term() not in splitted_subquery
+            node for node in sorted_nodes_to_visualize if node.term not in splitted_subquery
         ]
 
         # Limits the number of nodes to the number of graph terms
-        sorted_nodes_to_visualize = sorted_nodes_to_visualize[:self.__config.get_number_of_graph_terms()]
+        sorted_nodes_to_visualize = sorted_nodes_to_visualize[:self.__config.number_of_graph_terms]
 
         return sorted_nodes_to_visualize

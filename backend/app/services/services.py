@@ -157,9 +157,7 @@ class QueryService:
             visible_graph = self.__get_graph_from_pydantic_visible_neighbour_term_list(ranking.visible_neighbour_terms)
             
             # Get the vicinity terms with 'exclusion' criteria from the user graph
-            excluded_vicinity_terms: list[str] = [
-                node.get_term() for node in visible_graph.get_all_nodes_sorted() if node.get_criteria() == 'exclusion'
-            ]
+            excluded_vicinity_terms: list[str] = visible_graph.get_terms_from_exclusion_nodes()
             
             # Initialize a tuple list of graphs, weights and preprocessed text from each document of the ranking
             document_weight_graph_excluded_tuple_list = self.__get_doc_weight_graph_excluded_tuple_list(ranking, excluded_vicinity_terms)
@@ -196,7 +194,7 @@ class QueryService:
         for document in ranking.documents:
             # Get the document weight and all its neighbour terms
             document_graph = self.__get_graph_from_pydantic_neighbour_term_list(document.all_neighbour_terms)
-            document_is_excluded: bool = any(term in excluded_vicinity_terms for term in document_graph.get_terms_str_from_all_nodes())
+            document_is_excluded: bool = any(term in excluded_vicinity_terms for term in document_graph.get_terms_from_all_nodes())
             document_weight_graph_tuple_list.append( (document.weight, document_graph, document_is_excluded) )
         
         return document_weight_graph_tuple_list
@@ -286,49 +284,19 @@ class QueryService:
         for d in ranking.documents:
             # Get each document and its neighbour terms
             doc_neighbour_terms = self.__get_pydantic_neighbour_term_list(d.get_graph().get_graph_as_dict())
-            _doc_id = d.doc_id
-            _title = d.title
-            _abstract = d.abstract
-            _preprocessed_text = d.preprocessed_text
-            _weight = d.weight
             
             # Get the document sentences and their neighbour terms
             _sentences: list[PydanticSentence] = []
             for s in d.sentences:
-                _position_in_doc = s.position_in_doc
-                _raw_text = s.raw_text
                 sentence_neighbour_terms = self.__get_pydantic_neighbour_term_list(s.get_graph().get_graph_as_dict())
-                _sentences.append(PydanticSentence(position_in_doc=_position_in_doc, raw_text=_raw_text, 
+                _sentences.append(PydanticSentence(position_in_doc=s.position_in_doc, raw_text=s.raw_text, 
                                                     all_neighbour_terms=sentence_neighbour_terms))
             
             # Add the document to the list of documents with their neighbour terms and sentences
-            documents.append(PydanticDocument(doc_id=_doc_id, title=_title, abstract=_abstract, preprocessed_text=_preprocessed_text,
-                    weight=_weight, all_neighbour_terms=doc_neighbour_terms, sentences=_sentences))
+            documents.append(PydanticDocument(doc_id=d.doc_id, title=d.title, abstract=d.abstract, preprocessed_text=d.preprocessed_text,
+                        weight=d.weight, all_neighbour_terms=doc_neighbour_terms, sentences=_sentences))
         
         return documents
-    
-    
-    def __get_pydantic_neighbour_term_list(self, graph_dict: dict[str, dict[str, float | str]]) -> list[PydanticNeighbourTerm]:
-        """
-        Converts a dictionary of neighbour terms and their attributes into a list of PydanticNeighbourTerm objects.
-
-        Parameters:
-        - graph_dict (dict[str, dict[str, float | str]]): A dictionary where the keys are neighbour terms and the values are 
-        dictionaries containing the term's attributes. Each attribute dictionary contains 'proximity_score',
-        'frequency_score' and 'criteria' keys.
-
-        Returns:
-        - list[PydanticNeighbourTerm]: A list of PydanticNeighbourTerm objects, where each object represents a 
-        neighbour term with its attributes.
-        """
-        return [
-            PydanticNeighbourTerm(
-            term=k, 
-            proximity_score=v.get('proximity_score'),
-            frequency_score=v.get('frequency_score'),
-            criteria=v.get('criteria')
-            ) for k, v in graph_dict.items()
-        ]
     
     
     def __get_pydantic_ranking(self, ranking: Ranking) -> PydanticRanking:
@@ -361,6 +329,28 @@ class QueryService:
                                 complete_neighbour_terms=complete_neighbour_terms,
                                 documents=documents, individual_query_terms_list=individual_query_terms_list)
 
+
+    def __get_pydantic_neighbour_term_list(self, graph_dict: dict[str, dict[str, float | str]]) -> list[PydanticNeighbourTerm]:
+        """
+        Converts a dictionary of neighbour terms and their attributes into a list of PydanticNeighbourTerm objects.
+
+        Parameters:
+        - graph_dict (dict[str, dict[str, float | str]]): A dictionary where the keys are neighbour terms and the values are 
+        dictionaries containing the term's attributes. Each attribute dictionary contains 'proximity_score',
+        'frequency_score' and 'criteria' keys.
+
+        Returns:
+        - list[PydanticNeighbourTerm]: A list of PydanticNeighbourTerm objects, where each object represents a 
+        neighbour term with its attributes.
+        """
+        return [
+            PydanticNeighbourTerm(
+            term=k, 
+            proximity_score=v.get('proximity_score'),
+            frequency_score=v.get('frequency_score'),
+            criteria=v.get('criteria')
+            ) for k, v in graph_dict.items()
+        ]
 
 
 

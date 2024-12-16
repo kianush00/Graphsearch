@@ -181,8 +181,8 @@ class Sentence(QueryTreeHandler):
         query_term_positions_dict = self.get_query_term_positions_dict(term_positions_dict, query_terms)
         vicinity_matrix = {}   # Create the empty dictionary
         
-        limit_distance = self.get_graph().get_config().get_limit_distance()
-        include_query_terms = self.get_graph().get_config().get_include_query_terms()
+        limit_distance = self.get_graph().config.limit_distance
+        include_query_terms = self.get_graph().config.include_query_terms
 
         # Calculate all terms in term_positions_defaultdict that are at distance limit_distance (or closer) to the query_terms
         # and return a list of these terms and their corresponding distances
@@ -237,7 +237,7 @@ class Sentence(QueryTreeHandler):
             return
         
         terms_freq_dict = self.get_terms_frequency_dict()
-        graph_terms_list = root_graph.get_terms_str_from_all_nodes()
+        graph_terms_list = root_graph.get_terms_from_all_nodes()
         query_terms_list = self.query_tree.get_query_terms_str_list_with_underscores()
         query_terms_list_without_underscores = VectorUtils.split_and_extend_from_underscore_values(query_terms_list)
         
@@ -250,7 +250,7 @@ class Sentence(QueryTreeHandler):
             if term in graph_terms_list:    # If the term is in the graph, modify its frequency score
                 graph_node = root_graph.get_node_by_term(term)
                 if graph_node:  # Double check
-                    graph_node.set_frequency_score(freq_score)
+                    graph_node.frequency_score = freq_score
             else:   # If the term isn't in the graph, add a new frequency node
                 freq_criteria_node = VicinityNode(
                     term=term,
@@ -1054,7 +1054,7 @@ class Ranking(QueryTreeHandler):
         query = XPLORE(xplore_id)
         query.outputDataFormat='object'
         query.maximumResults(self.__nr_search_results)
-        query.queryText(self.query_tree.get_raw_query())
+        query.queryText(self.query_tree.raw_query)
         data = query.callAPI()
         results = data.get('articles', [{}])
         

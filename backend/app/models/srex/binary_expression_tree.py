@@ -308,7 +308,8 @@ class BinaryExpressionTree:
         self.root = self.__get_tree_built(self.__raw_query)
     
 
-    def get_raw_query(self) -> str:
+    @property
+    def raw_query(self) -> str:
         """
         Retrieve the raw boolean query used to construct the BinaryExpressionTree.
 
