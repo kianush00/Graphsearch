@@ -334,7 +334,7 @@ class BinaryExpressionTree:
     
     def get_individual_query_terms_str_list(self) -> list[str]:
         """
-        Get a list of query terms from the binary expression tree, without underscores.
+        Get a list of individual query terms from the binary expression tree, without underscores.
         This function retrieves the values from the leaves of the binary expression tree,
         which represent the query terms. The values are returned as a list of strings.
 

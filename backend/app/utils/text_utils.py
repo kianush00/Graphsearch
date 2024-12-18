@@ -37,7 +37,7 @@ class TextUtils:
             The transformed text
         """
         text_with_underscores = text_with_underscores.replace('_', ' ')
-        transformed_text = TextUtils.get_transformed_text(text_with_underscores, 
+        transformed_text, _ = TextUtils.get_transformed_text_with_mapping(text_with_underscores, 
                                                           stop_words, lema, stem)
         transformed_text = transformed_text.replace(' ', '_')
         
@@ -45,15 +45,14 @@ class TextUtils:
 
     
     @staticmethod
-    def get_transformed_text(
+    def get_transformed_text_with_mapping(
             text: str,
             stop_words: tuple[str] = (), 
             lema: bool = True, 
             stem: bool = False
-            ) -> str:
+            ) -> tuple[str, list[tuple[int, int, str, str]]]:
         """
-        Apply some transformations to the text. Lower the text, tokenize, remove punctuation, 
-        stopwords, finally do stemming and lemmatization if specified.
+        Apply transformations to the text and map raw words to processed words with their positions in the text.
 
         Parameters
         ----------
@@ -65,25 +64,23 @@ class TextUtils:
             If True, lemmatization is applied
         stem : bool, optional
             If True, stemming is applied
-        
+
         Returns
         -------
         transformed_text : str
             The transformed text
+        raw_to_processed_map_list : list[tuple[int, int, str, str]]
+            A list of mapping tuples from raw text index positions to its raw and processed word respectively.
         """
-        # Convert the string to lowercase
-        lower_text = text.lower()
-        
-        # Tokenize
-        tokens = nltk.word_tokenize(lower_text)
+        # Tokenize the text into raw tokens
+        raw_tokens = nltk.word_tokenize(text)
 
-        # Remove punctuation and special characters
-        filtered_words = TextUtils.split_strings_with_hyphen(tokens)
+        # Split hyphens and underscores, then remove punctuation and special characters, to preprocess tokens
+        raw_splitted_words = TextUtils.split_strings_with_hyphen_and_underscore(raw_tokens)
+        filtered_words = TextUtils.convert_to_lowercase(raw_splitted_words)
         filtered_words = TextUtils.replace_accented_vowels(filtered_words)
         filtered_words = TextUtils.remove_special_characters(filtered_words)
-        
-        # Remove stopwords
-        filtered_words = TextUtils.remove_stopwords(filtered_words, stop_words)
+        filtered_words = TextUtils.remove_stopwords(filtered_words, stop_words)  # Remove stopwords
         
         # Apply lemmatization
         if lema:
@@ -94,35 +91,57 @@ class TextUtils:
             filtered_words = TextUtils.do_stemming(filtered_words)
         
         # Join the tokens back into a single string
-        transformed_text = ' '.join(filtered_words)
+        transformed_text = TextUtils.join_tokens(filtered_words)
         
-        return transformed_text
+        # Initialize list of mapping tuples
+        raw_to_processed_map_list = TextUtils.get_raw_to_processed_map_list(text, raw_splitted_words, filtered_words)
+        
+        return transformed_text, raw_to_processed_map_list
     
     
     @staticmethod
-    def split_strings_with_hyphen(tokens: list[str]) -> list[str]:
+    def split_strings_with_hyphen_and_underscore(tokens: list[str]) -> list[str]:
         """
-        Split strings in the given list that contain hyphens into separate tokens.
+        Split strings in the given list that contain hyphens or underscores into separate tokens.
 
-        This function takes a list of strings as input, where some strings may contain hyphens.
-        It splits these strings into separate tokens at the hyphens and returns a new list containing
+        This function takes a list of strings as input, where some strings may contain hyphens or underscores.
+        It splits these strings into separate tokens at the hyphens or underscores and returns a new list containing
         all the individual tokens.
 
         Parameters:
-        tokens (list[str]): A list of strings where some strings may contain hyphens.
+        tokens (list[str]): A list of strings where some strings may contain hyphens or underscores.
 
         Returns:
         list[str]: A list of strings where each string represents a token.
-            If a string in the input list contained hyphens, it has been split into separate tokens.
+            If a string in the input list contained hyphens or underscores, it has been split into separate tokens.
         """
         result = []
         for s in tokens:
-            if '-' in s:
-                parts = s.split('-')
+            if '-' in s or '_' in s:
+                # Use regex to split by both '-' and '_'
+                parts = re.split(r'[-_]', s)
                 result.extend(parts)
             else:
                 result.append(s)
         return result
+    
+    
+    @staticmethod
+    def convert_to_lowercase(tokens: list[str]) -> list[str]:
+        """
+        Convert a list of tokens to lowercase.
+
+        Parameters
+        ----------
+        tokens : list[str]
+            A list of tokens to be converted to lowercase.
+
+        Returns
+        -------
+        list[str]
+            A list of tokens where each token is in lowercase.
+        """
+        return [token.lower() for token in tokens]
     
     
     @staticmethod
@@ -176,11 +195,10 @@ class TextUtils:
             The cleaned tokens have removed special characters and leading/trailing whitespace.
         """
         cleaned_list = []
-        for s in tokens:
-            cleaned_string = re.sub(r'[^a-zA-Z0-9\s]', '', s)  # Delete special characters
+        for t in tokens:
+            cleaned_string = re.sub(r'[^a-zA-Z0-9\s]', '', t)  # Delete special characters
             cleaned_string = cleaned_string.strip()  # Remove leading and trailing whitespace
-            if cleaned_string:  # If the string is not empty
-                cleaned_list.append(cleaned_string)
+            cleaned_list.append(cleaned_string)
         return cleaned_list
     
     
@@ -203,7 +221,7 @@ class TextUtils:
         Returns:
         list[str]: A list of strings where each string represents a token that is not a stop word.
         """
-        filtered_words = [word for word in tokens if word not in stop_words]
+        filtered_words = [word if word not in stop_words else '' for word in tokens]
         return filtered_words
     
 
@@ -247,3 +265,64 @@ class TextUtils:
         stemmer = PorterStemmer()
         filtered_words = [stemmer.stem(word) for word in tokens]
         return filtered_words
+    
+    
+    @staticmethod
+    def join_tokens(tokens: list[str]) -> str:
+        """
+        Join a list of tokens into a single string, ignoring empty tokens.
+
+        Parameters
+        ----------
+        tokens : list[str]
+            A list of tokens to be joined into a single string.
+
+        Returns
+        -------
+        str
+            A single string containing the joined tokens, separated by spaces.
+        """
+        return ' '.join([w for w in tokens if w != ''])
+    
+    
+    @staticmethod
+    def get_raw_to_processed_map_list(
+            text: str, 
+            raw_splitted_words: list[str], 
+            filtered_words: list[str]
+            ) -> list[tuple[int, int, str, str]]:
+        """
+        Get a list of mapping tuples from raw text positions to processed words.
+        This function takes the raw text, raw splitted words, and filtered words as input,
+        and returns a list of mapping tuples from raw text positions to processed words,
+        with format: [ (first_idx, last_idx, raw_word, processed_word), ... ]
+        
+        Parameters:
+        text (str): The raw text containing the words to be processed.
+        raw_splitted_words (list[str]): A list of raw splitted words extracted from the raw text.
+        filtered_words (list[str]): A list of processed words extracted from the raw text.
+        
+        Returns:
+        list[tuple[int, int, str, str]]: A list of mapping tuples from raw text index positions to 
+        its raw and processed word respectively.
+        """
+        # Initialize list of mapping tuples
+        raw_to_processed_map_list: list[tuple[int, int, str, str]] = []
+        
+        # Map raw words to processed words with index positions
+        current_position = 0  # Tracks the current position in the raw text
+        for raw_word, processed_word in zip(raw_splitted_words, filtered_words):
+            # Find the start and end indices of the current raw word
+            start_idx = text.find(raw_word, current_position)
+            if start_idx == -1:
+                continue  # Skip if the word is not found
+            end_idx = start_idx + len(raw_word) - 1
+
+            # Add the elements to a new item in the mapping list
+            if processed_word:
+                raw_to_processed_map_list.append((start_idx, end_idx, raw_word, processed_word))
+
+            # Move the current position forward to avoid finding the same word again
+            current_position = end_idx + 1
+            
+        return raw_to_processed_map_list

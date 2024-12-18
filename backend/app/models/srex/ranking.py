@@ -16,7 +16,7 @@ from utils.vector_utils import VectorUtils
 
 
 class QueryTreeHandler:
-    def __init__(self, query_tree):
+    def __init__(self, query_tree: BinaryExpressionTree):
         """
         Initialize a new QueryTreeHandler object.
 
@@ -89,6 +89,7 @@ class Sentence(QueryTreeHandler):
         self.__position_in_doc = position_in_doc
         self.__weight = weight
         self.__preprocessed_text: str = ""
+        self.__raw_to_processed_map: list[tuple[int, int, str, str]] = []
         self.__vicinity_matrix: dict[str, dict[str, list[int]]] = {}
 
 
@@ -124,6 +125,18 @@ class Sentence(QueryTreeHandler):
         """
         return self.__preprocessed_text
     
+    
+    @property
+    def raw_to_processed_map(self) -> list[tuple[int, int, str, str]]:
+        """
+        Retrieve the mapping from raw word index positions in the text to raw and preprocessed words.
+
+        Returns:
+        list[tuple[int, int, str, str]]: The list of mapping tuples from raw word index positions 
+        to raw and preprocessed words.
+        """
+        return self.__raw_to_processed_map
+    
 
     @property
     def vicinity_matrix(self) -> dict[str, dict[str, list[float]]]:
@@ -146,7 +159,8 @@ class Sentence(QueryTreeHandler):
             stem: bool = False
             ) -> None:
         """
-        Apply some text transformations to the sentence. Also replaces spaces in query terms with underscores.
+        Apply some text transformations to the sentence, replaces spaces in query terms with underscores
+        and generates a raw-to-processed mapping list of tuples.
 
         Parameters
         ----------
@@ -160,11 +174,12 @@ class Sentence(QueryTreeHandler):
         # Sentence query graphs is re-initialized
         self.query_tree.remove_graphs_for_each_node()
         
-        transformed_sentence_str = TextUtils.get_transformed_text(self.__raw_text, stop_words, lema, stem)
+        transformed_sentence_str, raw_to_processed_map = TextUtils.get_transformed_text_with_mapping(self.__raw_text, stop_words, lema, stem)
         query_terms_with_underscores = self.query_tree.get_query_terms_str_list_with_underscores() 
         transformed_sentence_str = self.__get_transformed_sentence_str_with_underscores_in_query_terms(query_terms_with_underscores, 
                                                                                                 transformed_sentence_str)
         self.__preprocessed_text = transformed_sentence_str
+        self.__raw_to_processed_map = raw_to_processed_map
     
 
     def calculate_vicinity_matrix(self) -> None:

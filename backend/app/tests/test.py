@@ -277,7 +277,7 @@ class TestSREX(unittest.TestCase):
         stem = False
         
         # Get transformed text
-        result = TextUtils.get_transformed_text(text, stop_words, lema, stem)
+        result, _ = TextUtils.get_transformed_text_with_mapping(text, stop_words, lema, stem)
         
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)

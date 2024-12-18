@@ -151,6 +151,7 @@ class ConversionUtils {
      *
      * @param hops - The number of hops from the central node to the neighbour term.
      * @param hopMaxValue - The maximum number of hops allowed in the graph.
+     * @param userGraphConversion - A boolean indicating whether the graph is a user graph.
      *
      * @returns {number} - The distance from the central node to the neighbour term.
      * The distance is calculated based on the normalized value of the hops,
@@ -163,7 +164,7 @@ class ConversionUtils {
      */
     public static convertHopsToDistance(hops: number, hopMaxValue: number, userGraphConversion: boolean): number {
         if (hopMaxValue < 2) return 1.0
-        const minMaxDistances = this.getMinMaxDistances(userGraphConversion)
+        const minMaxDistances = userGraphConversion ? this.minMaxDistancesUserGraph : this.minMaxDistancesSentenceGraph;
         const normalizedValue = this.normalize(hops, this.hopMinValue, hopMaxValue, minMaxDistances[0], minMaxDistances[1])
         return normalizedValue
     }
@@ -173,6 +174,7 @@ class ConversionUtils {
      *
      * @param distance - The distance to be converted to hops.
      * @param hopMaxValue - The maximum number of hops that can be achieved.
+     * @param userGraphConversion - A boolean indicating whether the graph is a user graph.
      *
      * @returns {number} - The number of hops corresponding to the given distance, normalized within the specified range.
      *
@@ -184,7 +186,7 @@ class ConversionUtils {
      */
     public static convertDistanceToHops(distance: number, hopMaxValue: number, userGraphConversion: boolean): number {
         if (hopMaxValue < 2) return 1.0
-        const minMaxDistances = this.getMinMaxDistances(userGraphConversion)
+        const minMaxDistances = userGraphConversion ? this.minMaxDistancesUserGraph : this.minMaxDistancesSentenceGraph;
         const normalizedValue = this.normalize(distance, minMaxDistances[0], minMaxDistances[1], this.hopMinValue, hopMaxValue)
         return parseFloat(normalizedValue.toFixed(1))
     }
@@ -231,11 +233,6 @@ class ConversionUtils {
         const normalizedValue = newMin + ((value - oldMin) * (newMax - newMin)) / (oldMax - oldMin);
         return normalizedValue;
     }
-
-    private static getMinMaxDistances(userGraphConversion: boolean) {
-        return userGraphConversion ? this.minMaxDistancesUserGraph : this.minMaxDistancesSentenceGraph
-    }
-
 }
 
 
@@ -299,8 +296,6 @@ class Edge {
     private readonly sourceNode: GraphNode
     private readonly targetNode: GraphNode
     private distance: number
-    private readonly hopLimit: number
-    private readonly isUserGraphEdge: boolean
     private readonly cyElement: cytoscape.Core
 
     /**
@@ -308,17 +303,19 @@ class Edge {
      * 
      * @param sourceNode - The source node of the edge.
      * @param targetNode - The target node of the edge.
-     * @param hopLimit - The maximum number of hops allowed for the edge.
+     * @param isUserGraphEdge - A boolean indicating whether the edge is from the user graph.
      */
-    constructor(sourceNode: GraphNode, targetNode: GraphNode, hopLimit: number, isUserGraphEdge: boolean) {
+    constructor(sourceNode: GraphNode, targetNode: GraphNode, isUserGraphEdge: boolean) {
         this.id = "e_" + targetNode.getId()
         this.sourceNode = sourceNode
         this.targetNode = targetNode
         this.distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
-        this.hopLimit = hopLimit
-        this.isUserGraphEdge = isUserGraphEdge
         this.cyElement = isUserGraphEdge ? cyUser : cySentence;
         this.addVisualEdgeToInterface()
+    }
+
+    public getDistance(): number {
+        return this.distance
     }
 
     /**
@@ -335,23 +332,6 @@ class Edge {
      */
     public setDistance(distance: number): void {
         this.distance = distance;
-    }
-
-    /**
-     * Updates the distance between the source and target nodes.
-     *
-     * This function calculates the distance between the source and target nodes using the `MathUtils.getDistanceBetweenNodes` method.
-     * It then sets the calculated distance as the distance between the nodes using the `this.setDistance` method.
-     *
-     * @remarks
-     * This function assumes that the source and target nodes are already defined and valid.
-     */
-    public updateDistance(): void {
-        this.setDistance(MathUtils.getDistanceBetweenNodes(this.sourceNode, this.targetNode))
-    }
-
-    public getDistance(): number {
-        return this.distance
     }
 
     /**
@@ -372,37 +352,31 @@ class Edge {
      * Converts the Edge instance into a serializable object.
      * 
      * @returns An object containing the data of the Edge.
-     * The object has properties: id, source, target, and distance.
-     * The distance is converted to hops using the ConversionUtils.
+     * The object has properties: id, source and target.
      */
     public toObject(): { data: EdgeData } {
-        const baseData = {
+        const edgeData = {
             id: this.id,
             source: this.sourceNode.getId(),
             target: this.targetNode.getId(),
         };
-    
-        // Add distance to the data if the edge is not a user graph edge
-        if (!this.isUserGraphEdge) {
-            return {
-                data: {
-                    ...baseData,
-                    distance: ConversionUtils.convertDistanceToHops(
-                        this.distance, 
-                        this.hopLimit, 
-                        this.isUserGraphEdge
-                    ),
-                }
-            };
-        }
-    
-        // Return the base data if the edge is a user graph edge
-        return { data: baseData };
+
+        return { data: edgeData };
     }
 
+    /**
+     * Adds a visual edge to the graph interface.
+     * 
+     * This function creates a new edge in the graph using the `toObject` method,
+     * which returns an object containing the edge's data.
+     * The edge is then added to the graph using the `cy.add` method.
+     *
+     * @returns {void} - This function does not return any value.
+     */
     private addVisualEdgeToInterface(): void {
         this.cyElement.add(this.toObject())
     }
+
 }
 
 
@@ -435,6 +409,7 @@ class GraphNode {
      * @param label - The label of the node.
      * @param position - The position of the node in the graph.
      * @param type - The type of the node.
+     * @param isUserGraphNode - A boolean indicating whether the graph node belongs to the user graph.
      */
     constructor(id: string, label: string, position: Position, type: NodeType, isUserGraphNode: boolean) {
         this.id = id
@@ -512,6 +487,7 @@ class CentralNode extends GraphNode {
      * @param id - The unique identifier of the central node.
      * @param x - The x-coordinate of the central node's position in the graph.
      * @param y - The y-coordinate of the central node's position in the graph.
+     * @param isUserGraphNode - A boolean indicating whether the central node belongs to the user graph.
      */
     constructor(id: string, x: number, y: number, isUserGraphNode: boolean) {
         let _id = id
@@ -545,6 +521,7 @@ class OuterNode extends GraphNode {
      * @param id - The unique identifier of the outer node.
      * @param distance - The distance from the central node to the outer node.
      *                    Default value is 0, which means the outer node will be positioned randomly.
+     * @param isUserGraphNode - A boolean indicating whether the outer node belongs to the user graph.
      */
     constructor(id: string, isUserGraphNode: boolean, distance: number = 0) {
         let _id = id
@@ -623,6 +600,9 @@ class OuterNode extends GraphNode {
     /**
      * Adds a visual node to the graph interface.
      * 
+     * @param isUserGraphNode - A boolean indicating whether the outer node belongs to the user graph.
+     * 
+     * @remarks
      * This function creates a new node in the graph using the `toObject` method,
      * which returns an object containing the node's data and position.
      * The node is then added to the graph using the `cy.add` method.
@@ -693,42 +673,53 @@ class NeighbourTerm extends Term implements ViewManager {
     private readonly proximityScore: number
     private readonly frequencyScore: number
     private criteria: string
-    private readonly hopLimit: number
 
     /**
-     * Represents a neighbour term in the graph.
-     * It manages the associated views, such as the OuterNode and Edge.
-     * 
-     * @param queryTerm - The QueryTerm associated with this neighbour term.
+     * Constructor for the NeighbourTerm class.
+     * Initializes a new NeighbourTerm instance with the provided parameters.
+     *
+     * @param queryTerm - The QueryTerm instance associated with the neighbour term.
      * @param value - The value of the neighbour term.
-     * @param hops - The number of hops from the central node to this neighbour term.
-     * @param ponderation - The ponderation of this neighbour term.
-     * @param hopLimit - The maximum number of hops allowed for the neighbour term.
+     * @param proximityScore - The proximity score of the neighbour term.
+     * @param frequencyScore - The frequency score of the neighbour term.
+     * @param criteria - The criteria of the neighbour term, which can be 'proximity', 'frequency', or 'exclusion'.
      */
-    constructor(queryTerm: QueryTerm, value: string, proximityScore: number, frequencyScore: number, 
-        criteria: string, hopLimit: number) {
+    constructor(queryTerm: QueryTerm, value: string, proximityScore: number, frequencyScore: number, criteria: string) {
         super(value)
         this.queryTerm = queryTerm
         this.proximityScore = proximityScore
         this.frequencyScore = frequencyScore
         this.criteria = criteria
         this.setInitialHops()
-        this.hopLimit = hopLimit
         this.setLabel(value)
     }
 
+    
     /**
-     * Displays the views of the neighbour term in the graph.
-     * This includes creating and positioning the OuterNode and Edge.
+     * Displays the views of the query term and its associated neighbour terms in the graph.
+     * This includes creating and positioning the CentralNode and OuterNodes.
+     *
+     * @returns {void} - This function does not return any value.
+     *
+     * @remarks
+     * The function first checks if the CentralNode associated with the query term exists.
+     * If the CentralNode does not exist, the function returns without performing any further actions.
+     *
+     * Next, the function creates a new OuterNode and sets its position and label.
+     * It also creates a new Edge connecting the CentralNode and the OuterNode.
+     *
+     * Finally, the function sets the criteria for the term, which includes changing the node color based on the criteria.
      */
     public displayViews(): void {
-        const isUserGraph = this.queryTerm.getIsUserGraph()
+        const centralNode = this.queryTerm.getNode()
+        if (centralNode === undefined) return 
+
         // Build the outer node and its edge, and display them
+        const isUserGraph = this.queryTerm.getIsUserGraph()
         this.node = new OuterNode(TextUtils.getRandomString(28), isUserGraph)
         this.node.setPosition(this.nodePosition)
         this.node.setLabel(this.value)
-        if (this.queryTerm.getNode() === undefined) return 
-        this.edge = new Edge(this.queryTerm.getNode() as CentralNode, this.node, this.hopLimit, isUserGraph)
+        this.edge = new Edge(centralNode, this.node, isUserGraph)
 
         // Set term criteria, which includes changing the node color based on the criteria.
         if (this.criteria === 'proximity') {
@@ -739,6 +730,7 @@ class NeighbourTerm extends Term implements ViewManager {
             this.setExclusionCriteria();
         }
     }
+
 
     /**
      * Removes the views of the neighbour terms and the central node.
@@ -755,13 +747,23 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.hops
     }
 
-    public updateHops(hops: number): void {
+    /**
+     * Updates the number of hops for the neighbour term.
+     * If the query term belongs to the user graph, the function calculates the previous hops,
+     * updates the current hops, and calls the `updateUserCriteria` method to update the criteria.
+     *
+     * @param newHops - The new number of hops from the central node to the neighbour term.
+     *
+     * @returns {void} - This function does not return any value.
+     */
+    public updateHops(newHops: number): void {
         if (this.queryTerm.getIsUserGraph()) {
             let previousHops = this.hops
-            this.hops = hops
-            this.updateUserCriteria(previousHops, hops)
+            this.hops = newHops
+            this.updateUserCriteria(previousHops, newHops)
         }
     }
+
 
     public getProximityScore(): number {
         return this.proximityScore
@@ -775,8 +777,8 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.criteria
     }
 
-    public getHopLimit(): number {
-        return this.hopLimit
+    public getQueryHopLimit(): number {
+        return this.queryTerm.getHopLimit()
     }
 
     /**
@@ -815,7 +817,7 @@ class NeighbourTerm extends Term implements ViewManager {
         const nodeDistance = this.edge?.getDistance() ?? 0
         this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
         const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
-        const hops = ConversionUtils.convertDistanceToHops(distance, this.hopLimit, this.queryTerm.getIsUserGraph())
+        const hops = ConversionUtils.convertDistanceToHops(distance, this.getQueryHopLimit(), this.queryTerm.getIsUserGraph())
         this.updateHops(hops)
         this.updateNodePosition(distance)
     }
@@ -836,7 +838,7 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2 + 0.25
-        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.hopLimit, this.queryTerm.getIsUserGraph())
+        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.getQueryHopLimit(), this.queryTerm.getIsUserGraph())
         this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this.updateNodePosition(nodeDistance)
     }
@@ -883,15 +885,27 @@ class NeighbourTerm extends Term implements ViewManager {
         this.edge?.setDistance(distance)
     }
 
+    /**
+     * Sets the initial number of hops for the neighbour term based on the user graph status.
+     *
+     * @returns {void} - This function does not return any value.
+     *
+     * @remarks
+     * If the query term belongs to the user graph, the initial hops are set to 1.0.
+     * If the query term does not belong to the user graph, the initial hops are set to 4.0.
+     * This initial hop value is used to calculate the position of the neighbour term in the graph.
+     */
     private setInitialHops(): void {
         let initialHops = this.queryTerm.getIsUserGraph() ? 1.0 : 4.0
         this.hops = initialHops
     }
 
+
     /**
     * Updates the criteria of the neighbour term based on the number of hops.
     *
-    * @param hops - The number of hops from the central node to the neighbour term.
+    * @param previousHops - The number of previous hops from the central node to the neighbour term.
+    * @param newHops - The number of new hops from the central node to the neighbour term.
     *
     * @returns {void} - This function does not return any value.
     *
@@ -901,12 +915,12 @@ class NeighbourTerm extends Term implements ViewManager {
     * If the number of hops is between 1.7 and 3.2 (exclusive), the criteria is set to "frequency".
     * If the number of hops is greater than or equal to 3.2, the criteria is set to "exclusion".
     */
-    private updateUserCriteria(previousHops: number, hops: number): void {
-        if (previousHops >= 1.7 && hops < 1.7) {
+    private updateUserCriteria(previousHops: number, newHops: number): void {
+        if (previousHops >= 1.7 && newHops < 1.7) {
             this.setProximityCriteria();
-        } else if ((previousHops < 1.7 || previousHops >= 3.2) && (hops >= 1.7 && hops < 3.2)) {
+        } else if ((previousHops < 1.7 || previousHops >= 3.2) && (newHops >= 1.7 && newHops < 3.2)) {
             this.setFrequnecyCriteria();
-        } else if (previousHops < 3.2 && hops >= 3.2) {
+        } else if (previousHops < 3.2 && newHops >= 3.2) {
             this.setExclusionCriteria();
         }
     }
@@ -938,15 +952,29 @@ class QueryTerm extends Term implements ViewManager {
     private neighbourTerms: NeighbourTerm[] = []
     private readonly isUserGraph: boolean
     private individualQueryTermsList: string[] = []
+    private readonly hopLimit: number
 
-    constructor(value: string, isUserGraph: boolean, individualQueryTermsList?: string[]) {
+    /**
+     * Constructor for the QueryTerm class.
+     * Initializes a new QueryTerm instance with the provided value, user graph status, and hop limit.
+     *
+     * @param value - The value of the query term.
+     * @param isUserGraph - A boolean indicating whether the query term belongs to the user graph.
+     * @param hopLimit - The maximum number of hops allowed for neighbour terms in the document.
+     */
+    constructor(value: string, isUserGraph: boolean, hopLimit: number) {
         super(value);
         this.isUserGraph = isUserGraph;
-        if (individualQueryTermsList) this.individualQueryTermsList = individualQueryTermsList
+        this.hopLimit = hopLimit
     }
+
 
     public getIsUserGraph(): boolean {
         return this.isUserGraph;
+    }
+
+    public getHopLimit(): number {
+        return this.hopLimit
     }
 
     public getIndividualQueryTermsList(): string[] {
@@ -1062,8 +1090,8 @@ class TextElement {
     ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
     ​ */
     constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number) {
-        this.queryTerm = new QueryTerm(queryTermValue, false)
-        this.initializeNeighbourTermsFromResponse(responseNeighbourTerms, hopLimit)
+        this.queryTerm = new QueryTerm(queryTermValue, false, hopLimit)
+        this.initializeNeighbourTermsFromResponse(responseNeighbourTerms)
     }
 
     public getQueryTerm(): QueryTerm {
@@ -1076,15 +1104,13 @@ class TextElement {
      * @param responseNeighbourTerms - An array of objects containing neighbour term data retrieved from the response.
      * Each object has properties: term, distance, and ponderation.
      * 
-     * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
-     * 
      * @returns {void} - This function does not return any value.
      */
-    private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[], hopLimit: number): void {
+    private initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[]): void {
         const neighbourTerms = []
         for (const termObject of responseNeighbourTerms) {
             let neighbourTerm = new NeighbourTerm(this.queryTerm, termObject.term, termObject.proximity_score, 
-                termObject.frequency_score, termObject.criteria, hopLimit)
+                termObject.frequency_score, termObject.criteria)
             neighbourTerms.push(neighbourTerm)
         }
         this.queryTerm.setNeighbourTerms(neighbourTerms)
@@ -1099,9 +1125,13 @@ interface SentenceObject {
     all_neighbour_terms: NTermObject[];
 }
 
+// Format: [ [first_idx, last_idx, raw_word, processed_word], ... ]
+type RawToProcessedMap = [number, number, string, string][];
+
 class Sentence extends TextElement {
     private readonly positionInDoc: number
     private readonly rawText: string
+    private readonly rawToProcessedMap: RawToProcessedMap
 
     /**
     ​ * Constructor for the Sentence class.
@@ -1113,11 +1143,14 @@ class Sentence extends TextElement {
     ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
     ​ * @param positionInDoc - The position of the sentence in the document.
     ​ * @param rawText - The raw text of the sentence.
+     * @param rawToProcessedMap - The map of raw to processed words in the sentence
     ​ */
-    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number, positionInDoc: number, rawText: string){
+    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number, positionInDoc: number, 
+        rawText: string, rawToProcessedMap: RawToProcessedMap){
         super(queryTermValue, responseNeighbourTerms, hopLimit)
         this.positionInDoc = positionInDoc
         this.rawText = rawText
+        this.rawToProcessedMap = rawToProcessedMap
     }
 
     public getPositionInDoc(): number {
@@ -1126,6 +1159,10 @@ class Sentence extends TextElement {
 
     public getRawText(): string {
         return this.rawText
+    }
+
+    public getRawToProcessedMap(): RawToProcessedMap {
+        return this.rawToProcessedMap
     }
 
     public toObject(): SentenceObject {
@@ -1235,7 +1272,7 @@ class Document extends TextElement {
         const sentences = []
         for (const sentenceObject of responseSentences) {
             let sentence = new Sentence(this.queryTerm.getValue(), sentenceObject.all_neighbour_terms, 
-                    hopLimit, sentenceObject.position_in_doc, sentenceObject.raw_text)
+                    hopLimit, sentenceObject.position_in_doc, sentenceObject.raw_text, sentenceObject.raw_to_processed_map)
             sentences.push(sentence)
         }
         return sentences
@@ -1254,10 +1291,21 @@ class Ranking {
     private documents: Document[] = []
     private visibleSentence: Sentence | undefined
 
-    constructor(queryTermValue: string) {
-        this.visibleQueryTerm = new QueryTerm(queryTermValue, true)
-        this.completeQueryTerm = new QueryTerm(queryTermValue, false)
+    /**
+     * Initializes a new Ranking instance with the provided query term value and limit distance.
+     *
+     * @param queryTermValue - The value of the query term for which the Ranking instance will be created.
+     * @param limitDistance - The maximum distance limit (hop limit) for neighbour terms.
+     *
+     * @returns A new Ranking instance with the provided query term value and limit distance.
+     * The visible and complete QueryTerm instances are created with the provided query term value,
+     * and the visibility and exclusion status of the documents are initialized to false.
+     */
+    constructor(queryTermValue: string, limitDistance: number) {
+        this.visibleQueryTerm = new QueryTerm(queryTermValue, true, limitDistance)
+        this.completeQueryTerm = new QueryTerm(queryTermValue, false, limitDistance)
     }
+
 
     public getVisibleQueryTerm(): QueryTerm {
         return this.visibleQueryTerm
@@ -1269,6 +1317,10 @@ class Ranking {
 
     public getDocuments(): Document[] {
         return this.documents
+    }
+
+    public getExcludedDocuments(): Document[] {
+        return this.documents.filter(doc => doc.isExcluded())
     }
 
     public getNotExcludedDocuments(): Document[] {
@@ -1283,11 +1335,21 @@ class Ranking {
         return this.visibleSentence
     }
 
+    /**
+     * Sets the visible sentence in the ranking.
+     * Removes the views of the current visible sentence (if any),
+     * sets the new visible sentence, and displays the views of the new visible sentence.
+     *
+     * @param sentence - The new visible sentence to be set in the ranking.
+     *
+     * @returns {void} - This function does not return any value.
+     */
     public setVisibleSentence(sentence: Sentence): void {
         this.visibleSentence?.getQueryTerm().removeViews()
         this.visibleSentence = sentence
         this.visibleSentence.getQueryTerm().displayViews()
     }
+
 
     /**
      * Reorders the documents in the ranking based on the provided positions array.
@@ -1303,8 +1365,8 @@ class Ranking {
      * It then assigns the reorderedDocuments array back to the documents property of the Ranking instance.
      */
     public reorderDocuments(newPositions: number[]): void {
-        const excludedDocuments: Document[] = this.documents.filter(doc => doc.isExcluded());
-        const notExcludedDocuments: Document[] = this.documents.filter(doc => !doc.isExcluded());
+        const excludedDocuments: Document[] = this.getExcludedDocuments();
+        const notExcludedDocuments: Document[] = this.getNotExcludedDocuments();
 
         // Validate the positions array length (it must be equal to the length of the not excluded documents array)
         if (newPositions.length !== notExcludedDocuments.length) {
@@ -1330,9 +1392,16 @@ class Ranking {
     }
 
 
+    /**
+     * Refreshes the exclusion status of all documents in the ranking.
+     * This function iterates over the documents in the ranking and sets their exclusion status to false.
+     *
+     * @returns {void} - This function does not return any value.
+     */
     public refreshDocumentsExclusion(): void {
         this.documents.forEach(doc => doc.setExcluded(false));
     }
+
 
     /**
      * Sets the indices of the documents to be excluded in the ranking.
@@ -1355,7 +1424,6 @@ class Ranking {
     }
 
 
-
     public toObject(): RankingObject {
         return {
             visible_neighbour_terms: this.visibleQueryTerm.getNeighbourTermsAsObjects(),
@@ -1373,10 +1441,47 @@ class QueryTermService {
     private readonly ranking: Ranking
     private isVisible: boolean = false
 
-    constructor(queryService: QueryService, queryTermValue: string, searchResults: number, limitDistance: number, graphTerms: number) {
+    /**
+     * Initializes a new instance of the QueryTermService class.
+     * 
+     * @param queryService - The QueryService instance to be associated with the QueryTermService.
+     * @param queryTermValue - The value of the query term for which the QueryTermService will be created.
+     * @param limitDistance - The maximum distance limit for neighbour terms.
+     */
+    constructor(queryService: QueryService, queryTermValue: string, limitDistance: number) {
         this.queryService = queryService
-        this.ranking = new Ranking(queryTermValue)
-        this.retrieveData(searchResults, limitDistance, graphTerms)
+        this.ranking = new Ranking(queryTermValue, limitDistance)
+    }
+
+    /**
+     * Retrieves data related to neighbour terms for the current query term.
+     * The retrieved data is then used to create new NeighbourTerm instances,
+     * which are added to the QueryTerm's neighbour terms list.
+     * 
+     * @param searchResults - The number of search results to retrieve.
+     * @param limitDistance - The maximum distance limit for neighbour terms.
+     * @param graphTerms - The number of neighbour terms to include in the graph.
+     *
+     * @returns {Promise<void>} - A promise that resolves when the data retrieval and processing are complete.
+     */
+    public async initialize(searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
+        // Define the endpoint for retrieving neighbour terms data
+        const endpoint = 'get-ranking'
+
+        // Send a POST request to the endpoint with the query term value
+        let _query = this.getVisibleQueryTerm().getValue()
+        const data = {query: _query, search_results: searchResults, limit_distance: limitDistance, graph_terms: graphTerms}
+        const result = await HTTPRequestUtils.postData(endpoint, data)
+
+        // Check if the result is not null
+        if (result) {
+            this.getVisibleQueryTerm().setIndividualQueryTermsList(result['individual_query_terms_list'])
+            this.generateVisibleNeighbourTerms(result)
+            this.generateCompleteNeighbourTerms(result)
+            this.generateRankingDocuments(result)
+        } else {
+            console.log("Warning: null API response");
+        }
     }
 
     public getVisibleQueryTerm(): QueryTerm {
@@ -1435,6 +1540,7 @@ class QueryTermService {
         this.isVisible = false
         this.getVisibleQueryTerm().removeViews()
         this.getVisibleSentence()?.getQueryTerm().removeViews()
+        queryService.updateActiveTermServiceInElements(undefined);
     }
 
     /**
@@ -1445,7 +1551,7 @@ class QueryTermService {
      * @param neighbourTerm - The neighbour term to be added.
      */
     public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        if (this.ranking.getVisibleQueryTerm().getNeighbourTerms().length > 19) return
+        if (this.getVisibleQueryTerm().getNeighbourTerms().length > 19) return
         this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         this.queryService.updateAddTermsTable()
@@ -1463,7 +1569,7 @@ class QueryTermService {
      */
     public removeVisibleNeighbourTerm(id: string): void {
         let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
-        if (neighbourTerm === undefined || this.ranking.getVisibleQueryTerm().getNeighbourTerms().length < 2) return
+        if (neighbourTerm === undefined || this.getVisibleQueryTerm().getNeighbourTerms().length < 2) return
         this.getVisibleQueryTerm().removeNeighbourTerm(neighbourTerm)
         this.queryService.updateNeighbourTermsTable()
         this.queryService.updateAddTermsTable()
@@ -1500,37 +1606,6 @@ class QueryTermService {
     }
 
     /**
-     * Retrieves data related to neighbour terms for the current query term.
-     * The retrieved data is then used to create new NeighbourTerm instances,
-     * which are added to the QueryTerm's neighbour terms list.
-     * 
-     * @param searchResults - The number of search results to retrieve.
-     * @param limitDistance - The maximum distance limit for neighbour terms.
-     * @param graphTerms - The number of neighbour terms to include in the graph.
-     *
-     * @returns {Promise<void>} - A promise that resolves when the data retrieval and processing are complete.
-     */
-    private async retrieveData(searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
-        // Define the endpoint for retrieving neighbour terms data
-        const endpoint = 'get-ranking'
-
-        // Send a POST request to the endpoint with the query term value
-        let _query = this.getVisibleQueryTerm().getValue()
-        const data = {query: _query, search_results: searchResults, limit_distance: limitDistance, graph_terms: graphTerms}
-        const result = await HTTPRequestUtils.postData(endpoint, data)
-
-        // Check if the result is not null
-        if (result) {
-            this.ranking.getVisibleQueryTerm().setIndividualQueryTermsList(result['individual_query_terms_list'])
-            this.generateVisibleNeighbourTerms(result, limitDistance)
-            this.generateCompleteNeighbourTerms(result, limitDistance)
-            this.generateRankingDocuments(result, limitDistance)
-        } else {
-            console.log("Warning: null API response");
-        }
-    }
-
-    /**
      * Generates visible neighbour terms for the current query term.
      * 
      * @param result - The result object containing neighbour terms data.
@@ -1538,15 +1613,13 @@ class QueryTermService {
      * which is an array of objects representing neighbour terms.
      * Each object should have properties 'term', 'distance', and 'ponderation'.
      * 
-     * @param hopLimit - The maximum number of hops allowed for the neighbour terms.
-     * 
      * @returns {void} - This function does not return any value.
      */
-    private generateVisibleNeighbourTerms(result: any, hopLimit: number): void {
+    private generateVisibleNeighbourTerms(result: any): void {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = this.initializeNewNeighbourTerm(this.getVisibleQueryTerm(), termObject, hopLimit)
+            let neighbourTerm = this.initializeNewNeighbourTerm(this.getVisibleQueryTerm(), termObject)
 
             // Add the neighbour term to the visible QueryTerm's neighbour terms list
             this.addVisibleNeighbourTerm(neighbourTerm)
@@ -1561,17 +1634,15 @@ class QueryTermService {
      * which is an array of objects representing neighbour terms.
      * Each object should have properties 'term', 'distance', and 'ponderation'.
      * 
-     * @param hopLimit - The maximum number of hops allowed for the neighbour terms.
-     * 
      * @returns {void} - This function does not return any value.
      * It iterates over the neighbour terms in the result, creates a new NeighbourTerm instance for each term object,
      * and adds the neighbour term to the complete QueryTerm's neighbour terms list.
      */
-    private generateCompleteNeighbourTerms(result: any, hopLimit: number): void {
+    private generateCompleteNeighbourTerms(result: any): void {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['complete_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = this.initializeNewNeighbourTerm(this.getCompleteQueryTerm(), termObject, hopLimit)
+            let neighbourTerm = this.initializeNewNeighbourTerm(this.getCompleteQueryTerm(), termObject)
 
             // Add the neighbour term to the complete QueryTerm's neighbour terms list
             this.addCompleteNeighbourTerm(neighbourTerm)
@@ -1585,13 +1656,12 @@ class QueryTermService {
      * Initializes a new NeighbourTerm instance based on the provided term object and hop limit.
      * 
      * @param termObject - An object containing properties 'term', 'distance', and 'ponderation' representing a neighbour term.
-     * @param hopLimit - The maximum number of hops allowed for the neighbour terms.
      * 
      * @returns A new NeighbourTerm instance with the provided term value, distance, ponderation, and hop limit.
      */
-    private initializeNewNeighbourTerm(queryTerm: QueryTerm, termObject: any, hopLimit: number): NeighbourTerm {
+    private initializeNewNeighbourTerm(queryTerm: QueryTerm, termObject: any): NeighbourTerm {
         return new NeighbourTerm(queryTerm, termObject.term, termObject.proximity_score, 
-            termObject.frequency_score, termObject.criteria, hopLimit)
+            termObject.frequency_score, termObject.criteria)
     }
 
     /**
@@ -1602,11 +1672,9 @@ class QueryTermService {
      * which is an array of objects representing documents.
      * Each object should have properties 'doc_id', 'title', 'abstract', and 'neighbour_terms'.
      * 
-     * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the documents.
-     * 
      * @returns {void} - This function does not return any value.
      */
-    private generateRankingDocuments(result: any, hopLimit: number): void {
+    private generateRankingDocuments(result: any): void {
         // Iterate over the documents in the result
         for (let documentObject of result['documents']) {
             const doc_id = documentObject['doc_id']
@@ -1616,7 +1684,9 @@ class QueryTermService {
             const weight = documentObject['weight']
             const response_neighbour_terms = documentObject['all_neighbour_terms']
             const sentences = documentObject['sentences']
-            let document = new Document(this.ranking.getVisibleQueryTerm().getValue(), response_neighbour_terms, hopLimit, 
+            const queryTermValue = this.getVisibleQueryTerm().getValue()
+            const hopLimit = this.getVisibleQueryTerm().getHopLimit()
+            let document = new Document(queryTermValue, response_neighbour_terms, hopLimit, 
                     [doc_id, title, abstract, preprocessed_text], weight, sentences)
             this.addDocument(document)
         }
@@ -1648,6 +1718,15 @@ class QueryService {
     private readonly queryTermsList: QueryTermsList
     private readonly resultsList: ResultsList
 
+    /**
+     * Initializes a new instance of the QueryService class.
+     * 
+     * The QueryService class manages the query terms, neighbour terms, and results for the application.
+     * It initializes the necessary components such as the neighbour terms table, results list, query terms list, and add terms table.
+     * 
+     * @remarks
+     * The QueryService class is responsible for coordinating the interaction between different components of the application.
+     */
     constructor() {
         this.queryTermServices = []
         this.neighbourTermsTable = new NeighbourTermsTable()
@@ -1666,11 +1745,16 @@ class QueryService {
      * @param limitDistance - The maximum distance limit for neighbour terms.
      * @param graphTerms - The number of neighbour terms to include in the graph.
      */
-    public setQuery(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
-        this.activeQueryTermService?.deactivate()
-        this.generateNewQueryTermService(queryValue, searchResults, limitDistance, graphTerms)
+    public async setQuery(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
+        // Deactivate the currently active service
+        this.activeQueryTermService?.deactivate();
+
+        // Wait for the new QueryTermService to be generated
+        await this.generateNewQueryTermService(queryValue, searchResults, limitDistance, graphTerms);
+
+        // If the list is not empty, set the new service active
         if (this.queryTermServices.length > 0) {
-            this.setActiveQueryTermService(queryValue)
+            this.setActiveQueryTermService(queryValue);
         }
     }
 
@@ -1691,11 +1775,29 @@ class QueryService {
         if (queryTermService !== undefined) {
             this.activeQueryTermService = queryTermService
             this.activeQueryTermService.display()
-            this.neighbourTermsTable.setActiveTermService(this.activeQueryTermService)
-            this.addTermsTable.setActiveTermService(this.activeQueryTermService)
-            this.resultsList.setActiveTermService(this.activeQueryTermService)
+            this.updateActiveTermServiceInElements(this.activeQueryTermService);
         }
     }
+
+    /**
+     * Updates the active QueryTermService in the neighbour terms table, add terms table, and results list.
+     * 
+     * @param queryTermService - The QueryTermService to be set as the active service.
+     * If this parameter is `undefined`, the active service in each component will be deactivated.
+     * 
+     * @remarks
+     * This function is responsible for coordinating the interaction between different components of the application.
+     * It updates the active service in the neighbour terms table, add terms table, and results list.
+     * If the provided `queryTermService` is `undefined`, it deactivates the active service in each component.
+     * 
+     * @returns {void}
+     */
+    public updateActiveTermServiceInElements(queryTermService: QueryTermService | undefined): void {
+        this.neighbourTermsTable.setActiveTermService(queryTermService);
+        this.addTermsTable.setActiveTermService(queryTermService);
+        this.resultsList.setActiveTermService(queryTermService);
+    }
+
 
     public updateNeighbourTermsTable(): void {
         this.neighbourTermsTable.updateTable()
@@ -1720,25 +1822,51 @@ class QueryService {
      * @param limitDistance - The maximum distance limit for neighbour terms.
      * @param graphTerms - The number of neighbour terms to include in the graph.
      */
-    private generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): void {
+    private async generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, 
+        graphTerms: number): Promise<void> {
         if (this.findQueryTermService(queryValue) === undefined) {
-            let queryTermService = new QueryTermService(this, queryValue, searchResults, limitDistance, graphTerms)
+            let queryTermService = new QueryTermService(this, queryValue, limitDistance);
+            await queryTermService.initialize(searchResults, limitDistance, graphTerms);
             this.queryTermServices.push(queryTermService)
             this.updateQueryTermsList()
         }
     }
 
+    /**
+     * Finds and returns the QueryTermService associated with a given query value.
+     * 
+     * @param queryValue - The value of the query term for which to find the QueryTermService.
+     * 
+     * @returns The QueryTermService associated with the given query value, or undefined if no such service exists.
+     * 
+     * @remarks
+     * This function iterates over the array of QueryTermServices and uses the Array.prototype.find method to find the service
+     * with a visible query term value that matches the given query value.
+     */
     private findQueryTermService(queryValue: string): QueryTermService | undefined {
         return this.queryTermServices.find(
             termService => termService.getVisibleQueryTerm().getValue() === queryValue
         )
     }
 
+    /**
+     * Updates the list of query terms from the interface, with new query terms.
+     * 
+     * This function retrieves the visible query terms from each QueryTermService,
+     * and passes them to the QueryTermsList's updateList method to update the list.
+     * 
+     * @remarks
+     * This function is responsible for keeping the list of query terms up-to-date
+     * with the active QueryTermServices.
+     * 
+     * @returns {void}
+     */
     private updateQueryTermsList(): void {
         this.queryTermsList.updateList(
             this.queryTermServices.map(termService => termService.getVisibleQueryTerm())
         )
     }
+
 }
 
 
@@ -1746,15 +1874,30 @@ class QueryTermsList {
     private readonly dynamicList: HTMLElement
     private readonly queryService: QueryService
 
+    /**
+     * Constructs a new instance of QueryTermsList.
+     * 
+     * @param queryService - The QueryService associated with the QueryTermsList.
+     * 
+     * @remarks
+     * This constructor initializes the QueryTermsList by setting the queryService property and
+     * retrieving the dynamicList element from the HTML structure.
+     */
     constructor(queryService: QueryService) {
         this.queryService = queryService
         this.dynamicList = document.getElementById('queryTermsList') as HTMLElement
     }
 
+
     /**
-     * Updates the list of query terms with new query terms.
-     *
-     * @param queryTerms - An array of QueryTerm objects to be displayed in the list.
+     * Updates the list of query terms from the interface, with new query terms.
+     * 
+     * This function retrieves the visible query terms from each QueryTermService,
+     * and passes them to the QueryTermsList's updateList method to update the list.
+     * 
+     * @param queryTerms - An array of QueryTerm objects representing the new query terms to be added to the list.
+     * 
+     * @returns {void}
      */
     public updateList(queryTerms: QueryTerm[]): void {
         // Clear existing list items
@@ -1778,6 +1921,7 @@ class QueryTermsList {
             this.dynamicList.appendChild(listItem)
         })
     }
+
 }
 
 
@@ -1785,6 +1929,12 @@ class AddTermsTable {
     private activeTermService: QueryTermService | undefined
     private readonly dynamicTable: HTMLElement
 
+    /**
+     * Constructs a new instance of AddTermsTable.
+     * 
+     * Initializes the AddTermsTable by setting the dynamicTable property and adding an event listener to the filter input.
+     * It also calls the toggleFilterVisibility method to handle the visibility of the filter input.
+     */
     constructor() {
         this.dynamicTable = document.getElementById('addTermsTable') as HTMLElement
         const filterInput = document.getElementById('addTermsFilter') as HTMLInputElement;
@@ -1792,7 +1942,19 @@ class AddTermsTable {
         this.toggleFilterVisibility();
     }
 
-    public setActiveTermService(queryTermService: QueryTermService): void {
+    /**
+     * Sets the active QueryTermService and updates the table.
+     *
+     * @param queryTermService - The QueryTermService to be set as the active service.
+     * This service will be used to retrieve and display data in the table.
+     *
+     * @returns {void} - This function does not return any value.
+     *
+     * @remarks
+     * This function is responsible for setting the active QueryTermService and updating the table.
+     * It is called whenever a new QueryTermService is selected by the user.
+     */
+    public setActiveTermService(queryTermService: QueryTermService | undefined): void {
         this.activeTermService = queryTermService
         this.updateTable()
     }
@@ -1867,9 +2029,8 @@ class AddTermsTable {
                 const proximityScore = neighbourTerm.getProximityScore()
                 const frequencyScore = neighbourTerm.getFrequencyScore()
                 const criteria = neighbourTerm.getCriteria()
-                const hopLimit = neighbourTerm.getHopLimit()
 
-                let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria, hopLimit)
+                let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria)
                 this.activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm)
             }
         }
@@ -1956,11 +2117,27 @@ class NeighbourTermsTable {
     private activeTermService: QueryTermService | undefined
     private readonly dynamicTable: HTMLElement
 
+    /**
+     * Constructor for the NeighbourTermsTable class.
+     * Initializes the dynamicTable property with the HTML element with the id 'neighboursTermsTable'.
+     */
     constructor() {
         this.dynamicTable = document.getElementById('neighboursTermsTable') as HTMLElement
     }
 
-    public setActiveTermService(queryTermService: QueryTermService): void {
+    /**
+     * Sets the active QueryTermService and updates the table.
+     *
+     * @param queryTermService - The QueryTermService to be set as the active service.
+     * This service will be used to retrieve and display data in the table.
+     *
+     * @returns {void} - This function does not return any value.
+     *
+     * @remarks
+     * This function is responsible for setting the active QueryTermService and updating the table.
+     * It is called whenever a new QueryTermService is selected by the user.
+     */
+    public setActiveTermService(queryTermService: QueryTermService | undefined): void {
         this.activeTermService = queryTermService
         this.updateTable()
     }
@@ -2005,11 +2182,27 @@ class ResultsList {
     private activeTermService: QueryTermService | undefined
     private readonly dynamicList: HTMLElement
 
+    /**
+     * Constructor for the NeighbourTermsTable class.
+     * Initializes the dynamicList property with the HTML element with the id 'resultsList'.
+     */
     constructor() {
         this.dynamicList = document.getElementById('resultsList') as HTMLElement
     }
 
-    public setActiveTermService(queryTermService: QueryTermService): void {
+    /**
+     * Sets the active QueryTermService and updates the list.
+     *
+     * @param queryTermService - The QueryTermService to be set as the active service.
+     * This service will be used to retrieve and display data in the list.
+     *
+     * @returns {void} - This function does not return any value.
+     *
+     * @remarks
+     * This function is responsible for setting the active QueryTermService and updating the table.
+     * It is called whenever a new QueryTermService is selected by the user.
+     */
+    public setActiveTermService(queryTermService: QueryTermService | undefined): void {
         this.activeTermService = queryTermService
         this.updateList()
     }
@@ -2062,7 +2255,9 @@ class ResultsList {
     private createTitleElement(index: number, doc: Document): HTMLSpanElement {
         const titleElement = document.createElement('span');
         titleElement.className = 'title';
-        const titleSentenceObject = [doc.getSentences()[0]];
+        // Check if the sentences array is not empty
+        const sentences = doc.getSentences();
+        const titleSentenceObject = sentences.length > 0 ? [sentences[0]] : [];
         // Highlight the title element with green color for the query terms and purple color for the neighbour terms
         titleElement.appendChild(document.createTextNode((index + 1) + '. '));
         const highlightedSpanContainer = this.applyHighlightingToSentences(titleSentenceObject);
@@ -2080,7 +2275,9 @@ class ResultsList {
     private createAbstractElement(doc: Document): HTMLParagraphElement {
         const abstractElement = document.createElement('p');
         abstractElement.className = 'abstract';
-        const abstractSentenceObjects = doc.getSentences().slice(1);
+        // Check if sentences exist and slice from them
+        const sentences = doc.getSentences();
+        const abstractSentenceObjects = sentences.length > 0 ? sentences.slice(1) : [];
         // Highlight the abstract element with green color for the query terms and purple color for the neighbour terms
         const highlightedSpanContainer = this.applyHighlightingToSentences(abstractSentenceObjects);
         abstractElement.appendChild(highlightedSpanContainer);
@@ -2102,16 +2299,12 @@ class ResultsList {
      */
     private applyHighlightingToSentences(sentenceObjects: Sentence[]): HTMLSpanElement {
         const visibleQueryTerm = this.activeTermService?.getVisibleQueryTerm();
+        if (!visibleQueryTerm)  return document.createElement('span');
+        const queryTermsList = visibleQueryTerm.getIndividualQueryTermsList()
+        const userProximityTermsList = visibleQueryTerm.getNeighbourProximityTermsValues()
+        const userFrequencyTermsList = visibleQueryTerm.getNeighbourFrequencyTermsValues()
+        return this.getHighlightedText(sentenceObjects, queryTermsList, userProximityTermsList, userFrequencyTermsList);
 
-        if (visibleQueryTerm) {
-            const queryTermsList = visibleQueryTerm?.getIndividualQueryTermsList()
-            const userProximityTermsList = visibleQueryTerm?.getNeighbourProximityTermsValues()
-            const userFrequencyTermsList = visibleQueryTerm?.getNeighbourFrequencyTermsValues()
-            return this.getHighlightedText(sentenceObjects, queryTermsList, userProximityTermsList, userFrequencyTermsList);
-        } else {
-            console.log("Warning: No active term service found");
-            return document.createElement('span');
-        }
     }
 
     /**
@@ -2119,7 +2312,8 @@ class ResultsList {
      *
      * @param sentenceObjects - An array of Sentence objects to apply highlighting to.
      * @param queryTermsList - An array of strings representing the query terms.
-     * @param neighbourTermsList - An array of strings representing the user neighbour terms.
+     * @param userProximityTermsList - An array of strings representing the user proximity terms.
+     * @param userFrequencyTermsList - An array of strings representing the user frequency terms.
      *
      * @returns A span element containing the highlighted sentences.
      *
@@ -2133,29 +2327,139 @@ class ResultsList {
     private getHighlightedText(sentenceObjects: Sentence[], queryTermsList: string[], userProximityTermsList: string[], 
                                 userFrequencyTermsList: string[]): HTMLSpanElement {
         if (sentenceObjects.length == 0) return document.createElement('span');
-        let highlightedSentences: [string, Sentence | undefined][] = []
+        let highlightedSentencesTextObject: [string, Sentence | undefined][] = []
 
         for (let sentenceObject of sentenceObjects) {
             const sentenceText = sentenceObject.getRawText();
             if (sentenceObject.getQueryTerm().getNeighbourTerms().length == 0 || (userProximityTermsList.length == 0 && userFrequencyTermsList.length == 0)) {
                 // If there are no user neighbour terms in the sentence, or no proximity/frequency terms in the user graph, then return the original sentence
-                highlightedSentences.push([sentenceText, undefined]);
+                highlightedSentencesTextObject.push([sentenceText, undefined]);
             } else {
                 // Else, split text by spaces and replace matching words
-                const words = sentenceText.split(' ');
-                const highlightedSentenceText = this.getHighlightedSentence(words, queryTermsList, userProximityTermsList, userFrequencyTermsList);
-                highlightedSentences.push([highlightedSentenceText, sentenceObject]);
+                const rawToProcessedMap = sentenceObject.getRawToProcessedMap();
+                const highlightedSentenceText = this.getHighlightedSentence(sentenceText, rawToProcessedMap, queryTermsList, 
+                    userProximityTermsList, userFrequencyTermsList);
+                highlightedSentencesTextObject.push([highlightedSentenceText, sentenceObject]);
             }
         }
 
-        return this.applyEventListenersToSentences(highlightedSentences);
+        return this.applyEventListenersToSentences(highlightedSentencesTextObject);
     }
 
     /**
-     * This function generates a highlighted sentence based on the presence of query terms and neighbour terms.
+     * Applies highlighting to words in a sentence based on query terms and neighbour terms.
      *
-     * @param highlightedSentences - An array of strings representing the sentences to be highlighted.
-     * @returns A HTMLSpanElement containing the highlighted sentences, with appropriate event listeners for mouseenter and mouseleave events.
+     * @param sentenceText - The raw text of the sentence.
+     * @param rawToProcessedMap - A map that maps raw words to processed words in the sentence.
+     * @param queryTermsList - An array of strings representing the query terms.
+     * @param userProxTermsList - An array of strings representing the user proximity terms.
+     * @param userFreqTermsList - An array of strings representing the user frequency terms.
+     *
+     * @returns A string representing the highlighted sentence. The highlighted words are wrapped in HTML span tags with specific background colors.
+     *
+     * @remarks
+     * The function iterates over each tuple in the rawToProcessedMap, determines the color based on the conditions, and highlights the word if a color is determined.
+     * The highlighted words are then sorted based on their original indices, and the highlighted sentence is built by combining the highlighted parts.
+     */
+    private getHighlightedSentence(sentenceText: string, rawToProcessedMap: RawToProcessedMap, queryTermsList: string[], 
+                userProxTermsList: string[], userFreqTermsList: string[]): string {
+        // Create an array to hold the final parts of the sentence
+        let highlightedParts = this.buildHighlightedParts(rawToProcessedMap, queryTermsList, userProxTermsList, userFreqTermsList);
+
+        // Sort the highlighted parts based on their original indices
+        highlightedParts.sort((a, b) => a.firstIndex - b.firstIndex);
+
+        // Build the highlighted sentence
+        const resultSentence = this.buildHighlightedSentence(highlightedParts, sentenceText)
+
+        return resultSentence;
+    }
+
+    /**
+     * Builds an array of highlighted parts from a raw to processed map, based on query terms and user proximity/frequency terms.
+     *
+     * @param rawToProcessedMap - A map that maps raw words to processed words in a sentence.
+     * @param queryTermsList - An array of strings representing the query terms.
+     * @param userProxTermsList - An array of strings representing the user proximity terms.
+     * @param userFreqTermsList - An array of strings representing the user frequency terms.
+     *
+     * @returns An array of objects, where each object represents a highlighted part of the sentence.
+     * Each object contains the first and last indices of the highlighted word, and the text of the highlighted word.
+     * If a word is not highlighted, it is represented as a plain string.
+     */
+    private buildHighlightedParts(rawToProcessedMap: RawToProcessedMap, queryTermsList: string[], 
+        userProxTermsList: string[], userFreqTermsList: string[]
+        ): { firstIndex: number; lastIndex: number; text: string }[] {
+        // Create an array to hold the final parts of the sentence
+        let highlightedParts: { firstIndex: number; lastIndex: number; text: string }[] = [];
+
+        // Iterate over each tuple in rawToProcessedMap
+        rawToProcessedMap.forEach(([firstIdx, lastIdx, rawWord, processedWord]) => {
+            let color = '';
+
+            // Determine the color based on the conditions
+            if (userProxTermsList.includes(processedWord)) {
+                color = '#98EE98'; // Green
+            } else if (userFreqTermsList.includes(processedWord)) {
+                color = '#b5bef1'; // Blue
+            } else if (queryTermsList.includes(processedWord)) {
+                color = '#EEF373'; // Yellow
+            }
+
+            // Highlight the word if a color is determined
+            if (color) {
+                const highlightedWord = `<span style="background-color: ${color};">${rawWord}</span>`;
+                highlightedParts.push({ firstIndex: firstIdx, lastIndex: lastIdx, text: highlightedWord });
+            } else {
+                highlightedParts.push({ firstIndex: firstIdx, lastIndex: lastIdx, text: rawWord });
+            }
+        });
+
+        return highlightedParts;
+    }
+    
+    /**
+     * Builds a highlighted sentence by combining the original sentence text with highlighted parts.
+     *
+     * @param highlightedParts - An array of tuples, where each tuple contains the first and last indices of a highlighted word,
+     * and the text of the highlighted word.
+     * @param sentenceText - The raw text of the sentence.
+     *
+     * @returns A string representing the highlighted sentence. The highlighted words are inserted into the sentence text
+     * at their respective indices.
+     */
+    private buildHighlightedSentence(highlightedParts: { firstIndex: number; lastIndex: number; text: string }[], 
+        sentenceText: string): string {
+        // Combine the sentence text with the highlighted words
+        let resultSentence = '';
+        let currentIndex = 0;
+
+        highlightedParts.forEach(part => {
+            // Append the text from the current index to the part's index
+            resultSentence += sentenceText.substring(currentIndex, part.firstIndex);
+            resultSentence += part.text;
+            currentIndex = part.lastIndex + 1; // Move current index forward
+        });
+
+        // Append any remaining text
+        resultSentence += sentenceText.substring(currentIndex);
+
+        return resultSentence;
+    }
+
+    /**
+     * Applies event listeners to sentences and returns a span element containing the highlighted sentences.
+     *
+     * @param highlightedSentences - An array of tuples, where each tuple contains a string representing a highlighted sentence
+     * and a Sentence object representing the original sentence.
+     *
+     * @returns A span element containing the highlighted sentences with event listeners applied to the sentences.
+     *
+     * @remarks
+     * The function creates a span element and adds spans to it, representing each highlighted sentence.
+     * If the sentence contains query terms or neighbour terms, the function adds mouseenter and mouseleave event listeners
+     * to the span element, changing the background color of the span and setting the visible sentence in the active term service.
+     * The function also appends a separator (a dot followed by a space) between each sentence, except for the last sentence.
      */
     private applyEventListenersToSentences(highlightedSentences: [string, Sentence | undefined][]): HTMLSpanElement {
         // Create the main container of type span
@@ -2174,7 +2478,7 @@ class ResultsList {
                     spanElement.style.backgroundColor = "#E4E4E4";
                     this.activeTermService?.setVisibleSentence(sentenceObject);
                 });
-            
+
                 spanElement.addEventListener("mouseleave", () => {
                     spanElement.style.backgroundColor = "inherit";
                 });
@@ -2191,146 +2495,16 @@ class ResultsList {
     }
 
     /**
-     * This function generates a highlighted sentence based on the presence of query terms and neighbour terms.
-     *
-     * @param words - An array of words that make up the sentence.
-     * @param queryTermsList - A list of query terms to be checked against.
-     * @param neighbourTermsList - A list of neighbour terms to be checked against.
-     *
-     * @returns A string representing the highlighted sentence. Each query term and neighbour term is highlighted
-     * with a different background color. Non-matching words are returned as is.
+     * Adds event listeners to the title element and the abstract element.
+     * 
+     * @param titleElement - The HTMLSpanElement representing the title of a list item.
+     * @param abstractElement - The HTMLParagraphElement representing the abstract of a list item.
+     * 
+     * @remarks
+     * When the title element is clicked, the abstract element is displayed or hidden.
+     * When the mouse hovers over the title element, the color changes to dark blue and the cursor becomes a pointer.
+     * When the mouse leaves the title element, the color changes back to black.
      */
-    private getHighlightedSentence(words: string[], queryTermsList: string[], userProximityTermsList: string[], 
-                                    userFrequencyTermsList: string[]): string {
-        const highlightedSentence = words.map((word, index) => {
-            // Recreate regex objects in each iteration to avoid state issues with global regex
-            const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
-            const userProximityTermsRegex = userProximityTermsList.length > 0 
-                    ? new RegExp(userProximityTermsList.join('|'), 'gi') 
-                    : null;
-            const userFrequencyTermsRegex = userFrequencyTermsList.length > 0 
-                    ? new RegExp(userFrequencyTermsList.join('|'), 'gi')
-                    : null;
-
-            if (userProximityTermsRegex?.test(word)) {
-                return this.getHighlightedWordIfNeighbourTerm(word, words, index, queryTermsList);
-            } else if (userFrequencyTermsRegex?.test(word)) {
-                return `<span style="background-color: #b5bef1;">${word}</span>`;
-            } else if (queryTermsRegex.test(word)) {
-                return `<span style="background-color: #EEF373;">${word}</span>`;
-            } else {
-                return word;
-            }
-        }).join(' ');
-
-        return highlightedSentence;
-    }
-
-    /**
-     * This function checks if a given word is a query term within a specified hop limit and 
-     * returns the word with a highlighted background color if it is a query term.
-     *
-     * @param word - The word to be checked for being a query term.
-     * @param words - An array of words surrounding the given word.
-     * @param index - The index of the given word in the words array.
-     * @param queryTermsList - A list of query terms to be checked against.
-     *
-     * @returns A string representing the given word with a highlighted background color if 
-     * it is a query term. If it is not a query term, the original word is returned.
-     */
-    private getHighlightedWordIfNeighbourTerm(word: string, words: string[], index: number, queryTermsList: string[]): string {
-        const stopwords = ["a", "about", "above", "accordingly", "after", "against", "ain", "all", "also", "although", "am", "an", "and", "any", "are", "aren", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "besides", "between", "both", "but", "by", "can", "can't", "cannot", "consequently", "could", "couldn", "couldn't", "d", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "doing", "don", "don't", "down", "due", "during", "each", "etc", "every", "few", "for", "from", "further", "furthermore", "had", "hadn", "hadn't", "has", "hasn", "hasn't", "have", "haven", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "however", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn", "isn't", "it", "it's", "its", "itself", "just", "let's", "likewise", "ll", "m", "ma", "me", "might", "mightn", "mightn't", "more", "moreover", "most", "must", "mustn", "mustn't", "my", "myself", "needn", "needn't", "nevertheless", "no", "nonetheless", "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "re", "s", "same", "shan", "shan't", "she", "she'd", "she'll", "she's", "should", "should've", "shouldn", "shouldn't", "similarly", "since", "so", "some", "such", "t", "than", "that", "that'll", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "therefore", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "though", "through", "thus", "to", "too", "under", "unless", "until", "up", "using", "ve", "very", "was", "wasn", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren", "weren't", "what", "what's", "when", "when's", "where", "where's", "whereas", "whether", "which", "while", "who", "who's", "whom", "whose", "why", "why's", "will", "with", "won", "won't", "would", "wouldn", "wouldn't", "y", "yet", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves",  "arent", "cant", "couldnt", "didnt", "doesnt", "dont", "hadnt", "hasnt", "havent", "hed", "hes", "im", "ive", "isnt", "its", "lets", "mightnt", "mustnt", "shant", "shed", "shes", "shouldve", "shouldnt", "theyd", "theyll", "theyre", "theyve", "wasnt", "wed", "well", "were", "weve", "werent", "whats", "whens", "wheres", "whos", "whys", "wont", "wouldnt", "youd", "youll", "youre", "youve", "us"]
-        const hopLimit = this.activeTermService?.getVisibleQueryTerm().getNeighbourTerms()[0].getHopLimit() ?? 0
-        let foundQueryTerm = false;
-
-        // Check words to the left
-        if (index > 0) {
-            foundQueryTerm = this.checkQueryTermToTheLeft(words, index, hopLimit, stopwords, queryTermsList)
-        }
-
-        // Check words to the right
-        if (index < words.length - 1 && !foundQueryTerm) {
-            foundQueryTerm = this.checkQueryTermToTheRight(words, index, hopLimit, stopwords, queryTermsList)
-        }
-
-        if (foundQueryTerm) {
-            return `<span style="background-color: #98EE98;">${word}</span>`;
-        } else {
-            return word;
-        }
-    }
-
-    /**
-     * This function checks if a given word is a query term within a specified hop limit to the left of the given index.
-     *
-     * @param words - An array of words surrounding the given word.
-     * @param index - The index of the given word in the words array.
-     * @param hopLimit - The maximum number of words to the left of the given index to check for query terms.
-     * @param stopwords - An array of stopwords to be ignored when checking for query terms.
-     * @param queryTermsList - A list of query terms to be checked against.
-     *
-     * @returns A boolean indicating whether a query term is found within the specified hop limit to the left of the given index.
-     */
-    private checkQueryTermToTheLeft(words: string[], index: number, hopLimit: number, 
-        stopwords: string[], queryTermsList: string[]): boolean {
-        return this.checkQueryTerm(words, index, hopLimit, stopwords, queryTermsList, -1);
-    }
-
-    /**
-     * This function checks if a given word is a query term within a specified hop limit to the right of the given index.
-     *
-     * @param words - An array of words surrounding the given word.
-     * @param index - The index of the given word in the words array.
-     * @param hopLimit - The maximum number of words to the right of the given index to check for query terms.
-     * @param stopwords - An array of stopwords to be ignored when checking for query terms.
-     * @param queryTermsList - A list of query terms to be checked against.
-     *
-     * @returns A boolean indicating whether a query term is found within the specified hop limit to the right of the given index.
-     */
-    private checkQueryTermToTheRight(words: string[], index: number, hopLimit: number, 
-        stopwords: string[], queryTermsList: string[]): boolean {
-        return this.checkQueryTerm(words, index, hopLimit, stopwords, queryTermsList, 1);
-    }
-
-    /**
-     * This helper function checks if a query term is found within a specified hop limit in a given direction.
-     *
-     * @param words - An array of words surrounding the given word.
-     * @param startIndex - The starting index to begin checking from.
-     * @param hopLimit - The maximum number of words to check for query terms.
-     * @param stopwords - An array of stopwords to be ignored when checking for query terms.
-     * @param queryTermsList - A list of query terms to be checked against.
-     * @param direction - The direction to check in, either 1 (right) or -1 (left).
-     *
-     * @returns A boolean indicating whether a query term is found within the specified hop limit in the given direction.
-     */
-    private checkQueryTerm(words: string[], startIndex: number, hopLimit: number, stopwords: string[], 
-        queryTermsList: string[], direction: 1 | -1): boolean {
-        let counter = 0;
-        const increment = direction === 1 ? 1 : -1;
-        
-        for (let i = startIndex + increment; i >= 0 && i < words.length && counter < hopLimit; i += increment) {
-            const word = words[i];
-            if (!stopwords.includes(word.toLowerCase())) {
-                const queryTermsRegex = new RegExp(queryTermsList.join('|'), 'gi');
-                if (queryTermsRegex.test(word)) {
-                    return true;
-                }
-                if (word.includes('-')) {
-                    const splitWords = word.split('-');
-                    const stopWordsCount = splitWords.filter(w => stopwords.includes(w.toLowerCase())).length;
-                    counter += (splitWords.length - 1) - stopWordsCount;
-                }
-                counter++;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * This function adds a click event listener to the title element, which opens the original URL document webpage in a new tab when clicked.
-     * It also adds mouseenter and mouseleave event listeners to change the title's color and cursor style.
-    */
     private addEventListenersToTitleElement(titleElement: HTMLSpanElement, abstractElement: HTMLParagraphElement): void {
         titleElement.addEventListener('click', () => {
             // When the list item is clicked, opens the original URL document webpage in a new tab
@@ -2346,12 +2520,11 @@ class ResultsList {
             titleElement.style.color = "darkblue";
             titleElement.style.cursor = "pointer";
         });
-    
+
         titleElement.addEventListener("mouseleave", () => {
             titleElement.style.color = "black";
         });
     }
-    
 }
 
 
@@ -2454,7 +2627,7 @@ class QueryComponent {
      * and checks if the value contains at least one alphanumeric character. If it does, it sends the query to the query service.
      * If the value is empty or does not contain any alphanumeric characters, it alerts the user to enter a valid query.
      */
-    private processQuery() {
+    private async processQuery(): Promise<void> {
         let queryValue = this.input.value.trim() // Get the trimmed input value
         this.input.value = '' // Clear the input field
         const alphanumericRegex = /[a-zA-Z0-9]/
@@ -2462,7 +2635,7 @@ class QueryComponent {
             const searchResults = parseInt(this.searchResultsInput.value, 10);
             const limitDistance = parseInt(this.limitDistanceInput.value, 10);
             const graphTerms = parseInt(this.graphTermsInput.value, 10);
-            this.queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms) // Send the query to the query service
+            await this.queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms) //Send the query to the query service
         } else if (queryValue !== '') {
             alert("Please enter a valid query.")    // Alert the user if the query is invalid
         }
@@ -2519,7 +2692,7 @@ class RerankComponent {
 
 
 
-
+//// GLOBAL VARIABLES
 
 const cyUser = cytoscape({
     container: document.getElementById("cy") as HTMLElement,
@@ -2607,6 +2780,10 @@ const cySentence = cytoscape({
     userZoomingEnabled: true,
     userPanningEnabled: true
 })
+
+
+
+//// CYTOSCAPE CONFIGURATION
 
 // When the user drags a node
 cyUser.on('drag', 'node', evt => {

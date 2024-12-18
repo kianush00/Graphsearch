@@ -268,37 +268,6 @@ class QueryService:
         return graph
     
     
-    def __get_pydantic_documents_from_ranking(self, ranking: Ranking) -> list[PydanticDocument]:
-        """
-        Converts a Ranking object into a list of PydanticDocument objects. Each PydanticDocument object represents a document
-        from the ranking, containing its neighbour terms, sentences, and other attributes.
-
-        Parameters:
-        - ranking (Ranking): An instance of the Ranking class, which contains a list of documents.
-
-        Returns:
-        - list[PydanticDocument]: A list of PydanticDocument objects, where each object represents a document from the ranking.
-       """
-        documents: list[PydanticDocument] = []
-        
-        for d in ranking.documents:
-            # Get each document and its neighbour terms
-            doc_neighbour_terms = self.__get_pydantic_neighbour_term_list(d.get_graph().get_graph_as_dict())
-            
-            # Get the document sentences and their neighbour terms
-            _sentences: list[PydanticSentence] = []
-            for s in d.sentences:
-                sentence_neighbour_terms = self.__get_pydantic_neighbour_term_list(s.get_graph().get_graph_as_dict())
-                _sentences.append(PydanticSentence(position_in_doc=s.position_in_doc, raw_text=s.raw_text, 
-                                                    all_neighbour_terms=sentence_neighbour_terms))
-            
-            # Add the document to the list of documents with their neighbour terms and sentences
-            documents.append(PydanticDocument(doc_id=d.doc_id, title=d.title, abstract=d.abstract, preprocessed_text=d.preprocessed_text,
-                        weight=d.weight, all_neighbour_terms=doc_neighbour_terms, sentences=_sentences))
-        
-        return documents
-    
-    
     def __get_pydantic_ranking(self, ranking: Ranking) -> PydanticRanking:
         """
         This function converts a Ranking object into a PydanticRanking object.
@@ -328,6 +297,37 @@ class QueryService:
         return PydanticRanking(visible_neighbour_terms=visible_neighbour_terms, 
                                 complete_neighbour_terms=complete_neighbour_terms,
                                 documents=documents, individual_query_terms_list=individual_query_terms_list)
+
+
+    def __get_pydantic_documents_from_ranking(self, ranking: Ranking) -> list[PydanticDocument]:
+        """
+        Converts a Ranking object into a list of PydanticDocument objects. Each PydanticDocument object represents a document
+        from the ranking, containing its neighbour terms, sentences, and other attributes.
+
+        Parameters:
+        - ranking (Ranking): An instance of the Ranking class, which contains a list of documents.
+
+        Returns:
+        - list[PydanticDocument]: A list of PydanticDocument objects, where each object represents a document from the ranking.
+       """
+        documents: list[PydanticDocument] = []
+        
+        for d in ranking.documents:
+            # Get each document and its neighbour terms
+            doc_neighbour_terms = self.__get_pydantic_neighbour_term_list(d.get_graph().get_graph_as_dict())
+            
+            # Get the document sentences and their neighbour terms
+            _sentences: list[PydanticSentence] = []
+            for s in d.sentences:
+                sentence_neighbour_terms = self.__get_pydantic_neighbour_term_list(s.get_graph().get_graph_as_dict())
+                _sentences.append(PydanticSentence(position_in_doc=s.position_in_doc, raw_text=s.raw_text, 
+                        raw_to_processed_map=s.raw_to_processed_map, all_neighbour_terms=sentence_neighbour_terms))
+            
+            # Add the document to the list of documents with their neighbour terms and sentences
+            documents.append(PydanticDocument(doc_id=d.doc_id, title=d.title, abstract=d.abstract, preprocessed_text=d.preprocessed_text,
+                        weight=d.weight, all_neighbour_terms=doc_neighbour_terms, sentences=_sentences))
+        
+        return documents
 
 
     def __get_pydantic_neighbour_term_list(self, graph_dict: dict[str, dict[str, float | str]]) -> list[PydanticNeighbourTerm]:

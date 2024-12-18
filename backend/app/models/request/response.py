@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Tuple
 
 
 class RerankNewPositions(BaseModel):
@@ -17,6 +17,7 @@ class PydanticNeighbourTerm(BaseModel):
 class PydanticSentence(BaseModel):
     position_in_doc: int
     raw_text: str
+    raw_to_processed_map: List[Tuple[int, int, str, str]]
     all_neighbour_terms: List[PydanticNeighbourTerm]
     
 
