@@ -129,11 +129,12 @@ class Sentence(QueryTreeHandler):
     @property
     def raw_to_processed_map(self) -> list[tuple[int, int, str, str]]:
         """
-        Retrieve the mapping from raw word index positions in the text to raw and preprocessed words.
+        Retrieve the mapping from raw word index positions in the text to raw and preprocessed words respectively.
+        Example: [ (first_idx, last_idx, raw_word, processed_word), ... ]
 
         Returns:
-        list[tuple[int, int, str, str]]: The list of mapping tuples from raw word index positions 
-        to raw and preprocessed words.
+        list[tuple[int, int, str, str]]: The list of mapping tuples from raw word first and last index positions 
+        to its raw and preprocessed word.
         """
         return self.__raw_to_processed_map
     
@@ -260,7 +261,7 @@ class Sentence(QueryTreeHandler):
             if term in query_terms_list_without_underscores:    # Validate that the term is not a query term
                 continue
             
-            freq_score: float = frequency * self.__weight
+            freq_score: float = frequency * self.__weight   # Calculate the frequency score of the term
             
             if term in graph_terms_list:    # If the term is in the graph, modify its frequency score
                 graph_node = root_graph.get_node_by_term(term)
@@ -289,11 +290,11 @@ class Sentence(QueryTreeHandler):
         if not self.__preprocessed_text:
             return dict()
         
-        # Normalize the text by converting it to lowercase and removing punctuation
-        words = re.findall(r'\b\w+\b', self.__preprocessed_text.lower())
+        # Tokenize the preprocessed sentence
+        terms = re.findall(r'\w+', self.__preprocessed_text)
         
-        # Count the frequency of each word using Counter
-        frequencies = Counter(words)
+        # Count the frequency of each term using Counter
+        frequencies = Counter(terms)
         
         return dict(frequencies)
 
@@ -319,8 +320,8 @@ class Sentence(QueryTreeHandler):
             A dictionary with a list of positions for each term of the text
         """
         term_positions_dict = defaultdict(list)
-        # Tokenize and normalize the text
-        terms = re.findall(r'\w+', self.__preprocessed_text.lower())
+        # Tokenize the preprocessed sentence
+        terms = re.findall(r'\w+', self.__preprocessed_text)
         for i, term in enumerate(terms):
             term_positions_dict[term].append(i)
         return term_positions_dict

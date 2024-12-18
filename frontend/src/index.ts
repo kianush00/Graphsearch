@@ -693,7 +693,6 @@ class NeighbourTerm extends Term implements ViewManager {
         this.setInitialHops()
         this.setLabel(value)
     }
-
     
     /**
      * Displays the views of the query term and its associated neighbour terms in the graph.
@@ -2341,8 +2340,9 @@ class ResultsList {
             } else {
                 // Else, split text by spaces and replace matching words
                 const rawToProcessedMap = sentenceObject.getRawToProcessedMap();
+                const sentenceProximityTermsList = sentenceObject.getQueryTerm().getNeighbourProximityTermsValues()
                 const highlightedSentenceText = this.getHighlightedSentence(sentenceText, rawToProcessedMap, queryTermsList, 
-                    userProximityTermsList, userFrequencyTermsList);
+                    userProximityTermsList, userFrequencyTermsList, sentenceProximityTermsList);
                 highlightedSentencesTextObject.push([highlightedSentenceText, sentenceObject]);
             }
         }
@@ -2358,6 +2358,7 @@ class ResultsList {
      * @param queryTermsList - An array of strings representing the query terms.
      * @param userProxTermsList - An array of strings representing the user proximity terms.
      * @param userFreqTermsList - An array of strings representing the user frequency terms.
+     * @param sentenceProxTermsList - An array of strings representing the sentence proximity terms.
      *
      * @returns A string representing the highlighted sentence. The highlighted words are wrapped in HTML span tags with specific background colors.
      *
@@ -2366,9 +2367,10 @@ class ResultsList {
      * The highlighted words are then sorted based on their original indices, and the highlighted sentence is built by combining the highlighted parts.
      */
     private getHighlightedSentence(sentenceText: string, rawToProcessedMap: RawToProcessedMap, queryTermsList: string[], 
-                userProxTermsList: string[], userFreqTermsList: string[]): string {
+                userProxTermsList: string[], userFreqTermsList: string[], sentenceProxTermsList: string[]): string {
         // Create an array to hold the final parts of the sentence
-        let highlightedParts = this.buildHighlightedParts(rawToProcessedMap, queryTermsList, userProxTermsList, userFreqTermsList);
+        let highlightedParts = this.buildHighlightedParts(rawToProcessedMap, queryTermsList, 
+            userProxTermsList, userFreqTermsList, sentenceProxTermsList);
 
         // Sort the highlighted parts based on their original indices
         highlightedParts.sort((a, b) => a.firstIndex - b.firstIndex);
@@ -2386,26 +2388,30 @@ class ResultsList {
      * @param queryTermsList - An array of strings representing the query terms.
      * @param userProxTermsList - An array of strings representing the user proximity terms.
      * @param userFreqTermsList - An array of strings representing the user frequency terms.
+     * @param sentenceProxTermsList - An array of strings representing the sentence proximity terms.
      *
      * @returns An array of objects, where each object represents a highlighted part of the sentence.
      * Each object contains the first and last indices of the highlighted word, and the text of the highlighted word.
      * If a word is not highlighted, it is represented as a plain string.
      */
     private buildHighlightedParts(rawToProcessedMap: RawToProcessedMap, queryTermsList: string[], 
-        userProxTermsList: string[], userFreqTermsList: string[]
+        userProxTermsList: string[], userFreqTermsList: string[], sentenceProxTermsList: string[]
         ): { firstIndex: number; lastIndex: number; text: string }[] {
         // Create an array to hold the final parts of the sentence
         let highlightedParts: { firstIndex: number; lastIndex: number; text: string }[] = [];
+        const processedWordsList = rawToProcessedMap.map(rawToProcessedTuple => rawToProcessedTuple[3]);
+        const limitDistance = this.activeTermService?.getVisibleQueryTerm().getHopLimit() ?? 0;
 
         // Iterate over each tuple in rawToProcessedMap
-        rawToProcessedMap.forEach(([firstIdx, lastIdx, rawWord, processedWord]) => {
+        rawToProcessedMap.forEach(([firstIdx, lastIdx, rawWord, processedWord], wordIndex) => {
             let color = '';
 
             // Determine the color based on the conditions
-            if (userProxTermsList.includes(processedWord)) {
+            if (userProxTermsList.includes(processedWord) && sentenceProxTermsList.includes(processedWord)
+                && this.hasNeighborMatchingQueryTerm(processedWordsList, queryTermsList, processedWord, wordIndex, limitDistance)) {
                 color = '#98EE98'; // Green
             } else if (userFreqTermsList.includes(processedWord)) {
-                color = '#b5bef1'; // Blue
+                color = '#B5BEF1'; // Blue
             } else if (queryTermsList.includes(processedWord)) {
                 color = '#EEF373'; // Yellow
             }
@@ -2420,6 +2426,38 @@ class ResultsList {
         });
 
         return highlightedParts;
+    }
+
+    /**
+     * Checks if any neighbor of the processed word in a given list matches a query term.
+     * 
+     * @param processedWordsList - The list of processed terms to search in.
+     * @param queryTermList - The list of query terms to match against.
+     * @param processedWord - The word whose neighbors need to be checked.
+     * @param wordIndex - The exact index of the processed word in rawToProcessedList.
+     * @param distance - The maximum number of neighbors to check on each side (default is 4).
+     * @returns `true` if any neighbor matches a query term, otherwise `false`.
+     */
+    private hasNeighborMatchingQueryTerm(processedWordsList: string[], queryTermList: string[],
+        processedWord: string, wordIndex: number, limitDistance: number): boolean {
+        // Ensure the processedWord at the given wordIndex matches the list
+        if (processedWordsList[wordIndex] !== processedWord) {
+            console.log("The processedWord does not match the word at the given index.");
+            return false;
+        }
+
+        // Calculate the range of indices to check
+        const startIndex = Math.max(0, wordIndex - limitDistance);
+        const endIndex = Math.min(processedWordsList.length - 1, wordIndex + limitDistance);
+
+        // Iterate through the neighbors within the range
+        for (let i = startIndex; i <= endIndex; i++) {
+            if (i !== wordIndex && queryTermList.includes(processedWordsList[i])) {
+                return true; // Found a match in the neighbors
+            }
+        }
+
+        return false; // No match found
     }
     
     /**
