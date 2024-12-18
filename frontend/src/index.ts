@@ -1468,19 +1468,23 @@ class QueryTermService {
         // Define the endpoint for retrieving neighbour terms data
         const endpoint = 'get-ranking'
 
-        // Send a POST request to the endpoint with the query term value
-        let _query = this.getVisibleQueryTerm().getValue()
-        const data = {query: _query, search_results: searchResults, limit_distance: limitDistance, graph_terms: graphTerms}
-        const result = await HTTPRequestUtils.postData(endpoint, data)
+        try {
+            // Send a POST request to the endpoint with the query term value
+            let _query = this.getVisibleQueryTerm().getValue()
+            const data = {query: _query, search_results: searchResults, limit_distance: limitDistance, graph_terms: graphTerms}
+            const result = await HTTPRequestUtils.postData(endpoint, data)
 
-        // Check if the result is not null
-        if (result) {
-            this.getVisibleQueryTerm().setIndividualQueryTermsList(result['individual_query_terms_list'])
-            this.generateVisibleNeighbourTerms(result)
-            this.generateCompleteNeighbourTerms(result)
-            this.generateRankingDocuments(result)
-        } else {
-            console.log("Warning: null API response");
+            // Check if the result is not null
+            if (result) {
+                this.getVisibleQueryTerm().setIndividualQueryTermsList(result['individual_query_terms_list'])
+                this.generateVisibleNeighbourTerms(result)
+                this.generateCompleteNeighbourTerms(result)
+                this.generateRankingDocuments(result)
+            } else {
+                console.log("Warning: null API response");
+            }
+        } catch (error) {
+            console.error("Error retrieving neighbour terms data:", error)
         }
     }
 
@@ -2590,9 +2594,25 @@ class QueryComponent {
             this.processQuery()
         })
 
-         // Add validation to ensure inputs stay within defined ranges
-         // Validate search results input
-         this.searchResultsInput.addEventListener("change", () => {
+        // Add validation to ensure inputs stay within defined ranges
+        this.addValidationListeners();
+    }
+
+    
+    /**
+     * Handles the validation of user input fields for search results, limit distance, and number of graph terms.
+     * This function adds event listeners to the input fields to validate the input values and ensure they stay within defined ranges.
+     *
+     * @remarks
+     * The function adds event listeners for the following input fields:
+     * - `searchResultsInput`: Validates the number of search results. It should be at least 5.
+     * - `limitDistanceInput`: Validates the limit distance for proximity-based queries. It should be between 2 and 10.
+     * - `graphTermsInput`: Validates the number of graph terms to be considered. It should be between 1 and 20.
+     */
+    private addValidationListeners(): void {
+        // Add validation to ensure inputs stay within defined ranges
+        // Validate search results input
+        this.searchResultsInput.addEventListener("change", () => {
             let value = parseInt(this.searchResultsInput.value, 10);
             if (isNaN(value) || value < 5) {
                 this.searchResultsInput.value = "5";
@@ -2620,6 +2640,7 @@ class QueryComponent {
         });
     }
 
+
     /**
      * Handles the query input and sends the query to the query service.
      * 
@@ -2628,17 +2649,26 @@ class QueryComponent {
      * If the value is empty or does not contain any alphanumeric characters, it alerts the user to enter a valid query.
      */
     private async processQuery(): Promise<void> {
+        // Disable the input field to prevent further user interaction
+        this.input.disabled = true;
+
         let queryValue = this.input.value.trim() // Get the trimmed input value
         this.input.value = '' // Clear the input field
         const alphanumericRegex = /[a-zA-Z0-9]/
+
         if (alphanumericRegex.test(queryValue)) {   // Check if the value contains at least one alphanumeric character
             const searchResults = parseInt(this.searchResultsInput.value, 10);
             const limitDistance = parseInt(this.limitDistanceInput.value, 10);
             const graphTerms = parseInt(this.graphTermsInput.value, 10);
-            await this.queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms) //Send the query to the query service
+
+            //Send the query to the query service
+            await this.queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms) 
         } else if (queryValue !== '') {
             alert("Please enter a valid query.")    // Alert the user if the query is invalid
         }
+
+        // Re-enable the input field after the process is complete
+        this.input.disabled = false;
     }
 }
 
@@ -2670,22 +2700,32 @@ class RerankComponent {
      * This method is asynchronous and uses the await keyword to handle the POST request.
      */
     private async handleRerankClick() {
-        if (this.queryService.getActiveQueryTermService() !== undefined) {
+        if (this.queryService.getActiveQueryTermService() === undefined) return;
+
+        // Disable the button to prevent multiple clicks
+        this.button.disabled = true;
+
+        try {
             // Create the data to be sent in the POST request
-            const ranking = this.queryService.getActiveQueryTermService()?.getRanking().toObject()
-            console.log(ranking)
+            const ranking = this.queryService.getActiveQueryTermService()?.getRanking().toObject();
+            console.log(ranking);
             // Send the POST request
-            const response = await HTTPRequestUtils.postData('rerank', ranking)
+            const response = await HTTPRequestUtils.postData('rerank', ranking);
             
             if (response) {
                 // Handle the response accordingly
-                const ranking_new_positions: number[] = response['ranking_new_positions']
-                const ranking_excluded_documents: number[] = response['ranking_excluded_documents']
-                this.queryService.getActiveQueryTermService()?.getRanking().refreshDocumentsExclusion() 
-                this.queryService.getActiveQueryTermService()?.getRanking().setExcludedDocuments(ranking_excluded_documents)  
-                this.queryService.getActiveQueryTermService()?.getRanking().reorderDocuments(ranking_new_positions)
-                this.queryService.updateResultsList()
+                const ranking_new_positions: number[] = response['ranking_new_positions'];
+                const ranking_excluded_documents: number[] = response['ranking_excluded_documents'];
+                this.queryService.getActiveQueryTermService()?.getRanking().refreshDocumentsExclusion();
+                this.queryService.getActiveQueryTermService()?.getRanking().setExcludedDocuments(ranking_excluded_documents);
+                this.queryService.getActiveQueryTermService()?.getRanking().reorderDocuments(ranking_new_positions);
+                this.queryService.updateResultsList();
             }
+        } catch (error) {
+            console.error("An error occurred during reranking:", error);
+        } finally {
+            // Re-enable the button after the process is complete
+            this.button.disabled = false;
         }
     }
 }
