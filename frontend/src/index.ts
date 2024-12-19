@@ -1099,6 +1099,9 @@ class QueryTerm extends Term implements ViewManager {
         // Center the graph on the CentralNode, if it exists
         if (this.node === undefined) return;
         cyElement.center(cyElement.getElementById(this.node.getId()))
+
+        // Pan the graph vertically, if it's a sentence graph, to make it easier to see the neighbour terms
+        if (!this.isUserGraph) cyElement.panBy({ x: 0, y: -1 });
     }
 
     /**
