@@ -199,6 +199,8 @@ header {
 
 #cySentence {
     width: 15.5rem;
+    border: 1px solid #999;
+    border-radius: 0.9rem;
 }
 
 #queryListContainer {
@@ -272,3 +274,42 @@ body, input, table, th, td {
     font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Loading bar container */
+#loadingBar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px; /* Altura de la barra */
+    background-color: #f0f0f0; /* Color de fondo para la barra */
+    overflow: hidden;
+    z-index: 1000; /* Asegúrate de que esté por encima de otros elementos */
+    display: none; /* Ocultar por defecto */
+}
+
+/* Loading bar animation */
+#loadingBar .progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background-color: #98a5ee; /* Color de la barra animada */
+    animation: loadingAnimation 2s linear infinite; /* Animación continua */
+}
+
+/* Keyframes for loading animation */
+@keyframes loadingAnimation {
+    0% {
+        left: -100%; /* Comienza fuera de la pantalla */
+        width: 100%;
+    }
+    50% {
+        left: 25%; /* Desplaza hacia la derecha */
+        width: 50%;
+    }
+    100% {
+        left: 100%; /* Sale completamente de la pantalla */
+        width: 0;
+    }
+}

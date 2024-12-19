@@ -1465,12 +1465,13 @@ class QueryTermService {
      */
     public async initialize(searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
         // Define the endpoint for retrieving neighbour terms data
-        const endpoint = 'get-ranking'
+        const endpoint = 'get-ranking';
+        const query = this.getVisibleQueryTerm().getValue();
+        const data = {query: query, search_results: searchResults, 
+                limit_distance: limitDistance, graph_terms: graphTerms}
 
         try {
             // Send a POST request to the endpoint with the query term value
-            let _query = this.getVisibleQueryTerm().getValue()
-            const data = {query: _query, search_results: searchResults, limit_distance: limitDistance, graph_terms: graphTerms}
             const result = await HTTPRequestUtils.postData(endpoint, data)
 
             // Check if the result is not null
@@ -1761,6 +1762,42 @@ class QueryService {
         }
     }
 
+    /**
+     * Sets the reranking for the service.
+     * Sends a POST request to the 'rerank' endpoint with the provided ranking object.
+     * If the response is successful, updates the ranking's documents exclusion, excluded documents,
+     * and reorders the documents based on the received new positions.
+     *
+     * @param ranking - The ranking object containing the new positions and excluded documents.
+     *
+     * @returns {Promise<void>} - A promise that resolves when the reranking process is complete.
+     */
+    public async setRerank(ranking: RankingObject): Promise<void> {
+        if (this.activeQueryTermService === undefined) return;
+
+        // Send the POST request
+        const endpoint = 'rerank';
+
+        try {
+            const response = await HTTPRequestUtils.postData(endpoint, ranking);
+
+            if (response) {
+                // Handle the response accordingly
+                const ranking_new_positions: number[] = response['ranking_new_positions'];
+                const ranking_excluded_documents: number[] = response['ranking_excluded_documents'];
+                this.activeQueryTermService.getRanking().refreshDocumentsExclusion();
+                this.activeQueryTermService.getRanking().setExcludedDocuments(ranking_excluded_documents);
+                this.activeQueryTermService.getRanking().reorderDocuments(ranking_new_positions);
+                this.updateResultsList();
+            } else {
+                console.log("Warning: null API response");
+            }
+        } catch (error) {
+            console.error("Error retrieving rerank data:", error)
+        }
+    }
+
+
     public getActiveQueryTermService(): QueryTermService | undefined { 
         return this.activeQueryTermService 
     }
@@ -1773,13 +1810,13 @@ class QueryService {
      * @param queryValue - The value of the query term for which to set the active QueryTermService.
      */
     public setActiveQueryTermService(queryValue: string): void {
-        this.activeQueryTermService?.deactivate()
-        const queryTermService = this.findQueryTermService(queryValue)
-        if (queryTermService !== undefined) {
-            this.activeQueryTermService = queryTermService
-            this.activeQueryTermService.display()
-            this.updateActiveTermServiceInElements(this.activeQueryTermService);
-        }
+        this.activeQueryTermService?.deactivate();
+        const queryTermService = this.findQueryTermService(queryValue);
+        if (queryTermService === undefined) return;
+        this.activeQueryTermService = queryTermService
+        this.activeQueryTermService.display()
+        this.updateActiveTermServiceInElements(this.activeQueryTermService);
+        
     }
 
     /**
@@ -2023,20 +2060,20 @@ class AddTermsTable {
     ​ * @returns {void}
     ​ */
     private handleTermAddition(termValue: string): void {
-        if (this.activeTermService !== undefined) {
-            const neighbourTerm = this.activeTermService.getCompleteQueryTerm().getNeighbourTermByValue(termValue)
-            if (neighbourTerm !== undefined) {
-                // Add the neighbour term to the active query term's visible neighbour terms
-                const queryTerm = this.activeTermService.getVisibleQueryTerm()
-                const value = neighbourTerm.getValue()
-                const proximityScore = neighbourTerm.getProximityScore()
-                const frequencyScore = neighbourTerm.getFrequencyScore()
-                const criteria = neighbourTerm.getCriteria()
+        if (this.activeTermService === undefined) return;
 
-                let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria)
-                this.activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm)
-            }
-        }
+        const neighbourTerm = this.activeTermService.getCompleteQueryTerm().getNeighbourTermByValue(termValue)
+        if (neighbourTerm === undefined) return;
+
+        // Add the neighbour term to the active query term's visible neighbour terms
+        const queryTerm = this.activeTermService.getVisibleQueryTerm();
+        const value = neighbourTerm.getValue();
+        const proximityScore = neighbourTerm.getProximityScore();
+        const frequencyScore = neighbourTerm.getFrequencyScore();
+        const criteria = neighbourTerm.getCriteria();
+
+        let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria);
+        this.activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm);
     }
 
     /**
@@ -2302,7 +2339,7 @@ class ResultsList {
      */
     private applyHighlightingToSentences(sentenceObjects: Sentence[]): HTMLSpanElement {
         const visibleQueryTerm = this.activeTermService?.getVisibleQueryTerm();
-        if (!visibleQueryTerm)  return document.createElement('span');
+        if (visibleQueryTerm === undefined) return document.createElement('span');
         const queryTermsList = visibleQueryTerm.getIndividualQueryTermsList()
         const userProximityTermsList = visibleQueryTerm.getNeighbourProximityTermsValues()
         const userFrequencyTermsList = visibleQueryTerm.getNeighbourFrequencyTermsValues()
@@ -2583,24 +2620,27 @@ class QueryComponent {
     private readonly searchResultsInput: HTMLInputElement
     private readonly limitDistanceInput: HTMLInputElement
     private readonly graphTermsInput: HTMLInputElement
+    private readonly loadingBar: LoadingBar;
 
     /**
      * Constructs a new instance of QueryComponent.
      * This class is responsible for handling query input interactions.
      *
      * @param queryService - The QueryService instance to be used for sending queries.
+     * @param loadingBar - The LoadingBar instance to manage the loading bar display.
      *
      * @remarks
      * The QueryComponent captures user input from an HTML input element,
      * and sends the query to the QueryService when the Enter key is pressed or the search icon is clicked.
      */
-    constructor(queryService: QueryService) {
+    constructor(queryService: QueryService, loadingBar: LoadingBar) {
         this.queryService = queryService
         this.input = document.getElementById('queryInput') as HTMLInputElement
         this.searchIcon = document.getElementById('searchIcon') as HTMLElement
         this.searchResultsInput = document.getElementById('searchResults') as HTMLInputElement;
         this.limitDistanceInput = document.getElementById('limitDistance') as HTMLInputElement;
         this.graphTermsInput = document.getElementById('graphTerms') as HTMLInputElement;
+        this.loadingBar = loadingBar;
 
         // Set default values for the inputs
         this.searchResultsInput.value = "10";
@@ -2689,6 +2729,7 @@ class QueryComponent {
     private async processQuery(): Promise<void> {
         // Disable the input field to prevent further user interaction
         this.input.disabled = true;
+        this.loadingBar.show();
 
         let queryValue = this.input.value.trim() // Get the trimmed input value
         this.input.value = '' // Clear the input field
@@ -2699,14 +2740,21 @@ class QueryComponent {
             const limitDistance = parseInt(this.limitDistanceInput.value, 10);
             const graphTerms = parseInt(this.graphTermsInput.value, 10);
 
-            //Send the query to the query service
-            await this.queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms) 
+            try {
+                //Send the query to the query service
+                await this.queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms) 
+            } catch (error) {
+                console.error("Error processing query:", error);
+                alert("Failed to process the query.");
+            }
+            
         } else if (queryValue !== '') {
             alert("Please enter a valid query.")    // Alert the user if the query is invalid
         }
 
-        // Re-enable the input field after the process is complete
+        // Re-enable the input field after the process is complete, and end the loading bar
         this.input.disabled = false;
+        this.loadingBar.hide();
     }
 }
 
@@ -2714,15 +2762,18 @@ class QueryComponent {
 class RerankComponent {
     private readonly queryService: QueryService
     private readonly button: HTMLButtonElement
+    private readonly loadingBar: LoadingBar
 
     /**
      * Constructs a new instance of RerankComponent.
      * 
      * @param queryService - The QueryService instance to be used for reranking operations.
+     * @param loadingBar - The LoadingBar instance to manage the loading bar display.
      */
-    constructor(queryService: QueryService) {
+    constructor(queryService: QueryService, loadingBar: LoadingBar) {
         this.queryService = queryService
         this.button = document.getElementById('rerankButton') as HTMLButtonElement
+        this.loadingBar = loadingBar;
 
         // Add event listener to the button element
         this.button.addEventListener('click', this.handleRerankClick.bind(this))
@@ -2737,34 +2788,59 @@ class RerankComponent {
      * @remarks
      * This method is asynchronous and uses the await keyword to handle the POST request.
      */
-    private async handleRerankClick() {
-        if (this.queryService.getActiveQueryTermService() === undefined) return;
+    private async handleRerankClick(): Promise<void> {
+        const activeTermService = this.queryService.getActiveQueryTermService();
+        if (activeTermService === undefined) return;
 
         // Disable the button to prevent multiple clicks
         this.button.disabled = true;
+        this.loadingBar.show();
+        
+        // Create the data to be sent in the POST request
+        const ranking = activeTermService.getRanking().toObject();
+        console.log(ranking);
+        if (ranking === undefined) return;
 
         try {
-            // Create the data to be sent in the POST request
-            const ranking = this.queryService.getActiveQueryTermService()?.getRanking().toObject();
-            console.log(ranking);
             // Send the POST request
-            const response = await HTTPRequestUtils.postData('rerank', ranking);
-            
-            if (response) {
-                // Handle the response accordingly
-                const ranking_new_positions: number[] = response['ranking_new_positions'];
-                const ranking_excluded_documents: number[] = response['ranking_excluded_documents'];
-                this.queryService.getActiveQueryTermService()?.getRanking().refreshDocumentsExclusion();
-                this.queryService.getActiveQueryTermService()?.getRanking().setExcludedDocuments(ranking_excluded_documents);
-                this.queryService.getActiveQueryTermService()?.getRanking().reorderDocuments(ranking_new_positions);
-                this.queryService.updateResultsList();
-            }
+            await this.queryService.setRerank(ranking);
         } catch (error) {
             console.error("An error occurred during reranking:", error);
+            alert("Failed to process the rerank.");
         } finally {
-            // Re-enable the button after the process is complete
+            // Re-enable the button after the process is complete, and end the loading bar
             this.button.disabled = false;
+            this.loadingBar.hide();
         }
+    }
+}
+
+
+class LoadingBar {
+    private readonly element: HTMLElement;
+
+    /**
+     * Constructs a new instance of LoadingBar.
+     * 
+     * @param elementId - The ID of the HTML element representing the loading bar.
+     */
+    constructor() {
+        const element = document.getElementById('loadingBar') as HTMLElement;
+        this.element = element;
+    }
+
+    /**
+     * Shows the loading bar by setting its display to "block".
+     */
+    public show(): void {
+        this.element.style.display = "block";
+    }
+
+    /**
+     * Hides the loading bar by setting its display to "none".
+     */
+    public hide(): void {
+        this.element.style.display = "none";
     }
 }
 
@@ -2889,10 +2965,10 @@ cyUser.on('mouseout', 'node', (evt: cytoscape.EventObject) => {
 });
 
 
-
-const queryService: QueryService = new QueryService()
-const queryComponent: QueryComponent = new QueryComponent(queryService)
-const rerankComponent: RerankComponent = new RerankComponent(queryService)
+const loadingBar = new LoadingBar();
+const queryService = new QueryService();
+const queryComponent = new QueryComponent(queryService, loadingBar);
+const rerankComponent = new RerankComponent(queryService, loadingBar);
 
 
 cyUser.ready(() => {})
