@@ -143,7 +143,7 @@ class TextUtils {
 
 class ConversionUtils {
     private static readonly minMaxDistancesUserGraph: [number, number] = [45.0, 125.0]
-    private static readonly minMaxDistancesSentenceGraph: [number, number] = [40.0, 65.0]
+    private static readonly minDistanceSentenceGraph: number = 40.0
     private static readonly hopMinValue: number = 1.0
 
     /**
@@ -162,9 +162,9 @@ class ConversionUtils {
      * It also assumes that the hopMinValue is 0.
      * If the hopMaxValue is less than 2, the function returns 1.0.
      */
-    public static convertHopsToDistance(hops: number, hopMaxValue: number, userGraphConversion: boolean): number {
-        if (hopMaxValue < 2) return 1.0
-        const minMaxDistances = userGraphConversion ? this.minMaxDistancesUserGraph : this.minMaxDistancesSentenceGraph;
+    public static convertHopsToDistance(hops: number, hopMaxValue: number, userGraphConversion: boolean, graphZoom: number): number {
+        if (hopMaxValue < 2) return this.minMaxDistancesUserGraph[0];
+        const minMaxDistances = userGraphConversion ? this.minMaxDistancesUserGraph : [this.minDistanceSentenceGraph, 78 / graphZoom];
         const normalizedValue = this.normalize(hops, this.hopMinValue, hopMaxValue, minMaxDistances[0], minMaxDistances[1])
         return normalizedValue
     }
@@ -184,9 +184,9 @@ class ConversionUtils {
      * If the hopMaxValue is less than 2, the function returns 1.0.
      * The returned value is rounded to one decimal place.
      */
-    public static convertDistanceToHops(distance: number, hopMaxValue: number, userGraphConversion: boolean): number {
+    public static convertDistanceToHops(distance: number, hopMaxValue: number): number {
         if (hopMaxValue < 2) return 1.0
-        const minMaxDistances = userGraphConversion ? this.minMaxDistancesUserGraph : this.minMaxDistancesSentenceGraph;
+        const minMaxDistances =this.minMaxDistancesUserGraph;
         const normalizedValue = this.normalize(distance, minMaxDistances[0], minMaxDistances[1], this.hopMinValue, hopMaxValue)
         return parseFloat(normalizedValue.toFixed(1))
     }
@@ -720,14 +720,8 @@ class NeighbourTerm extends Term implements ViewManager {
         this.node.setLabel(this.value)
         this.edge = new Edge(centralNode, this.node, isUserGraph)
 
-        // Set term criteria, which includes changing the node color based on the criteria.
-        if (this.criteria === 'proximity') {
-            this.setProximityCriteria();
-        } else if (this.criteria === 'frequency') {
-            this.setFrequnecyCriteria();
-        } else {
-            this.setExclusionCriteria();
-        }
+        // Set the node color based on the criteria.
+        this.initializeNodeColor();
     }
 
 
@@ -776,10 +770,6 @@ class NeighbourTerm extends Term implements ViewManager {
         return this.criteria
     }
 
-    public getQueryHopLimit(): number {
-        return this.queryTerm.getHopLimit()
-    }
-
     /**
      * Converts the NeighbourTerm instance into an object containing term, ponderation, and distance.
      * 
@@ -800,28 +790,6 @@ class NeighbourTerm extends Term implements ViewManager {
     }
 
     /**
-     * Sets the position of the neighbour term node and updates the neighbour term's hops.
-     *
-     * @param position - The new position of the neighbour term node.
-     * The position object contains properties x and y representing the coordinates of the new position.
-     *
-     * @remarks
-     * This function calculates the distance between the new position and the central node,
-     * validates the position to ensure it falls within the specified range, updates the number of hops,
-     * and updates the position of the neighbour term node.
-     *
-     * @returns {void} - This function does not return any value.
-     */
-    public setPosition(position: Position): void {
-        const nodeDistance = this.edge?.getDistance() ?? 0
-        this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
-        const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
-        const hops = ConversionUtils.convertDistanceToHops(distance, this.getQueryHopLimit(), this.queryTerm.getIsUserGraph())
-        this.updateHops(hops)
-        this.updateNodePosition(distance)
-    }
-
-    /**
      * Updates the position of the neighbour term node and updates the neighbour term's hops.
      *
      * @param neighbourTermsLength - The total number of neighbour terms associated with the query term.
@@ -837,9 +805,32 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2 + 0.25
-        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.getQueryHopLimit(), this.queryTerm.getIsUserGraph())
+        const nodeDistance = ConversionUtils.convertHopsToDistance(this.hops, this.queryTerm.getHopLimit(), 
+                this.queryTerm.getIsUserGraph(), this.queryTerm.getGraphZoom());
         this.nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this.updateNodePosition(nodeDistance)
+    }
+
+    /**
+     * Sets the position of the neighbour term node and updates the neighbour term's hops.
+     *
+     * @param position - The new position of the neighbour term node.
+     * The position object contains properties x and y representing the coordinates of the new position.
+     *
+     * @remarks
+     * This function calculates the distance between the new position and the central node,
+     * validates the position to ensure it falls within the specified range, updates the number of hops,
+     * and updates the position of the neighbour term node.
+     *
+     * @returns {void} - This function does not return any value.
+     */
+    public updateNodePositionAndHops(position: Position): void {
+        const nodeDistance = this.edge?.getDistance() ?? 0
+        this.nodePosition = this.validatePositionWithinRange(position, nodeDistance)
+        const distance = MathUtils.calculateEuclideanDistance(this.nodePosition.x, this.nodePosition.y)
+        const hops = ConversionUtils.convertDistanceToHops(distance, this.queryTerm.getHopLimit())
+        this.updateHops(hops)
+        this.updateNodePosition(distance)
     }
 
     /**
@@ -891,14 +882,34 @@ class NeighbourTerm extends Term implements ViewManager {
      *
      * @remarks
      * If the query term belongs to the user graph, the initial hops are set to 1.0.
-     * If the query term does not belong to the user graph, the initial hops are set to 4.0.
+     * If the query term does not belong to the user graph, the initial hops are set to the query hop limit.
      * This initial hop value is used to calculate the position of the neighbour term in the graph.
      */
     private setInitialHops(): void {
-        let initialHops = this.queryTerm.getIsUserGraph() ? 1.0 : 4.0
+        let initialHops = this.queryTerm.getIsUserGraph() ? 1.0 : this.queryTerm.getHopLimit();
         this.hops = initialHops
     }
 
+    /**
+     * Initializes the color of the node based on the criteria.
+     *
+     * @remarks
+     * This function checks the value of the `criteria` property and calls the appropriate method to set the node's color.
+     * If the criteria is 'proximity', it calls `setProximityNodeColor()`.
+     * If the criteria is 'frequency', it calls `setFrequencyNodeColor()`.
+     * If the criteria is neither 'proximity' nor 'frequency', it calls `setExclusionNodeColor()`.
+     *
+     * @returns {void} - This function does not return any value.
+     */
+    private initializeNodeColor(): void {
+        if (this.criteria === 'proximity') {
+            this.setProximityNodeColor();
+        } else if (this.criteria === 'frequency') {
+            this.setFrequencyNodeColor();
+        } else {
+            this.setExclusionNodeColor();
+        }
+    }
 
     /**
     * Updates the criteria of the neighbour term based on the number of hops.
@@ -916,29 +927,28 @@ class NeighbourTerm extends Term implements ViewManager {
     */
     private updateUserCriteria(previousHops: number, newHops: number): void {
         if (previousHops >= 1.7 && newHops < 1.7) {
-            this.setProximityCriteria();
+            this.criteria = "proximity";
+            this.setProximityNodeColor();
         } else if ((previousHops < 1.7 || previousHops >= 3.2) && (newHops >= 1.7 && newHops < 3.2)) {
-            this.setFrequnecyCriteria();
+            this.criteria = "frequency";
+            this.setFrequencyNodeColor();
         } else if (previousHops < 3.2 && newHops >= 3.2) {
-            this.setExclusionCriteria();
+            this.criteria = "exclusion";
+            this.setExclusionNodeColor();
         }
     }
 
-    private setProximityCriteria(): void {
-        this.criteria = "proximity";
+    private setProximityNodeColor(): void {
         this.node?.setBackgroundColor("#73b201");
     }
 
-    private setFrequnecyCriteria(): void {
-        this.criteria = "frequency";
+    private setFrequencyNodeColor(): void {
         this.node?.setBackgroundColor("#2750db");
     }
 
-    private setExclusionCriteria(): void {
-        this.criteria = "exclusion";
+    private setExclusionNodeColor(): void {
         this.node?.setBackgroundColor("#FF0000");
     }
-
 }
 
 
@@ -952,6 +962,7 @@ class QueryTerm extends Term implements ViewManager {
     private readonly isUserGraph: boolean
     private individualQueryTermsList: string[] = []
     private readonly hopLimit: number
+    private graphZoom: number = 1.2
 
     /**
      * Constructor for the QueryTerm class.
@@ -965,6 +976,7 @@ class QueryTerm extends Term implements ViewManager {
         super(value);
         this.isUserGraph = isUserGraph;
         this.hopLimit = hopLimit
+        this.updateGraphZoom();
     }
 
 
@@ -984,6 +996,10 @@ class QueryTerm extends Term implements ViewManager {
         this.individualQueryTermsList = queryTermsList
     }
 
+    public getGraphZoom(): number {
+        return this.graphZoom
+    }
+
     /**
      * Displays the views of the query term and its associated neighbour terms in the graph.
      * This includes creating and positioning the CentralNode and OuterNodes.
@@ -993,7 +1009,7 @@ class QueryTerm extends Term implements ViewManager {
         for (let neighbourTerm of this.neighbourTerms) {
             neighbourTerm.displayViews();
         }
-        this.centerNode();
+        this.centerAndZoomNode();
     }
 
     /**
@@ -1008,11 +1024,6 @@ class QueryTerm extends Term implements ViewManager {
 
     public getNeighbourTerms(): NeighbourTerm[] {
         return this.neighbourTerms
-    }
-
-    public setNeighbourTerms(neighbourTerms: NeighbourTerm[]): void {
-        this.neighbourTerms = neighbourTerms
-        this.updateOuterNodesAngles()
     }
 
     public getNeighbourTermsValues(): string[] {
@@ -1043,14 +1054,22 @@ class QueryTerm extends Term implements ViewManager {
         return this.neighbourTerms.find(nterm => nterm.getValue() === value)
     }
 
+    public setNeighbourTerms(neighbourTerms: NeighbourTerm[]): void {
+        this.neighbourTerms = neighbourTerms
+        this.updateGraphZoom();
+        this.updateOuterNodesAngles()
+    }
+
     public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.neighbourTerms.push(neighbourTerm)
+        this.updateGraphZoom();
         this.updateOuterNodesAngles()
     }
 
     public removeNeighbourTerm(neighbourTerm: NeighbourTerm): void {
         this.neighbourTerms = this.neighbourTerms.filter(term => term !== neighbourTerm)
         neighbourTerm.removeViews()
+        this.updateGraphZoom();
         this.updateOuterNodesAngles()
     }
 
@@ -1060,6 +1079,10 @@ class QueryTerm extends Term implements ViewManager {
         }
     }
 
+    private updateGraphZoom(): void {
+        this.graphZoom = this.isUserGraph ? 1.2 : this.getPersonalizedZoomIfSentenceGraph();
+    }
+
     /**
      * Centers the graph on the CentralNode.
      * 
@@ -1067,11 +1090,36 @@ class QueryTerm extends Term implements ViewManager {
      * It first zooms in the graph by a factor of 1.2, then checks if the visible query term has a node.
      * If the node exists and is a CentralNode, it centers the graph on the node.
      */
-    private centerNode(): void {
-        const cyElement = this.isUserGraph ? cyUser : cySentence
-        cyElement.zoom(1.2)
-        if (this.node === undefined) return
+    private centerAndZoomNode(): void {
+        const cyElement = this.isUserGraph ? cyUser : cySentence;
+
+        // Zoom the graph. If its a sentence graph, then do a personalized zoom based on the lenght of neighbour terms
+        cyElement.zoom(this.graphZoom);
+
+        // Center the graph on the CentralNode, if it exists
+        if (this.node === undefined) return;
         cyElement.center(cyElement.getElementById(this.node.getId()))
+    }
+
+    /**
+     * Calculates and returns the personalized zoom level for the sentence graph based on the number of neighbour terms.
+     *
+     * @returns {number} - The personalized zoom level for the sentence graph.
+     * The zoom level is calculated based on the number of neighbour terms as follows:
+     * - If the number of neighbour terms is less than or equal to 15, the zoom level is 1.2.
+     * - If the number of neighbour terms is between 16 and 60 (inclusive), the zoom level is calculated by subtracting
+     *   a fraction from 1.2, where the fraction is proportional to the difference between the number of neighbour terms and 15.
+     * - If the number of neighbour terms is greater than 60, the zoom level is calculated by dividing 0.2 by
+     *   a factor that is proportional to the difference between the number of neighbour terms and 60.
+     */
+    private getPersonalizedZoomIfSentenceGraph(): number {
+        if (this.getNeighbourTerms().length <= 15) {
+            return 1.2;
+        } else if (this.getNeighbourTerms().length <= 60) {
+            return 1.2 - ((this.getNeighbourTerms().length - 15) / 45);
+        } else {
+            return 0.2 / (1 + 0.01 * (this.getNeighbourTerms().length - 60));
+        }
     }
 }
 
@@ -1515,9 +1563,9 @@ class QueryTermService {
      * @param position - The new position of the neighbour term node.
      */
     public nodeDragged(id: string, position: Position): void {
-        let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
+        const neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
         if (neighbourTerm === undefined) return
-        neighbourTerm.setPosition(position)
+        neighbourTerm.updateNodePositionAndHops(position)
 
         // Update the neighbour terms table with the new hops values
         this.queryService.updateNeighbourTermsTable()
