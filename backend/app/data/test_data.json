@@ -3,8 +3,8 @@
     "text2": "perro hierarchical SIMkNN dual-index driven, house network car adopt hierarchical gato R-tree to store the topology of the road network and gato hierarchical topology grid model to manage the moving objects in non-uniform distribution perro",
     "text3": "perro hierarchical SIMkNN dual-index driven, echeverria network patricio adopt hierarchical gato R-tree to galeas the topology of the road network abel gato hierarchical topology grid model temuco manage galeas moving objects abel non-uniform patricio perro",
     "text4": "ant hierarchical SIMkNN dual-index driven, echeverria network rain adopt hierarchical rain R-tree to galeas the topology of the road network abel gato hierarchical topology grid model rain manage galeas moving objects abel non-uniform patricio ant",
-    "text4_terms_from_nodes": ["hierarchical", "rain", "topology", "dual", "index", "driven", "echeverria", "adopt", "tree", "galea", "road", "abel", "gato"],
-    "text4_terms_from_viewable_graph_copy": ["rain", "topology", "dual", "index", "driven"],
+    "text4_terms_from_nodes": ["rain", "echeverria", "road", "abel", "topology", "hierarchical", "driven", "adopt", "gato", "index", "galea", "dual", "tree", "ant", "simknn", "r", "grid", "model", "manage", "moving", "object", "non", "uniform", "patricio"],
+    "text4_terms_from_viewable_graph_copy": ["rain", "echeverria", "adopt", "topology", "road"],
     "text5": "The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most common words.Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators. To achieve this, it would be necessary to have uniform grammar, pronunciation and more common words. If several languages coalesce, the grammar of the resulting language is more simple and regular than that of the individual languages. The new common language will be more simple and regular than the existing European languages. It will be as simple as Occidental; in fact, it will be Occidental. To an English person, it will seem like simplified English, as a skeptical Cambridge friend of mine told me what Occidental is. The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most common words. Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators.",
     "text5_transformed_text_with_lema": "european language member family separate existence myth science music sport europe us vocabulary language differ grammar pronunciation common wordseveryone realizes new common language desirable one refuse pay expensive translator achieve necessary uniform grammar pronunciation common word several language coalesce grammar resulting language simple regular individual language new common language simple regular existing european language simple occidental fact occidental english person seem like simplified english skeptical cambridge friend mine told occidental european language member family separate existence myth science music sport europe us vocabulary language differ grammar pronunciation common word everyone realizes new common language desirable one refuse pay expensive translator",
     "text5_remove_special_characters": ["the", "european", "languages", "are", "members", "of", "the", "same", "family", "", "their", "separate", "existence", "is", "a", "myth", "", "for", "science", "", "music", "", "sport", "", "etc", "", "europe", "uses", "the", "same", "vocabulary", "", "the", "languages", "only", "differ", "in", "their", "grammar", "", "their", "pronunciation", "and", "their", "most", "common", "wordseveryone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "", "one", "could", "refuse", "to", "pay", "expensive", "translators", "", "to", "achieve", "this", "", "it", "would", "be", "necessary", "to", "have", "uniform", "grammar", "", "pronunciation", "and", "more", "common", "words", "", "if", "several", "languages", "coalesce", "", "the", "grammar", "of", "the", "resulting", "language", "is", "more", "simple", "and", "regular", "than", "that", "of", "the", "individual", "languages", "", "the", "new", "common", "language", "will", "be", "more", "simple", "and", "regular", "than", "the", "existing", "european", "languages", "", "it", "will", "be", "as", "simple", "as", "occidental", "", "in", "fact", "", "it", "will", "be", "occidental", "", "to", "an", "english", "person", "", "it", "will", "seem", "like", "simplified", "english", "", "as", "a", "skeptical", "cambridge", "friend", "of", "mine", "told", "me", "what", "occidental", "is", "", "the", "european", "languages", "are", "members", "of", "the", "same", "family", "", "their", "separate", "existence", "is", "a", "myth", "", "for", "science", "", "music", "", "sport", "", "etc", "", "europe", "uses", "the", "same", "vocabulary", "", "the", "languages", "only", "differ", "in", "their", "grammar", "", "their", "pronunciation", "and", "their", "most", "common", "words", "", "everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "", "one", "could", "refuse", "to", "pay", "expensive", "translators", ""],
@@ -142,147 +142,230 @@
         "topology": 1.0
     },
     "text6_leaf_graph_mean_1": {
-        "hierarchical": {"criteria": "proximity", "ponderation": 1.778151, "distance": 2.333333}, 
-        "simknn": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
-        "dual": {"criteria": "proximity", "ponderation": 1.30103, "distance": 1.5}, 
-        "index": {"criteria": "proximity", "ponderation": 1.30103, "distance": 1.5}, 
-        "network": {"criteria": "proximity", "ponderation": 1.477121, "distance": 3.0}, 
-        "adopt": {"criteria": "proximity", "ponderation": 1.69897, "distance": 2.8}, 
-        "rtree": {"criteria": "proximity", "ponderation": 1.0, "distance": 1.0}, 
-        "store": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
-        "topology": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}
+      "hierarchical": {
+        "frequency_score": 0.0,
+        "proximity_score": 3.25,
+        "criteria": "proximity"
+      },
+      "adopt": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.625,
+        "criteria": "proximity"
+      },
+      "dual": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.5,
+        "criteria": "proximity"
+      },
+      "index": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.5,
+        "criteria": "proximity"
+      },
+      "store": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "simknn": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "rtree": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "network": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.875,
+        "criteria": "proximity"
+      },
+      "road": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.5,
+        "criteria": "proximity"
+      }
     },
     "text6_leaf_graph_mean_2": {
-        "hierarchical": {"criteria": "proximity", "ponderation": 1.778151, "distance": 2.5}, 
-        "driven": {"criteria": "proximity", "ponderation": 1.69897, "distance": 2.8}, 
-        "index": {"criteria": "proximity", "ponderation": 1.0, "distance": 4.0}, 
-        "network": {"criteria": "proximity", "ponderation": 1.477121, "distance": 1.0}, 
-        "rtree": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
-        "store": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
-        "topology": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"criteria": "proximity", "ponderation": 1.30103, "distance": 3.0}
+      "network": {
+        "frequency_score": 0.0,
+        "proximity_score": 3.0,
+        "criteria": "proximity"
+      },
+      "hierarchical": {
+        "frequency_score": 0.0,
+        "proximity_score": 2.625,
+        "criteria": "proximity"
+      },
+      "driven": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.625,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "store": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "rtree": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.75,
+        "criteria": "proximity"
+      },
+      "road": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.625,
+        "criteria": "proximity"
+      },
+      "index": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.125,
+        "criteria": "proximity"
+      }
     },
     "text6_leaf_graph_mean_3": {
-        "hierarchical": {"criteria": "proximity", "ponderation": 1.30103, "distance": 3.5}, 
-        "driven": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
-        "adopt": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
-        "rtree": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}, 
-        "topology": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}
-    },
-    "text6_leaf_graph_median_1": {
-        "hierarchical": {"criteria": "proximity", "ponderation": 1.778151, "distance": 2.0}, 
-        "simknn": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
-        "dual": {"criteria": "proximity", "ponderation": 1.30103, "distance": 1.5}, 
-        "index": {"criteria": "proximity", "ponderation": 1.30103, "distance": 1.5}, 
-        "network": {"criteria": "proximity", "ponderation": 1.477121, "distance": 3.0}, 
-        "adopt": {"criteria": "proximity", "ponderation": 1.69897, "distance": 3.0}, 
-        "rtree": {"criteria": "proximity", "ponderation": 1.0, "distance": 1.0}, 
-        "store": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
-        "topology": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}
-    },
-    "text6_leaf_graph_median_2": {
-        "hierarchical": {"criteria": "proximity", "ponderation": 1.778151, "distance": 2.5}, 
-        "driven": {"criteria": "proximity", "ponderation": 1.69897, "distance": 3.0}, 
-        "index": {"criteria": "proximity", "ponderation": 1.0, "distance": 4.0}, 
-        "network": {"criteria": "proximity", "ponderation": 1.477121, "distance": 1.0}, 
-        "rtree": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
-        "store": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
-        "topology": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
-        "road": {"criteria": "proximity", "ponderation": 1.30103, "distance": 3.0}
-    },
-    "text6_leaf_graph_median_3": {
-        "hierarchical": {"criteria": "proximity", "ponderation": 1.30103, "distance": 3.5}, 
-        "driven": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.0}, 
-        "adopt": {"criteria": "proximity", "ponderation": 1.30103, "distance": 2.5}, 
-        "rtree": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}, 
-        "topology": {"criteria": "proximity", "ponderation": 1.0, "distance": 2.0}
+      "driven": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "adopt": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "rtree": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.5,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.5,
+        "criteria": "proximity"
+      },
+      "hierarchical": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.375,
+        "criteria": "proximity"
+      }
     },
     "text6_subgraph1": {
-        "hierarchical": {
-          "criteria": "proximity", "ponderation": 1.778151,
-          "distance": 2.922525
-        },
-        "driven": {
-          "criteria": "proximity", "ponderation": 1.69897,
-          "distance": 2.453059
-        },
-        "index": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 4.0
-        },
-        "network": {
-          "criteria": "proximity", "ponderation": 1.477121,
-          "distance": 1.0
-        },
-        "rtree": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.282706
-        },
-        "store": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.5
-        },
-        "topology": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.0
-        },
-        "road": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 3.0
-        },
-        "adopt": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.5
-        }
+      "network": {
+        "frequency_score": 0.0,
+        "proximity_score": 3.0,
+        "criteria": "proximity"
+      },
+      "hierarchical": {
+        "frequency_score": 0.0,
+        "proximity_score": 2.625,
+        "criteria": "proximity"
+      },
+      "driven": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.625,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "store": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "adopt": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "rtree": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.75,
+        "criteria": "proximity"
+      },
+      "road": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.625,
+        "criteria": "proximity"
+      },
+      "index": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.125,
+        "criteria": "proximity"
+      }
     },
     "text6_subgraph2": {
-        "hierarchical": {
-          "criteria": "proximity", "ponderation": 1.778151,
-          "distance": 2.627929
-        },
-        "simknn": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.5
-        },
-        "dual": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 1.5
-        },
-        "index": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.58647
-        },
-        "network": {
-          "criteria": "proximity", "ponderation": 1.477121,
-          "distance": 2.0
-        },
-        "adopt": {
-          "criteria": "proximity", "ponderation": 1.69897,
-          "distance": 2.669897
-        },
-        "rtree": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 1.725257
-        },
-        "store": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.25
-        },
-        "topology": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.0
-        },
-        "road": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.565412
-        },
-        "driven": {
-          "criteria": "proximity", "ponderation": 1.69897,
-          "distance": 2.453059
-        }
+      "hierarchical": {
+        "frequency_score": 0.0,
+        "proximity_score": 3.25,
+        "criteria": "proximity"
       },
+      "network": {
+        "frequency_score": 0.0,
+        "proximity_score": 3.0,
+        "criteria": "proximity"
+      },
+      "adopt": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.625,
+        "criteria": "proximity"
+      },
+      "driven": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.625,
+        "criteria": "proximity"
+      },
+      "dual": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.5,
+        "criteria": "proximity"
+      },
+      "index": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.5,
+        "criteria": "proximity"
+      },
+      "store": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "simknn": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "rtree": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "road": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.625,
+        "criteria": "proximity"
+      }
+    },
     "text6_text2_united_graph_1": {
       "hierarchical": {
         "frequency_score": 0.0,

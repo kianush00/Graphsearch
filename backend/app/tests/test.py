@@ -85,27 +85,9 @@ class TestSREX(unittest.TestCase):
 
         # Define expected result
         expected_result = {
-            'x': {'ponderation': 2.0, 'distance': 1.5}, 
-            'y': {'ponderation': 3.0, 'distance': 2.5}, 
-            'z': {'ponderation': 4.0, 'distance': 2.1}
-        }
-
-        # Assert the dict match the expected output
-        self.assertDictEqual(result, expected_result)
-
-    
-    def test_get_proximity_dict_with_normalized_distances(self):
-        # Initialize vicinity graph
-        graph = self.__get_initialized_graph_config_01()
-
-        # Get the graph as a normalized dictionary
-        result = graph.get_proximity_dict_with_normalized_distances()
-
-        # Define expected result
-        expected_result = {
-            'x': {'criteria': 'proximity', 'ponderation': 0.5, 'distance': 0.5833333333333334}, 
-            'y': {'criteria': 'proximity', 'ponderation': 0.75, 'distance': 0.75}, 
-            'z': {'criteria': 'proximity', 'ponderation': 1.0, 'distance': 0.6833333333333333}
+            'x': {'frequency_score': 3.0, 'proximity_score': 2.5, 'criteria': 'proximity'}, 
+            'y': {'frequency_score': 4.0, 'proximity_score': 3.5, 'criteria': 'proximity'}, 
+            'z': {'frequency_score': 5.0, 'proximity_score': 0.0, 'criteria': 'frequency'}
         }
 
         # Assert the dict match the expected output
@@ -133,6 +115,18 @@ class TestSREX(unittest.TestCase):
         # Get the euclidean distance between vectors and assert the results
         result = VectorUtils.get_cosine_between_vectors(vector1, vector2)
         expected_result = 0.7851655406125303
+        
+        self.assertAlmostEqual(result, expected_result, delta=1e-13)
+    
+    
+    def test_get_cosine_between_vectors_with_one_empty_vector(self):
+        # Initialize vectors values
+        vector1 = [1.2, 2.3, 3.5, 3.0]
+        vector2 = []
+
+        # Get the euclidean distance between vectors and assert the results
+        result = VectorUtils.get_cosine_between_vectors(vector1, vector2)
+        expected_result = 0.0
         
         self.assertAlmostEqual(result, expected_result, delta=1e-13)
 
@@ -242,7 +236,7 @@ class TestSREX(unittest.TestCase):
     def test_remove_special_characters(self):
         # Load test text data
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text5')
+        text: str = test_data.get('text5')
         expected_result = test_data.get('text5_remove_special_characters')
         
         # Tokenize the text
@@ -264,7 +258,7 @@ class TestSREX(unittest.TestCase):
 
         # Load test text data
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text5')
+        text: str = test_data.get('text5')
         expected_result = test_data.get('text5_remove_stopwords')
         
         # Tokenize the text
@@ -287,7 +281,7 @@ class TestSREX(unittest.TestCase):
         
         # Load test text data
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text5')
+        text: str = test_data.get('text5')
         expected_result = test_data.get('text5_do_lemmatization')
         
         # Tokenize the text
@@ -311,7 +305,7 @@ class TestSREX(unittest.TestCase):
         
         # Load test data and expected result from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text5')
+        text: str = test_data.get('text5')
         expected_result = test_data.get('text5_do_stemming')
         
         # Tokenize the text
@@ -335,7 +329,7 @@ class TestSREX(unittest.TestCase):
 
         # Load test data and expected result from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text5')
+        text: str = test_data.get('text5')
         expected_result = test_data.get('text5_transformed_text_with_lema')
         
         # Set lema and stem flags
@@ -371,15 +365,15 @@ class TestSREX(unittest.TestCase):
     def test_term_positions_dict(self):
         # Load test data from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text6')
+        text: str = test_data.get('text6')
         dict_result = test_data.get('text6_term_positions_dict')
 
         # Initialize Ranking object
-        ranking = Ranking(query_text="test")
-        ranking.calculate_article_dictionaries_list([{'title': 'test'}])
+        ranking = Ranking(query_text="testtext6")
+        ranking.calculate_article_dictionaries_list([{'title': text}])
 
         # Get term positions dictionary from ranking object
-        result = ranking.documents[0].sentences[0].get_term_positions_dict(text)
+        result = ranking.documents[0].sentences[0].get_term_positions_dict()
         
         # Create expected result as defaultdict
         expected_result = defaultdict(list, dict_result)
@@ -414,7 +408,7 @@ class TestSREX(unittest.TestCase):
 
         # Load test data from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text6')
+        text: str = test_data.get('text6')
         expected_result = test_data.get('text6_calculate_vicinity_matrix_with_include_query_terms')
         article_dict = {'abstract': text}
 
@@ -424,7 +418,7 @@ class TestSREX(unittest.TestCase):
             self.__get_ranking_parameters_default_config, query, [article_dict], stop_words)
         
         #Calculate the vicinity matrix for the sentence
-        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
+        sentence = ranking.documents[0].sentences[0]
         sentence.calculate_vicinity_matrix()
         result = sentence.vicinity_matrix
 
@@ -438,7 +432,7 @@ class TestSREX(unittest.TestCase):
 
         # Load test data from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text6')
+        text: str = test_data.get('text6')
         expected_result = test_data.get('text6_calculate_vicinity_matrix_without_include_query_terms')
         article_dict = {'abstract': text}
 
@@ -448,7 +442,7 @@ class TestSREX(unittest.TestCase):
             self.__get_ranking_parameters_config_02, query, [article_dict], stop_words)
         
         #Calculate the vicinity matrix for the sentence
-        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
+        sentence = ranking.documents[0].sentences[0]
         sentence.calculate_vicinity_matrix()
         result = sentence.vicinity_matrix
 
@@ -462,7 +456,7 @@ class TestSREX(unittest.TestCase):
 
         # Load test data from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text6')
+        text: str = test_data.get('text6')
         expected_result1 = test_data.get('text6_terms_frequency_dict1')
         expected_result2 = test_data.get('text6_terms_frequency_dict2')
         expected_result3 = test_data.get('text6_terms_frequency_dict3')
@@ -475,7 +469,7 @@ class TestSREX(unittest.TestCase):
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         #Calculate the terms frequency dict for the sentence, by each query term
-        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
+        sentence = ranking.documents[0].sentences[0]
         query_terms = sentence.query_tree.get_query_terms_str_list_with_underscores()
 
         result1 = sentence.get_terms_proximity_frequency_dict(query_terms[0])
@@ -488,13 +482,13 @@ class TestSREX(unittest.TestCase):
         self.assertEqual(result3, expected_result3)
     
 
-    def test_generate_nodes_in_all_leaf_graphs_summarize_mean(self):
+    def test_generate_nodes_in_all_leaf_graphs(self):
         # Load stopwords from JSON file
         stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text6')
+        text: str = test_data.get('text6')
         expected_result1 = test_data.get('text6_leaf_graph_mean_1')
         expected_result2 = test_data.get('text6_leaf_graph_mean_2')
         expected_result3 = test_data.get('text6_leaf_graph_mean_3')
@@ -513,38 +507,13 @@ class TestSREX(unittest.TestCase):
         self.assertEqual(result3, expected_result3)
     
 
-    def test_generate_nodes_in_all_leaf_graphs_summarize_median(self):
-        # Load stopwords from JSON file
-        stop_words = DataUtils.load_stopwords()
-
-        # Load test data from JSON file
-        test_data = DataUtils.load_test_data()
-        text = test_data.get('text6')
-        expected_result1 = test_data.get('text6_leaf_graph_median_1')
-        expected_result2 = test_data.get('text6_leaf_graph_median_2')
-        expected_result3 = test_data.get('text6_leaf_graph_median_3')
-        article_dict = {'abstract': text}
-
-        # Initialize Ranking object with summarize as 'median'
-        query = 'driven OR adopt AND store'
-        ranking = self.__get_initialized_ranking_initialized_graph_values_01(
-            self.__get_ranking_parameters_config_03, query, [article_dict], stop_words)
-        
-        result1, result2, result3 = self.__get_results_from_generate_nodes_in_all_leaf_graphs(ranking)
-
-        # Assert the result matches the expected output
-        self.assertEqual(result1, expected_result1)
-        self.assertEqual(result2, expected_result2)
-        self.assertEqual(result3, expected_result3)
-    
-
     def test_generate_nodes_in_sentence_graphs(self):
         # Load stopwords from JSON file
         stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text6')
+        text: str = test_data.get('text6')
         expected_result1 = test_data.get('text6_subgraph1')
         expected_result2 = test_data.get('text6_subgraph2')
         article_dict = {'abstract': text}
@@ -556,8 +525,8 @@ class TestSREX(unittest.TestCase):
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         # Generate nodes in all graphs of the query expression tree
-        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
-        sentence.generate_nodes_in_all_leaf_graphs()
+        sentence = ranking.documents[0].sentences[0]
+        sentence.generate_proximity_nodes_in_all_leaf_graphs()
         sentence.query_tree.operate_non_leaf_graphs_from_leaves()
 
         # Get vicinity graphs from the subqueries, as dicts
@@ -593,7 +562,7 @@ class TestSREX(unittest.TestCase):
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         # Generate nodes in all graphs of the query expression tree, in the sentences
-        document = ranking.get_document_by_ranking_position(1)
+        document = ranking.documents[0]
         for sentence in document.sentences:
             sentence.generate_nodes_in_tree_graphs()
 
@@ -646,10 +615,10 @@ class TestSREX(unittest.TestCase):
         ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
 
         # Get euclidean distances between vicinity graphs from the documents
-        graph1 = ranking.get_document_by_ranking_position(1).get_graph()
-        graph2 = ranking.get_document_by_ranking_position(2).get_graph()
-        graph3 = ranking.get_document_by_ranking_position(3).get_graph()
-        graph4 = ranking.get_document_by_ranking_position(4).get_graph()
+        graph1 = ranking.documents[0].get_graph()
+        graph2 = ranking.documents[1].get_graph()
+        graph3 = ranking.documents[2].get_graph()
+        graph4 = ranking.documents[3].get_graph()
 
         result1 = graph1.get_similarity_score_as_base_graph(graph1)
         result2 = graph1.get_similarity_score_as_base_graph(graph2)
@@ -669,47 +638,13 @@ class TestSREX(unittest.TestCase):
         self.assertAlmostEqual(result4, expected_result4, delta=1e-13)
     
 
-    def test_euclidean_distance_include_ponderation(self):
-        # Load stopwords from JSON file
-        stop_words = DataUtils.load_stopwords()
-
-        # Load test data from JSON file
-        test_data = DataUtils.load_test_data()
-        
-        # Initialize Ranking object and generate all graphs
-        ranking = self.__get_initialized_ranking_config_01(test_data, stop_words)
-
-        # Get euclidean distances between vicinity graphs from the documents
-        graph1 = ranking.get_document_by_ranking_position(1).get_graph()
-        graph2 = ranking.get_document_by_ranking_position(2).get_graph()
-        graph3 = ranking.get_document_by_ranking_position(3).get_graph()
-        graph4 = ranking.get_document_by_ranking_position(4).get_graph()
-
-        result1 = graph1.get_similarity_score_as_base_graph(graph1, True)
-        result2 = graph1.get_similarity_score_as_base_graph(graph2, True)
-        result3 = graph1.get_similarity_score_as_base_graph(graph3, True)
-        result4 = graph1.get_similarity_score_as_base_graph(graph4, True)
-
-        # Create expected results
-        expected_result1 = 0.0
-        expected_result2 = 0.2041241452319315
-        expected_result3 = 0.30046260628866567
-        expected_result4 = 0.5590169943749473
-
-        # Assert the result matches the expected output
-        self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
-        self.assertAlmostEqual(result2, expected_result2, delta=1e-13)
-        self.assertAlmostEqual(result3, expected_result3, delta=1e-13)
-        self.assertAlmostEqual(result4, expected_result4, delta=1e-13)
-    
-
     def test_get_terms_from_nodes(self):
         # Load stopwords from JSON file
         stop_words = DataUtils.load_stopwords()
 
         # Load test data from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text4')
+        text: str = test_data.get('text4')
         expected_result = test_data.get('text4_terms_from_nodes')
         
         # Initialize Ranking object and initialize vicinity graph
@@ -718,7 +653,7 @@ class TestSREX(unittest.TestCase):
             self.__get_ranking_parameters_default_config, query, articles_dicts_list=[{'abstract': text}], stop_words=stop_words)
 
         # Get terms from nodes of the vicinity graphs associated with the document
-        result = ranking.get_document_by_ranking_position(1).get_graph().get_terms_from_nodes()
+        result = ranking.documents[0].get_graph().get_terms_from_all_nodes()
 
         # Assert the result matches the expected output
         self.assertListEqual(result, expected_result)
@@ -730,7 +665,7 @@ class TestSREX(unittest.TestCase):
 
         # Load test data from JSON file
         test_data = DataUtils.load_test_data()
-        text = test_data.get('text4')
+        text: str = test_data.get('text4')
         expected_result = test_data.get('text4_terms_from_viewable_graph_copy')
         
         # Initialize Ranking object and initialize all graphs
@@ -739,9 +674,9 @@ class TestSREX(unittest.TestCase):
             self.__get_ranking_parameters_default_config, query, articles_dicts_list=[{'abstract': text}], stop_words=stop_words)
 
         # Get terms from nodes of the viewable copy from the vicinity graph
-        graph = ranking.get_document_by_ranking_position(1).get_graph()
+        graph = ranking.documents[0].get_graph()
         viewable_graph_copy = graph.get_viewable_graph_copy()
-        result = viewable_graph_copy.get_terms_from_nodes()
+        result = viewable_graph_copy.get_terms_from_all_nodes()
 
         # Assert the result matches the expected output
         self.assertListEqual(result, expected_result)
@@ -797,11 +732,11 @@ class TestSREX(unittest.TestCase):
     def __get_initialized_graph_config_01(self) -> VicinityGraph:
         # Initialize vicinity graph
         graph = VicinityGraph(subquery="")
-
+        
         # Build graph
-        node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([1.0, 2.0]))
-        node2 = VicinityNode(term='y', ponderation=3.0, distance=np.mean([1.2, 2.3, 3.5, 3.0]))
-        node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([3.1, 2.4, 1.1, 1.8]))
+        node1 = VicinityNode(term='x', frequency_score=3.0, proximity_score=2.5, criteria='proximity')
+        node2 = VicinityNode(term='y', frequency_score=4.0, proximity_score=3.5, criteria='proximity')
+        node3 = VicinityNode(term='z', frequency_score=5.0, proximity_score=0.0, criteria='frequency')
         graph.add_node(node1)
         graph.add_node(node2)
         graph.add_node(node3)
@@ -822,12 +757,6 @@ class TestSREX(unittest.TestCase):
     def __get_ranking_parameters_config_02(self):
         ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_ranking_parameters_default_config()
         include_query_terms = False
-        return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
-    
-
-    def __get_ranking_parameters_config_03(self):
-        ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = self.__get_ranking_parameters_default_config()
-        summarize = 'median'
         return ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms
     
 
@@ -896,8 +825,8 @@ class TestSREX(unittest.TestCase):
         ranking.calculate_vicinity_matrix_of_sentences_by_doc()
         
         # Generate nodes in all graphs in leaf nodes of the query expression tree
-        sentence = ranking.get_document_by_ranking_position(1).get_sentence_by_position_in_doc(0)
-        sentence.generate_nodes_in_all_leaf_graphs()
+        sentence = ranking.documents[0].sentences[0]
+        sentence.generate_proximity_nodes_in_all_leaf_graphs()
 
         # Get vicinity graphs from the sentence, as dicts
         query_terms = sentence.query_tree.get_query_terms_str_list_with_underscores()
