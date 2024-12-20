@@ -7,10 +7,10 @@
     "text4_terms_from_viewable_graph_copy": ["rain", "topology", "dual", "index", "driven"],
     "text5": "The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most common words.Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators. To achieve this, it would be necessary to have uniform grammar, pronunciation and more common words. If several languages coalesce, the grammar of the resulting language is more simple and regular than that of the individual languages. The new common language will be more simple and regular than the existing European languages. It will be as simple as Occidental; in fact, it will be Occidental. To an English person, it will seem like simplified English, as a skeptical Cambridge friend of mine told me what Occidental is. The European languages are members of the same family. Their separate existence is a myth. For science, music, sport, etc, Europe uses the same vocabulary. The languages only differ in their grammar, their pronunciation and their most common words. Everyone realizes why a new common language would be desirable: one could refuse to pay expensive translators.",
     "text5_transformed_text_with_lema": "european language member family separate existence myth science music sport europe us vocabulary language differ grammar pronunciation common wordseveryone realizes new common language desirable one refuse pay expensive translator achieve necessary uniform grammar pronunciation common word several language coalesce grammar resulting language simple regular individual language new common language simple regular existing european language simple occidental fact occidental english person seem like simplified english skeptical cambridge friend mine told occidental european language member family separate existence myth science music sport europe us vocabulary language differ grammar pronunciation common word everyone realizes new common language desirable one refuse pay expensive translator",
-    "text5_remove_special_characters": ["the", "european", "languages", "are", "members", "of", "the", "same", "family", "their", "separate", "existence", "is", "a", "myth", "for", "science", "music", "sport", "etc", "europe", "uses", "the", "same", "vocabulary", "the", "languages", "only", "differ", "in", "their", "grammar", "their", "pronunciation", "and", "their", "most", "common", "wordseveryone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "one", "could", "refuse", "to", "pay", "expensive", "translators", "to", "achieve", "this", "it", "would", "be", "necessary", "to", "have", "uniform", "grammar", "pronunciation", "and", "more", "common", "words", "if", "several", "languages", "coalesce", "the", "grammar", "of", "the", "resulting", "language", "is", "more", "simple", "and", "regular", "than", "that", "of", "the", "individual", "languages", "the", "new", "common", "language", "will", "be", "more", "simple", "and", "regular", "than", "the", "existing", "european", "languages", "it", "will", "be", "as", "simple", "as", "occidental", "in", "fact", "it", "will", "be", "occidental", "to", "an", "english", "person", "it", "will", "seem", "like", "simplified", "english", "as", "a", "skeptical", "cambridge", "friend", "of", "mine", "told", "me", "what", "occidental", "is", "the", "european", "languages", "are", "members", "of", "the", "same", "family", "their", "separate", "existence", "is", "a", "myth", "for", "science", "music", "sport", "etc", "europe", "uses", "the", "same", "vocabulary", "the", "languages", "only", "differ", "in", "their", "grammar", "their", "pronunciation", "and", "their", "most", "common", "words", "everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "one", "could", "refuse", "to", "pay", "expensive", "translators"],
-    "text5_remove_stopwords": ["european", "languages", "members", "family", ".", "separate", "existence", "myth", ".", "science", ",", "music", ",", "sport", ",", ",", "europe", "uses", "vocabulary", ".", "languages", "differ", "grammar", ",", "pronunciation", "common", "words.everyone", "realizes", "new", "common", "language", "desirable", ":", "one", "refuse", "pay", "expensive", "translators", ".", "achieve", ",", "necessary", "uniform", "grammar", ",", "pronunciation", "common", "words", ".", "several", "languages", "coalesce", ",", "grammar", "resulting", "language", "simple", "regular", "individual", "languages", ".", "new", "common", "language", "simple", "regular", "existing", "european", "languages", ".", "simple", "occidental", ";", "fact", ",", "occidental", ".", "english", "person", ",", "seem", "like", "simplified", "english", ",", "skeptical", "cambridge", "friend", "mine", "told", "occidental", ".", "european", "languages", "members", "family", ".", "separate", "existence", "myth", ".", "science", ",", "music", ",", "sport", ",", ",", "europe", "uses", "vocabulary", ".", "languages", "differ", "grammar", ",", "pronunciation", "common", "words", ".", "everyone", "realizes", "new", "common", "language", "desirable", ":", "one", "refuse", "pay", "expensive", "translators", "."],
-    "text5_do_lemmatization": ["the", "european", "language", "are", "member", "of", "the", "same", "family", ".", "their", "separate", "existence", "is", "a", "myth", ".", "for", "science", ",", "music", ",", "sport", ",", "etc", ",", "europe", "us", "the", "same", "vocabulary", ".", "the", "language", "only", "differ", "in", "their", "grammar", ",", "their", "pronunciation", "and", "their", "most", "common", "words.everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", ":", "one", "could", "refuse", "to", "pay", "expensive", "translator", ".", "to", "achieve", "this", ",", "it", "would", "be", "necessary", "to", "have", "uniform", "grammar", ",", "pronunciation", "and", "more", "common", "word", ".", "if", "several", "language", "coalesce", ",", "the", "grammar", "of", "the", "resulting", "language", "is", "more", "simple", "and", "regular", "than", "that", "of", "the", "individual", "language", ".", "the", "new", "common", "language", "will", "be", "more", "simple", "and", "regular", "than", "the", "existing", "european", "language", ".", "it", "will", "be", "a", "simple", "a", "occidental", ";", "in", "fact", ",", "it", "will", "be", "occidental", ".", "to", "an", "english", "person", ",", "it", "will", "seem", "like", "simplified", "english", ",", "a", "a", "skeptical", "cambridge", "friend", "of", "mine", "told", "me", "what", "occidental", "is", ".", "the", "european", "language", "are", "member", "of", "the", "same", "family", ".", "their", "separate", "existence", "is", "a", "myth", ".", "for", "science", ",", "music", ",", "sport", ",", "etc", ",", "europe", "us", "the", "same", "vocabulary", ".", "the", "language", "only", "differ", "in", "their", "grammar", ",", "their", "pronunciation", "and", "their", "most", "common", "word", ".", "everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", ":", "one", "could", "refuse", "to", "pay", "expensive", "translator", "."],
-    "text5_do_stemming": ["the", "european", "languag", "are", "member", "of", "the", "same", "famili", ".", "their", "separ", "exist", "is", "a", "myth", ".", "for", "scienc", ",", "music", ",", "sport", ",", "etc", ",", "europ", "use", "the", "same", "vocabulari", ".", "the", "languag", "onli", "differ", "in", "their", "grammar", ",", "their", "pronunci", "and", "their", "most", "common", "words.everyon", "realiz", "whi", "a", "new", "common", "languag", "would", "be", "desir", ":", "one", "could", "refus", "to", "pay", "expens", "translat", ".", "to", "achiev", "thi", ",", "it", "would", "be", "necessari", "to", "have", "uniform", "grammar", ",", "pronunci", "and", "more", "common", "word", ".", "if", "sever", "languag", "coalesc", ",", "the", "grammar", "of", "the", "result", "languag", "is", "more", "simpl", "and", "regular", "than", "that", "of", "the", "individu", "languag", ".", "the", "new", "common", "languag", "will", "be", "more", "simpl", "and", "regular", "than", "the", "exist", "european", "languag", ".", "it", "will", "be", "as", "simpl", "as", "occident", ";", "in", "fact", ",", "it", "will", "be", "occident", ".", "to", "an", "english", "person", ",", "it", "will", "seem", "like", "simplifi", "english", ",", "as", "a", "skeptic", "cambridg", "friend", "of", "mine", "told", "me", "what", "occident", "is", ".", "the", "european", "languag", "are", "member", "of", "the", "same", "famili", ".", "their", "separ", "exist", "is", "a", "myth", ".", "for", "scienc", ",", "music", ",", "sport", ",", "etc", ",", "europ", "use", "the", "same", "vocabulari", ".", "the", "languag", "onli", "differ", "in", "their", "grammar", ",", "their", "pronunci", "and", "their", "most", "common", "word", ".", "everyon", "realiz", "whi", "a", "new", "common", "languag", "would", "be", "desir", ":", "one", "could", "refus", "to", "pay", "expens", "translat", "."],
+    "text5_remove_special_characters": ["the", "european", "languages", "are", "members", "of", "the", "same", "family", "", "their", "separate", "existence", "is", "a", "myth", "", "for", "science", "", "music", "", "sport", "", "etc", "", "europe", "uses", "the", "same", "vocabulary", "", "the", "languages", "only", "differ", "in", "their", "grammar", "", "their", "pronunciation", "and", "their", "most", "common", "wordseveryone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "", "one", "could", "refuse", "to", "pay", "expensive", "translators", "", "to", "achieve", "this", "", "it", "would", "be", "necessary", "to", "have", "uniform", "grammar", "", "pronunciation", "and", "more", "common", "words", "", "if", "several", "languages", "coalesce", "", "the", "grammar", "of", "the", "resulting", "language", "is", "more", "simple", "and", "regular", "than", "that", "of", "the", "individual", "languages", "", "the", "new", "common", "language", "will", "be", "more", "simple", "and", "regular", "than", "the", "existing", "european", "languages", "", "it", "will", "be", "as", "simple", "as", "occidental", "", "in", "fact", "", "it", "will", "be", "occidental", "", "to", "an", "english", "person", "", "it", "will", "seem", "like", "simplified", "english", "", "as", "a", "skeptical", "cambridge", "friend", "of", "mine", "told", "me", "what", "occidental", "is", "", "the", "european", "languages", "are", "members", "of", "the", "same", "family", "", "their", "separate", "existence", "is", "a", "myth", "", "for", "science", "", "music", "", "sport", "", "etc", "", "europe", "uses", "the", "same", "vocabulary", "", "the", "languages", "only", "differ", "in", "their", "grammar", "", "their", "pronunciation", "and", "their", "most", "common", "words", "", "everyone", "realizes", "why", "a", "new", "common", "language", "would", "be", "desirable", "", "one", "could", "refuse", "to", "pay", "expensive", "translators", ""],
+    "text5_remove_stopwords": ["", "european", "languages", "", "members", "", "", "", "family", "", "", "separate", "existence", "", "", "myth", "", "", "science", "", "music", "", "sport", "", "", "", "europe", "uses", "", "", "vocabulary", "", "", "languages", "", "differ", "", "", "grammar", "", "", "pronunciation", "", "", "", "common", "wordseveryone", "realizes", "", "", "new", "common", "language", "", "", "desirable", "", "one", "", "refuse", "", "pay", "expensive", "translators", "", "", "achieve", "", "", "", "", "", "necessary", "", "", "uniform", "grammar", "", "pronunciation", "", "", "common", "words", "", "", "several", "languages", "coalesce", "", "", "grammar", "", "", "resulting", "language", "", "", "simple", "", "regular", "", "", "", "", "individual", "languages", "", "", "new", "common", "language", "", "", "", "simple", "", "regular", "", "", "existing", "european", "languages", "", "", "", "", "", "simple", "", "occidental", "", "", "fact", "", "", "", "", "occidental", "", "", "", "english", "person", "", "", "", "seem", "like", "simplified", "english", "", "", "", "skeptical", "cambridge", "friend", "", "mine", "told", "", "", "occidental", "", "", "", "european", "languages", "", "members", "", "", "", "family", "", "", "separate", "existence", "", "", "myth", "", "", "science", "", "music", "", "sport", "", "", "", "europe", "uses", "", "", "vocabulary", "", "", "languages", "", "differ", "", "", "grammar", "", "", "pronunciation", "", "", "", "common", "words", "", "everyone", "realizes", "", "", "new", "common", "language", "", "", "desirable", "", "one", "", "refuse", "", "pay", "expensive", "translators", ""],
+    "text5_do_lemmatization": ["", "european", "language", "", "member", "", "", "", "family", "", "", "separate", "existence", "", "", "myth", "", "", "science", "", "music", "", "sport", "", "", "", "europe", "us", "", "", "vocabulary", "", "", "language", "", "differ", "", "", "grammar", "", "", "pronunciation", "", "", "", "common", "wordseveryone", "realizes", "", "", "new", "common", "language", "", "", "desirable", "", "one", "", "refuse", "", "pay", "expensive", "translator", "", "", "achieve", "", "", "", "", "", "necessary", "", "", "uniform", "grammar", "", "pronunciation", "", "", "common", "word", "", "", "several", "language", "coalesce", "", "", "grammar", "", "", "resulting", "language", "", "", "simple", "", "regular", "", "", "", "", "individual", "language", "", "", "new", "common", "language", "", "", "", "simple", "", "regular", "", "", "existing", "european", "language", "", "", "", "", "", "simple", "", "occidental", "", "", "fact", "", "", "", "", "occidental", "", "", "", "english", "person", "", "", "", "seem", "like", "simplified", "english", "", "", "", "skeptical", "cambridge", "friend", "", "mine", "told", "", "", "occidental", "", "", "", "european", "language", "", "member", "", "", "", "family", "", "", "separate", "existence", "", "", "myth", "", "", "science", "", "music", "", "sport", "", "", "", "europe", "us", "", "", "vocabulary", "", "", "language", "", "differ", "", "", "grammar", "", "", "pronunciation", "", "", "", "common", "word", "", "everyone", "realizes", "", "", "new", "common", "language", "", "", "desirable", "", "one", "", "refuse", "", "pay", "expensive", "translator", ""],
+    "text5_do_stemming": ["", "european", "languag", "", "member", "", "", "", "famili", "", "", "separ", "exist", "", "", "myth", "", "", "scienc", "", "music", "", "sport", "", "", "", "europ", "use", "", "", "vocabulari", "", "", "languag", "", "differ", "", "", "grammar", "", "", "pronunci", "", "", "", "common", "wordseveryon", "realiz", "", "", "new", "common", "languag", "", "", "desir", "", "one", "", "refus", "", "pay", "expens", "translat", "", "", "achiev", "", "", "", "", "", "necessari", "", "", "uniform", "grammar", "", "pronunci", "", "", "common", "word", "", "", "sever", "languag", "coalesc", "", "", "grammar", "", "", "result", "languag", "", "", "simpl", "", "regular", "", "", "", "", "individu", "languag", "", "", "new", "common", "languag", "", "", "", "simpl", "", "regular", "", "", "exist", "european", "languag", "", "", "", "", "", "simpl", "", "occident", "", "", "fact", "", "", "", "", "occident", "", "", "", "english", "person", "", "", "", "seem", "like", "simplifi", "english", "", "", "", "skeptic", "cambridg", "friend", "", "mine", "told", "", "", "occident", "", "", "", "european", "languag", "", "member", "", "", "", "famili", "", "", "separ", "exist", "", "", "myth", "", "", "scienc", "", "music", "", "sport", "", "", "", "europ", "use", "", "", "vocabulari", "", "", "languag", "", "differ", "", "", "grammar", "", "", "pronunci", "", "", "", "common", "word", "", "everyon", "realiz", "", "", "new", "common", "languag", "", "", "desir", "", "one", "", "refus", "", "pay", "expens", "translat", ""],
     "text6": "hierarchical simknn driven dual index driven hierarchical network adopt hierarchical rtree driven store adopt topology driven hierarchical road network adopt network hierarchical topology",
     "text6_calculate_vicinity_matrix_with_include_query_terms": {
         "hierarchical": {
@@ -284,261 +284,422 @@
         }
       },
     "text6_text2_united_graph_1": {
-        "hierarchical": {
-          "criteria": "proximity", "ponderation": 2.778151,
-          "distance": 2.933253
-        },
-        "adopt": {
-          "criteria": "proximity", "ponderation": 2.69897,
-          "distance": 3.244614
-        },
-        "network": {
-          "criteria": "proximity", "ponderation": 2.477121,
-          "distance": 2.596306
-        },
-        "simknn": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 2.717294
-        },
-        "dual": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 1.717294
-        },
-        "index": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 1.282706
-        },
-        "store": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.0
-        },
-        "topology": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.0
-        },
-        "rtree": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 1.0
-        },
-        "road": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 2.0
-        },
-        "house": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 1.0
-        },
-        "car": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 3.0
-        }
+      "hierarchical": {
+        "frequency_score": 0.0,
+        "proximity_score": 3.375,
+        "criteria": "proximity"
       },
+      "index": {
+        "frequency_score": 0.0,
+        "proximity_score": 2.5,
+        "criteria": "proximity"
+      },
+      "dual": {
+        "frequency_score": 0.0,
+        "proximity_score": 2.0,
+        "criteria": "proximity"
+      },
+      "adopt": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.75,
+        "criteria": "proximity"
+      },
+      "simknn": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.375,
+        "criteria": "proximity"
+      },
+      "network": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.375,
+        "criteria": "proximity"
+      },
+      "store": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "rtree": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "house": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "road": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.5,
+        "criteria": "proximity"
+      },
+      "car": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.25,
+        "criteria": "proximity"
+      }
+    },
     "text6_text2_united_graph_2": {
-        "hierarchical": {
-          "criteria": "proximity", "ponderation": 2.778151,
-          "distance": 2.770436
-        },
-        "driven": {
-          "criteria": "proximity", "ponderation": 2.69897,
-          "distance": 3.026219
-        },
-        "network": {
-          "criteria": "proximity", "ponderation": 2.477121,
-          "distance": 1.605542
-        },
-        "topology": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 1.565412
-        },
-        "road": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 2.565412
-        },
-        "rtree": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.282706
-        },
-        "store": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.5
-        },
-        "adopt": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.5
-        },
-        "gato": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.848118
-        },
-        "index": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 4.0
-        },
-        "tree": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 2.5
-        },
-        "r": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 2.5
-        },
-        "car": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 1.0
-        },
-        "house": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 3.0
-        }
+      "hierarchical": {
+        "frequency_score": 0.0,
+        "proximity_score": 3.625,
+        "criteria": "proximity"
       },
+      "network": {
+        "frequency_score": 0.0,
+        "proximity_score": 3.5,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 0.0,
+        "proximity_score": 2.25,
+        "criteria": "proximity"
+      },
+      "driven": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.75,
+        "criteria": "proximity"
+      },
+      "store": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "road": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "adopt": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "tree": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "car": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "rtree": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.75,
+        "criteria": "proximity"
+      },
+      "r": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.5,
+        "criteria": "proximity"
+      },
+      "gato": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.5,
+        "criteria": "proximity"
+      },
+      "house": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.25,
+        "criteria": "proximity"
+      },
+      "index": {
+        "frequency_score": 0.0,
+        "proximity_score": 0.125,
+        "criteria": "proximity"
+      }
+    },
     "text6_text2_united_graph_3": {
-        "hierarchical": {
-          "criteria": "proximity", "ponderation": 2.778151,
-          "distance": 2.851844
-        },
-        "adopt": {
-          "criteria": "proximity", "ponderation": 2.69897,
-          "distance": 3.162716
-        },
-        "driven": {
-          "criteria": "proximity", "ponderation": 2.69897,
-          "distance": 3.026219
-        },
-        "network": {
-          "criteria": "proximity", "ponderation": 2.477121,
-          "distance": 2.100924
-        },
-        "simknn": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 2.717294
-        },
-        "dual": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 1.717294
-        },
-        "index": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 1.897009
-        },
-        "topology": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 1.565412
-        },
-        "road": {
-          "criteria": "proximity", "ponderation": 2.30103,
-          "distance": 2.319691
-        },
-        "rtree": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 1.725257
-        },
-        "store": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.25
-        },
-        "gato": {
-          "criteria": "proximity", "ponderation": 1.30103,
-          "distance": 2.848118
-        },
-        "tree": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 2.5
-        },
-        "r": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 2.5
-        },
-        "car": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 2.0
-        },
-        "house": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 2.0
-        }
+      "hierarchical": {
+        "frequency_score": 8.0,
+        "proximity_score": 4.25,
+        "criteria": "proximity"
+      },
+      "network": {
+        "frequency_score": 5.0,
+        "proximity_score": 3.5,
+        "criteria": "proximity"
+      },
+      "index": {
+        "frequency_score": 2.0,
+        "proximity_score": 2.5,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 4.0,
+        "proximity_score": 2.25,
+        "criteria": "proximity"
+      },
+      "dual": {
+        "frequency_score": 2.0,
+        "proximity_score": 2.0,
+        "criteria": "proximity"
+      },
+      "adopt": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.75,
+        "criteria": "proximity"
+      },
+      "driven": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.75,
+        "criteria": "proximity"
+      },
+      "simknn": {
+        "frequency_score": 2.0,
+        "proximity_score": 1.375,
+        "criteria": "proximity"
+      },
+      "store": {
+        "frequency_score": 0.0,
+        "proximity_score": 1.25,
+        "criteria": "proximity"
+      },
+      "road": {
+        "frequency_score": 2.0,
+        "proximity_score": 1.125,
+        "criteria": "proximity"
+      },
+      "rtree": {
+        "frequency_score": 1.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "car": {
+        "frequency_score": 1.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "tree": {
+        "frequency_score": 1.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "house": {
+        "frequency_score": 1.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "gato": {
+        "frequency_score": 2.0,
+        "proximity_score": 0.5,
+        "criteria": "proximity"
+      },
+      "r": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.5,
+        "criteria": "proximity"
+      },
+      "manage": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "uniform": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "non": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "model": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "perro": {
+        "frequency_score": 2.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "grid": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "distribution": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "moving": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "object": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      }
     },
     "text_1_2_3_4_united_root_graph": {
-        "hierarchical": {
-          "criteria": "proximity", "ponderation": 4.228347,
-          "distance": 2.557692
-        },
-        "topology": {
-          "criteria": "proximity", "ponderation": 4.228347,
-          "distance": 2.711538
-        },
-        "gato": {
-          "criteria": "proximity", "ponderation": 4.040203,
-          "distance": 2.3824
-        },
-        "dual": {
-          "criteria": "proximity", "ponderation": 3.25,
-          "distance": 4.0
-        },
-        "index": {
-          "criteria": "proximity", "ponderation": 3.25,
-          "distance": 3.0
-        },
-        "driven": {
-          "criteria": "proximity", "ponderation": 3.25,
-          "distance": 2.0
-        },
-        "adopt": {
-          "criteria": "proximity", "ponderation": 3.25,
-          "distance": 1.692308
-        },
-        "tree": {
-          "criteria": "proximity", "ponderation": 3.25,
-          "distance": 4.0
-        },
-        "road": {
-          "criteria": "proximity", "ponderation": 3.25,
-          "distance": 1.0
-        },
-        "store": {
-          "criteria": "proximity", "ponderation": 1.875,
-          "distance": 3.0
-        },
-        "grid": {
-          "criteria": "proximity", "ponderation": 1.875,
-          "distance": 4.0
-        },
-        "galea": {
-          "criteria": "proximity", "ponderation": 1.375,
-          "distance": 3.0
-        },
-        "abel": {
-          "criteria": "proximity", "ponderation": 1.375,
-          "distance": 1.0
-        },
-        "echeverria": {
-          "criteria": "proximity", "ponderation": 1.375,
-          "distance": 1.0
-        },
-        "child": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 1.0
-        },
-        "r": {
-          "criteria": "proximity", "ponderation": 1.0,
-          "distance": 4.0
-        },
-        "car": {
-          "criteria": "proximity", "ponderation": 0.875,
-          "distance": 1.0
-        },
-        "house": {
-          "criteria": "proximity", "ponderation": 0.875,
-          "distance": 1.0
-        },
-        "rain": {
-          "criteria": "proximity", "ponderation": 0.813144,
-          "distance": 2.5
-        },
-        "patricio": {
-          "criteria": "proximity", "ponderation": 0.75,
-          "distance": 1.0
-        }
+      "road": {
+        "frequency_score": 3.0,
+        "proximity_score": 3.0,
+        "criteria": "proximity"
+      },
+      "gato": {
+        "frequency_score": 5.5,
+        "proximity_score": 2.854167,
+        "criteria": "proximity"
+      },
+      "hierarchical": {
+        "frequency_score": 9.0,
+        "proximity_score": 2.208333,
+        "criteria": "proximity"
+      },
+      "topology": {
+        "frequency_score": 6.0,
+        "proximity_score": 2.104167,
+        "criteria": "proximity"
+      },
+      "adopt": {
+        "frequency_score": 3.0,
+        "proximity_score": 2.0,
+        "criteria": "proximity"
+      },
+      "driven": {
+        "frequency_score": 3.0,
+        "proximity_score": 1.5,
+        "criteria": "proximity"
+      },
+      "abel": {
+        "frequency_score": 2.333333,
+        "proximity_score": 1.166667,
+        "criteria": "proximity"
+      },
+      "echeverria": {
+        "frequency_score": 1.166667,
+        "proximity_score": 1.166667,
+        "criteria": "proximity"
+      },
+      "child": {
+        "frequency_score": 1.0,
+        "proximity_score": 1.0,
+        "criteria": "proximity"
+      },
+      "car": {
+        "frequency_score": 0.8333333333333334,
+        "proximity_score": 0.833333,
+        "criteria": "proximity"
+      },
+      "house": {
+        "frequency_score": 0.8333333333333334,
+        "proximity_score": 0.833333,
+        "criteria": "proximity"
+      },
+      "index": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.75,
+        "criteria": "proximity"
+      },
+      "patricio": {
+        "frequency_score": 1.833333,
+        "proximity_score": 0.666667,
+        "criteria": "proximity"
+      },
+      "rain": {
+        "frequency_score": 1.5,
+        "proximity_score": 0.5625,
+        "criteria": "proximity"
+      },
+      "store": {
+        "frequency_score": 1.833333,
+        "proximity_score": 0.458333,
+        "criteria": "proximity"
+      },
+      "dual": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.375,
+        "criteria": "proximity"
+      },
+      "tree": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.375,
+        "criteria": "proximity"
+      },
+      "galea": {
+        "frequency_score": 2.333333,
+        "proximity_score": 0.291667,
+        "criteria": "proximity"
+      },
+      "grid": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.229167,
+        "criteria": "proximity"
+      },
+      "r": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.125,
+        "criteria": "proximity"
+      },
+      "perro": {
+        "frequency_score": 5.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "simknn": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "model": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "manage": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "moving": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "object": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "non": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "uniform": {
+        "frequency_score": 3.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "distribution": {
+        "frequency_score": 1.833333,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "temuco": {
+        "frequency_score": 0.6666666666666667,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      },
+      "ant": {
+        "frequency_score": 1.0,
+        "proximity_score": 0.0,
+        "criteria": "frequency"
+      }
     }
-    
 }
 

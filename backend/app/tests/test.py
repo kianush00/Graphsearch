@@ -132,46 +132,89 @@ class TestSREX(unittest.TestCase):
 
         # Get the euclidean distance between vectors and assert the results
         result = VectorUtils.get_cosine_between_vectors(vector1, vector2)
-        expected_result = 3.2893768406797053
+        expected_result = 0.7851655406125303
         
         self.assertAlmostEqual(result, expected_result, delta=1e-13)
 
     
-
-    def test_union_between_graphs(self):
+    def test_union_between_graphs_sum_scores(self):
         # Initialize vicinity graphs
-        g1, g2 = self.__initialize_graph_1_and_2()
+        g1, g2 = self.__initialize_graph_1_and_2_sum_scores()
         r = VicinityGraph(subquery="")
 
         # Build graph result to be evaluated
-        r_node1 = VicinityNode(term='x', ponderation=4.0, distance=np.mean([1, 2, 3, 4]))
-        r_node2 = VicinityNode(term='y', ponderation=7.0, distance=np.mean([11, 23, 52, 3, 1, 3, 5]))
-        r_node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        r_node1 = VicinityNode(term='w', proximity_score=4.5, frequency_score=6.0, criteria="proximity")
+        r_node2 = VicinityNode(term='x', proximity_score=1.5, frequency_score=3.0, criteria="proximity")
+        r_node3 = VicinityNode(term='y', proximity_score=0.0, frequency_score=5.0, criteria="frequency")
+        r_node4 = VicinityNode(term='z', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
+        r.add_node(r_node1)
+        r.add_node(r_node2)
+        r.add_node(r_node3)
+        r.add_node(r_node4)
+
+        # Define result as union between graph 1 and graph 2
+        result = g1.get_union_to_graph(g2, True).get_graph_as_dict()
+        expected_result = r.get_graph_as_dict()
+
+        # Assert the dict matches the expected output
+        self.assertDictEqual(result, expected_result)
+    
+    
+    def test_union_between_graphs_no_sum_scores(self):
+        # Initialize vicinity graphs
+        g1, g2 = self.__initialize_graph_1_and_2_no_sum_scores()
+        r = VicinityGraph(subquery="")
+
+        # Build graph result to be evaluated
+        r_node1 = VicinityNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
+        r_node2 = VicinityNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
+        r_node3 = VicinityNode(term='z', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
         r.add_node(r_node1)
         r.add_node(r_node2)
         r.add_node(r_node3)
 
         # Define result as union between graph 1 and graph 2
-        result = g1.get_union_to_graph(g2).get_graph_as_dict()
+        result = g1.get_union_to_graph(g2, False).get_graph_as_dict()
         expected_result = r.get_graph_as_dict()
 
         # Assert the dict matches the expected output
         self.assertDictEqual(result, expected_result)
     
 
-    def test_intersection_between_graphs(self):
+    def test_intersection_between_graphs_sum_scores(self):
         # Initialize vicinity graphs
-        g1, g2 = self.__initialize_graph_1_and_2()
+        g1, g2 = self.__initialize_graph_1_and_2_sum_scores()
         r = VicinityGraph(subquery="")
 
         # Build graph result to be evaluated
-        r_node1 = VicinityNode(term='x', ponderation=4.0, distance=np.mean([1, 2, 3, 4]))
-        r_node2 = VicinityNode(term='y', ponderation=7.0, distance=np.mean([11, 23, 52, 3, 1, 3, 5]))
+        r_node1 = VicinityNode(term='w', proximity_score=4.5, frequency_score=6.0, criteria="proximity")
+        r_node2 = VicinityNode(term='x', proximity_score=1.5, frequency_score=3.0, criteria="proximity")
+        r_node3 = VicinityNode(term='y', proximity_score=0.0, frequency_score=5.0, criteria="frequency")
+        r.add_node(r_node1)
+        r.add_node(r_node2)
+        r.add_node(r_node3)
+
+        # Define result as intersection between graph 1 and graph 2
+        result = g1.get_intersection_to_graph(g2, True).get_graph_as_dict()
+        expected_result = r.get_graph_as_dict()
+
+        # Assert the dict matches the expected output
+        self.assertDictEqual(result, expected_result)
+    
+    
+    def test_intersection_between_graphs_no_sum_scores(self):
+        # Initialize vicinity graphs
+        g1, g2 = self.__initialize_graph_1_and_2_no_sum_scores()
+        r = VicinityGraph(subquery="")
+
+        # Build graph result to be evaluated
+        r_node1 = VicinityNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
+        r_node2 = VicinityNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
         r.add_node(r_node1)
         r.add_node(r_node2)
 
         # Define result as intersection between graph 1 and graph 2
-        result = g1.get_intersection_to_graph(g2).get_graph_as_dict()
+        result = g1.get_intersection_to_graph(g2, False).get_graph_as_dict()
         expected_result = r.get_graph_as_dict()
 
         # Assert the dict matches the expected output
@@ -203,7 +246,10 @@ class TestSREX(unittest.TestCase):
         expected_result = test_data.get('text5_remove_special_characters')
         
         # Tokenize the text
-        tokens = nltk.word_tokenize(text.lower())
+        tokens = nltk.word_tokenize(text)
+        tokens = TextUtils.split_strings_with_hyphen_and_underscore(tokens)
+        tokens = TextUtils.convert_to_lowercase(tokens)
+        tokens = TextUtils.replace_accented_vowels(tokens)
         
         # Remove special characters
         result = TextUtils.remove_special_characters(tokens)
@@ -222,7 +268,11 @@ class TestSREX(unittest.TestCase):
         expected_result = test_data.get('text5_remove_stopwords')
         
         # Tokenize the text
-        tokens = nltk.word_tokenize(text.lower())
+        tokens = nltk.word_tokenize(text)
+        tokens = TextUtils.split_strings_with_hyphen_and_underscore(tokens)
+        tokens = TextUtils.convert_to_lowercase(tokens)
+        tokens = TextUtils.replace_accented_vowels(tokens)
+        tokens = TextUtils.remove_special_characters(tokens)
         
         # Remove stopwords
         result = TextUtils.remove_stopwords(tokens, stop_words)
@@ -232,13 +282,21 @@ class TestSREX(unittest.TestCase):
 
     
     def test_do_lemmatization(self):
+        # Load stopwords from JSON file
+        stop_words = DataUtils.load_stopwords()
+        
         # Load test text data
         test_data = DataUtils.load_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_do_lemmatization')
         
         # Tokenize the text
-        tokens = nltk.word_tokenize(text.lower())
+        tokens = nltk.word_tokenize(text)
+        tokens = TextUtils.split_strings_with_hyphen_and_underscore(tokens)
+        tokens = TextUtils.convert_to_lowercase(tokens)
+        tokens = TextUtils.replace_accented_vowels(tokens)
+        tokens = TextUtils.remove_special_characters(tokens)
+        tokens = TextUtils.remove_stopwords(tokens, stop_words)
         
         # Perform lemmatization
         result = TextUtils.do_lemmatization(tokens)
@@ -248,13 +306,21 @@ class TestSREX(unittest.TestCase):
     
 
     def test_do_stemming(self):
+        # Load stopwords from JSON file
+        stop_words = DataUtils.load_stopwords()
+        
         # Load test data and expected result from JSON file
         test_data = DataUtils.load_test_data()
         text = test_data.get('text5')
         expected_result = test_data.get('text5_do_stemming')
         
         # Tokenize the text
-        tokens = nltk.word_tokenize(text.lower())
+        tokens = nltk.word_tokenize(text)
+        tokens = TextUtils.split_strings_with_hyphen_and_underscore(tokens)
+        tokens = TextUtils.convert_to_lowercase(tokens)
+        tokens = TextUtils.replace_accented_vowels(tokens)
+        tokens = TextUtils.remove_special_characters(tokens)
+        tokens = TextUtils.remove_stopwords(tokens, stop_words)
         
         # Perform stemming
         result = TextUtils.do_stemming(tokens)
@@ -591,10 +657,10 @@ class TestSREX(unittest.TestCase):
         result4 = graph1.get_similarity_score_as_base_graph(graph4)
 
         # Create expected results
-        expected_result1 = 0.0
-        expected_result2 = 0.2041241452319315
-        expected_result3 = 0.30046260628866567
-        expected_result4 = 0.24999999999999992
+        expected_result1 = 0.8178318984557755
+        expected_result2 = 0.6588154130038578
+        expected_result3 = 0.5313063523622924
+        expected_result4 = 0.44352460224229734
 
         # Assert the result matches the expected output
         self.assertAlmostEqual(result1, expected_result1, delta=1e-13)
@@ -778,21 +844,47 @@ class TestSREX(unittest.TestCase):
         return b_expr_tree
     
     
-    def __initialize_graph_1_and_2(self) -> tuple[VicinityGraph, VicinityGraph]:
+    def __initialize_graph_1_and_2_sum_scores(self) -> tuple[VicinityGraph, VicinityGraph]:
         # Initialize vicinity graphs
         g1 = VicinityGraph(subquery="")
         g2 = VicinityGraph(subquery="")
 
         # Build graph 1
-        g1_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([3,4]))
-        g1_node2 = VicinityNode(term='y', ponderation=3.0, distance=np.mean([1,3,5]))
+        g1_node1 = VicinityNode(term='w', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
+        g1_node2 = VicinityNode(term='x', proximity_score=1.5, frequency_score=2.0, criteria="proximity")
+        g1_node3 = VicinityNode(term='y', proximity_score=0.0, frequency_score=3.0, criteria="frequency")
+        g1.add_node(g1_node1)
+        g1.add_node(g1_node2)
+        g1.add_node(g1_node3)
+
+        # Build graph 2
+        g2_node1 = VicinityNode(term='w', proximity_score=2.5, frequency_score=4.0, criteria="proximity")
+        g2_node2 = VicinityNode(term='x', proximity_score=0.0, frequency_score=1.0, criteria="frequency")
+        g2_node3 = VicinityNode(term='y', proximity_score=0.0, frequency_score=2.0, criteria="frequency")
+        g2_node4 = VicinityNode(term='z', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
+        g2.add_node(g2_node1)
+        g2.add_node(g2_node2)
+        g2.add_node(g2_node3)
+        g2.add_node(g2_node4)
+        
+        return g1, g2
+    
+    
+    def __initialize_graph_1_and_2_no_sum_scores(self) -> tuple[VicinityGraph, VicinityGraph]:
+        # Initialize vicinity graphs
+        g1 = VicinityGraph(subquery="")
+        g2 = VicinityGraph(subquery="")
+
+        # Build graph 1
+        g1_node1 = VicinityNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
+        g1_node2 = VicinityNode(term='y', proximity_score=3.0, frequency_score=0.0, criteria="proximity")
         g1.add_node(g1_node1)
         g1.add_node(g1_node2)
 
         # Build graph 2
-        g2_node1 = VicinityNode(term='x', ponderation=2.0, distance=np.mean([1,2]))
-        g2_node2 = VicinityNode(term='y', ponderation=4.0, distance=np.mean([11,23,52,3]))
-        g2_node3 = VicinityNode(term='z', ponderation=4.0, distance=np.mean([11,23,52,3]))
+        g2_node1 = VicinityNode(term='x', proximity_score=1.0, frequency_score=0.0, criteria="proximity")
+        g2_node2 = VicinityNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
+        g2_node3 = VicinityNode(term='z', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
         g2.add_node(g2_node1)
         g2.add_node(g2_node2)
         g2.add_node(g2_node3)
