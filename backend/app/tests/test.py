@@ -370,7 +370,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object
         ranking = Ranking(query_text="testtext6")
-        ranking.calculate_article_dictionaries_list([{'title': text}])
+        ranking.build_article_dictionaries_list([{'title': text}])
 
         # Get term positions dictionary from ranking object
         result = ranking.documents[0].sentences[0].get_term_positions_dict()
@@ -390,7 +390,7 @@ class TestSREX(unittest.TestCase):
 
         # Initialize Ranking object
         ranking = Ranking(query_text="test")
-        ranking.calculate_article_dictionaries_list([{'title': 'test'}])
+        ranking.build_article_dictionaries_list([{'title': 'test'}])
 
         # Initialize query terms
         query_terms = ["driven", "adopt", "store"]
@@ -711,7 +711,7 @@ class TestSREX(unittest.TestCase):
         ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = method_to_call()
         
         ranking = Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list(articles_dicts_list)
+        ranking.build_article_dictionaries_list(articles_dicts_list)
         ranking.generate_all_graphs(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
 
         return ranking
@@ -723,7 +723,7 @@ class TestSREX(unittest.TestCase):
         ranking_weight_type, lema, stem, summarize, limit_distance, include_query_terms = method_to_call()
 
         ranking = Ranking(query, ranking_weight_type=ranking_weight_type, stop_words=stop_words, lemmatization=lema, stemming=stem)
-        ranking.calculate_article_dictionaries_list(articles_dicts_list)
+        ranking.build_article_dictionaries_list(articles_dicts_list)
         ranking.initialize_graphs_for_all_trees(limit_distance=limit_distance, include_query_terms=include_query_terms, summarize=summarize)
 
         return ranking

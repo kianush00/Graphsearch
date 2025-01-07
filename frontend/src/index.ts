@@ -1280,10 +1280,6 @@ class Document extends TextElement {
         return this.abstract
     }
 
-    public getWeight(): number {
-        return this.weight
-    }
-
     public getSentences(): Sentence[] {
         return this.sentences
     }

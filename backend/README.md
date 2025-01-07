@@ -44,17 +44,34 @@ Run the following command from the backend/ directory to launch analysis:
 ```
 
 
+# ENV File
 
+Create a `.env` file in the current backend directory of the project with the following content:
+
+```bash
+    IEEE_XPLORE_API_KEY=your_api_key
+```
 
 
 # Required Libraries
 
-- GraphViz
-- Python
-    - numpy
-    - scikit_learn
-    - nltk
-    - textblob
-    - fastapi
-    - uvicorn
+- graphviz
+- numpy
+- scikit_learn
+- nltk
+- textblob
+- fastapi
+- uvicorn
+- pydantic
+- python-dotenv
 
+
+
+# API Endpoints
+
+| Endpoint                | Method | Description                | Classes/Services involved                          |
+|-------------------------|--------|----------------------------|----------------------------------------------------|
+| /get-ranking            | POST   | Get ranking from query     | Ranking, VicinityGraph, VicinityNode               |
+| /get-ranking-example-1  | POST   | Get ranking 1st example    | Ranking, VicinityGraph, VicinityNode               |
+| /get-ranking-example-2  | POST   | Get ranking 2nd example    | Ranking, VicinityGraph, VicinityNode               |
+| /rerank                 | POST   | Rerank the current ranking | Ranking, VicinityGraph, VicinityNode, VectorUtils  |

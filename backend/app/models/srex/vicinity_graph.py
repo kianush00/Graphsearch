@@ -97,7 +97,7 @@ class VicinityNode:
         self.__term = term
         self.__frequency_score = frequency_score
         self.__proximity_score = proximity_score
-        self.criteria = criteria
+        self.__criteria = criteria
     
 
     @property

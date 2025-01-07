@@ -1,4 +1,3 @@
-import numpy as np
 from collections import defaultdict, Counter
 import copy
 import re
@@ -74,17 +73,17 @@ class QueryTreeHandler:
 
 class Sentence(QueryTreeHandler):
     
-    def __init__(self, raw_text: str, query: BinaryExpressionTree, position_in_doc: int = 0, weight: float = 1.0):
+    def __init__(self, raw_text: str, query_tree: BinaryExpressionTree, position_in_doc: int = 0, weight: float = 1.0):
         """
         Initialize a new Sentence object.
 
         Parameters:
         raw_text (str): The raw text of the sentence.
-        query (BinaryExpressionTree): The query tree associated with the sentence.
+        query_tree (BinaryExpressionTree): The query tree associated with the sentence.
         position_in_doc (int, optional): The position of the sentence in the document. Default is 0.
         weight (float, optional): The weight of the sentence in the ranking. Default is 1.0.
         """
-        super().__init__(query_tree=query)
+        super().__init__(query_tree=query_tree)
         self.__raw_text = raw_text
         self.__position_in_doc = position_in_doc
         self.__weight = weight
@@ -299,7 +298,7 @@ class Sentence(QueryTreeHandler):
         return dict(frequencies)
 
 
-    def generate_proximity_nodes_in_all_leaf_graphs(self):
+    def generate_proximity_nodes_in_all_leaf_graphs(self) -> None:
         """
         Generate proximity nodes to the graphs associated with the leaves from the query tree.\n
         This function iterates over all the leaf nodes in the query tree and calls the 
@@ -473,21 +472,21 @@ class Sentence(QueryTreeHandler):
 
 class Document(QueryTreeHandler):
     
-    def __init__(self, query: BinaryExpressionTree, abstract: str = "", title: str = "", 
+    def __init__(self, query_tree: BinaryExpressionTree, abstract: str = "", title: str = "", 
                  doc_id: str = "1", weight: float = 1.0, ranking_position: int = 1):
         """
         Initialize a new Document object.
 
         Parameters:
         ranking (Ranking): The ranking associated with this document.
-        query (BinaryExpressionTree): The query tree for the document.
+        query_tree (BinaryExpressionTree): The query tree for the document.
         abstract (str, optional): The abstract of the document. Default is an empty string.
         title (str, optional): The title of the document. Default is an empty string.
         doc_id (str, optional): The unique identifier of the document. Default is "1".
         weight (float, optional): The weight of the document in the ranking. Default is 1.0.
         ranking_position (int, optional): The position of the document in the ranking. Default is 1.
         """
-        super().__init__(query_tree=query)
+        super().__init__(query_tree=query_tree)
         self.__title = title
         self.__abstract = abstract
         self.__preprocessed_text: str = ""
@@ -698,7 +697,7 @@ class Document(QueryTreeHandler):
         list_of_sentence_str = self.__get_list_of_sentence_strings()
         for index, sentence_str in enumerate(list_of_sentence_str):
             query_copy = copy.deepcopy(self.query_tree)
-            sentence_obj = Sentence(raw_text=sentence_str, query=query_copy, 
+            sentence_obj = Sentence(raw_text=sentence_str, query_tree=query_copy, 
                                     position_in_doc=index, weight=self.__weight)
             self.__sentences.append(sentence_obj)
 
@@ -873,11 +872,11 @@ class Ranking(QueryTreeHandler):
         return list_of_query_trees
     
 
-    def calculate_article_dictionaries_list(self, 
+    def build_article_dictionaries_list(self, 
             articles_dicts: list[dict]
             ) -> None:
         """
-        Calculate the current ranking from a list of article dictionaries ordered by their 
+        Build the current ranking from a list of article dictionaries ordered by their 
         ranking position. Each dictionary must contain the attributes 'title', 'abstract'
         and 'article_number'.
 
@@ -894,9 +893,9 @@ class Ranking(QueryTreeHandler):
         self.__calculate_ranking_as_weighted_documents_and_do_text_transformations(articles_dicts)
     
     
-    def calculate_ieee_xplore_ranking(self) -> None:
+    def build_ieee_xplore_ranking(self) -> None:
         """
-        Calculate the IEEE-Xplore ranking for the current ranking. 
+        Build the IEEE-Xplore ranking for the current ranking. 
 
         Transforms the list of article dictionaries into a list of Document type objects, 
         which have a weight associated with their position in the received list. 
@@ -1144,7 +1143,7 @@ class Ranking(QueryTreeHandler):
         _ranking_pos = index + 1
         _weight = MathUtils.calculate_document_weight(results_size, _ranking_pos, self.__ranking_weight_type)
         _query_copy = copy.deepcopy(self.query_tree)
-        new_doc = Document(query=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
+        new_doc = Document(query_tree=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         
         return new_doc

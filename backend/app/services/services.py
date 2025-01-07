@@ -40,7 +40,7 @@ class QueryService:
         try:
             # Generate ranking graphs from the results of the search
             ranking = Ranking(query_text, nr_search_results, ranking_weight_type, stop_words_list, lema, stem)
-            ranking.calculate_ieee_xplore_ranking()
+            ranking.build_ieee_xplore_ranking()
             ranking.generate_all_graphs(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
             
             # Return the Pydantic ranking
@@ -84,7 +84,7 @@ class QueryService:
             ]
 
             ranking = Ranking(query_text, nr_search_results, ranking_weight_type, stop_words_list, lema, stem)
-            ranking.calculate_article_dictionaries_list(articles_list)
+            ranking.build_article_dictionaries_list(articles_list)
             ranking.generate_all_graphs(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
             
             # Return the Pydantic ranking
@@ -128,7 +128,7 @@ class QueryService:
             ]
 
             ranking = Ranking(query_text, nr_search_results, ranking_weight_type, stop_words_list, lema, stem)
-            ranking.calculate_article_dictionaries_list(articles_list)
+            ranking.build_article_dictionaries_list(articles_list)
             ranking.generate_all_graphs(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
             
             # Return the Pydantic ranking
