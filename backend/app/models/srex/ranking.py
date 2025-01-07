@@ -965,12 +965,20 @@ class Ranking(QueryTreeHandler):
         -------
         article : dict
             The IEEE Xplore article
+        
+        Raises
+        ------
+        MissingEnvironmentVariableError
+            If the .env file is not found or the IEEE_XPLORE_API_KEY is missing.
         """
-        xplore_id = '6g7w4kfgteeqvy2jur3ak9mn'
-        query = XPLORE(xplore_id)
-        query.outputDataFormat='object'
-        query.addParameter(parameter, value)
-        data = query.callAPI()
+        # Get the IEEE Xplore api key
+        api_key = self.__get_ieee_xplore_api_key()
+        
+        # Make a call to the IEEE Xplore API to get the article by the provided parameter and value
+        query = XPLORE(api_key)
+        query.output_data_format='object'
+        query.add_parameter(parameter, value)
+        data = query.call_api()
         article = {}
         article["abstract"] = data.get('articles', [{}])[0].get('abstract', "")
         article["title"] = data.get('articles', [{}])[0].get('title', "")
@@ -1071,27 +1079,18 @@ class Ranking(QueryTreeHandler):
         
         Raises
         ------
-        OSError
+        MissingEnvironmentVariableError
             If the .env file is not found or the IEEE_XPLORE_API_KEY is missing.
         """
-        # Get the .env file route
-        env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
-        
-        # Load the .env file
-        if not load_dotenv(env_path):
-            raise MissingEnvironmentVariableError(f"Environment file not found at {env_path}")
-        
-        # Get the API Key
-        api_key = os.getenv('IEEE_XPLORE_API_KEY')
-        if not api_key:
-            raise MissingEnvironmentVariableError("The environment variable 'IEEE_XPLORE_API_KEY' is missing.")
+        # Get the IEEE Xplore api key
+        api_key = self.__get_ieee_xplore_api_key()
         
         # Make a call to the IEEE-Xplore API to get the ranking of articles
         query = XPLORE(api_key)
-        query.outputDataFormat='object'
-        query.maximumResults(self.__nr_search_results)
-        query.queryText(self.query_tree.raw_query)
-        data = query.callAPI()
+        query.output_data_format='object'
+        query.maximum_results(self.__nr_search_results)
+        query.query_text(self.query_tree.raw_query)
+        data = query.call_api()
         results = data.get('articles', [{}])
         
         return results
@@ -1175,9 +1174,7 @@ class Ranking(QueryTreeHandler):
         return new_doc
     
     
-    def __initialize_binary_expression_tree(self, 
-        query_text: str
-        ) -> None:
+    def __initialize_binary_expression_tree(self, query_text: str) -> None:
         """
         Validate the query text and initialize the binary expression tree.
 
@@ -1194,9 +1191,7 @@ class Ranking(QueryTreeHandler):
             raise ValueError("Invalid query syntax: " + repr(e))
     
     
-    def __validate_alnum_query_text_not_empty(self, 
-        query_text: str
-        ) -> None:
+    def __validate_alnum_query_text_not_empty(self, query_text: str) -> None:
         """
         Validate that the alphanumeric version of the query text is not empty, otherwise raise an exception.
 
@@ -1212,3 +1207,31 @@ class Ranking(QueryTreeHandler):
         alnum_query_text = re.sub(r'\W+', '', query_text)
         if alnum_query_text == '':
             raise ValueError("Query text cannot be empty")
+    
+    
+    def __get_ieee_xplore_api_key(self) -> str:
+        """
+        Get the IEEE-Xplore API Key from the environment variables.
+        
+        Returns
+        -------
+        str: The IEEE-Xplore API Key.
+        
+        Raises
+        ------
+        MissingEnvironmentVariableError
+            If the .env file is not found or the IEEE_XPLORE_API_KEY is missing.
+        """
+        # Get the .env file route
+        env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
+        
+        # Load the .env file
+        if not load_dotenv(env_path):
+            raise MissingEnvironmentVariableError(f"Environment file not found at {env_path}")
+        
+        # Get the API Key
+        api_key = os.getenv('IEEE_XPLORE_API_KEY')
+        if not api_key:
+            raise MissingEnvironmentVariableError("The environment variable 'IEEE_XPLORE_API_KEY' is missing.")
+        
+        return api_key
