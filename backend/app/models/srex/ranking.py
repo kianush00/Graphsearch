@@ -2,6 +2,7 @@ from collections import defaultdict, Counter
 from copy import deepcopy
 import re
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 from models.ieee_xplore.xploreapi import XPLORE
@@ -9,6 +10,7 @@ from models.srex.vicinity_graph import VicinityGraph
 from models.srex.vicinity_graph import VicinityNode
 from models.srex.binary_expression_tree import BinaryExpressionTree
 from models.srex.binary_expression_tree import BinaryTreeNode
+from exceptions.exceptions import MissingEnvironmentVariableError
 from utils.text_utils import TextUtils
 from utils.math_utils import MathUtils
 from utils.vector_utils import VectorUtils
@@ -1066,9 +1068,26 @@ class Ranking(QueryTreeHandler):
         results : list[dict]
             A list of dictionaries, where each dictionary represents an article. Each dictionary 
             contains the article's attributes such as 'title', 'abstract', and 'article_number'.
+        
+        Raises
+        ------
+        OSError
+            If the .env file is not found or the IEEE_XPLORE_API_KEY is missing.
         """
-        xplore_id = '6g7w4kfgteeqvy2jur3ak9mn'
-        query = XPLORE(xplore_id)
+        # Get the .env file route
+        env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
+        
+        # Load the .env file
+        if not load_dotenv(env_path):
+            raise MissingEnvironmentVariableError(f"Environment file not found at {env_path}")
+        
+        # Get the API Key
+        api_key = os.getenv('IEEE_XPLORE_API_KEY')
+        if not api_key:
+            raise MissingEnvironmentVariableError("The environment variable 'IEEE_XPLORE_API_KEY' is missing.")
+        
+        # Make a call to the IEEE-Xplore API to get the ranking of articles
+        query = XPLORE(api_key)
         query.outputDataFormat='object'
         query.maximumResults(self.__nr_search_results)
         query.queryText(self.query_tree.raw_query)
@@ -1128,6 +1147,11 @@ class Ranking(QueryTreeHandler):
         -------
         new_doc : Document
             A new document obtained from the attributes of the article
+        
+        Raises
+        ------
+        ValueError: If the abstract and title are both empty
+        TypeError: If the abstract, title or doc_id is not a string
         """
         # Calculate the weight depending on the argument value and the position of the document in the ranking
         _abstract = article.get('abstract', "")

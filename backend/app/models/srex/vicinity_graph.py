@@ -166,6 +166,9 @@ class VicinityNode:
         
         Returns:
         str: The criteria used to determine proximity.
+        
+        Raises:
+        ValueError: If the criteria is invalid or the proximity score is negative or zero when the criteria is 'proximity'.
         """
         return self.__criteria
     

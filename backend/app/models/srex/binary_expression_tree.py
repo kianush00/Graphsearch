@@ -186,6 +186,9 @@ class BinaryTreeNode:
 
         Returns:
         VicinityGraph: The graph resulting from the intersection or union operation.
+        
+        Raises:
+        ValueError: If the operator value is neither 'AND' nor 'OR'.
         """
         left_graph = self.__get_leaf_graph(self.left)
         right_graph = self.__get_leaf_graph(self.right)
