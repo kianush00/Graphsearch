@@ -1,6 +1,6 @@
 from collections import deque 
 import re
-import copy
+from copy import deepcopy
 from functools import reduce
 from utils.text_utils import TextUtils
 from models.srex.vicinity_graph import VicinityGraph
@@ -102,7 +102,7 @@ class BinaryTreeNode:
         copy_subtree (BinaryTreeNode): The union between copy of the subtree itself 
         and an external subtree.
         """
-        copy_subtree = copy.deepcopy(self)
+        copy_subtree = deepcopy(self)
         copy_subtree.__do_union_between_copy_self_and_subtree(external_subtree)
         return copy_subtree
     
@@ -445,7 +445,7 @@ class BinaryExpressionTree:
         copy_tree : BinaryExpressionTree
             The union between copy of the tree itself and an external tree
         """
-        copy_tree = copy.deepcopy(self)
+        copy_tree = deepcopy(self)
         
         #Get the deep union between the copy root node and the external root node
         copy_root = copy_tree.root.get_union_to_subtree(external_tree.root)

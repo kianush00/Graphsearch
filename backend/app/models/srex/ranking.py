@@ -1,6 +1,8 @@
 from collections import defaultdict, Counter
-import copy
+from copy import deepcopy
 import re
+import os
+from dotenv import load_dotenv
 
 from models.ieee_xplore.xploreapi import XPLORE
 from models.srex.vicinity_graph import VicinityGraph
@@ -696,7 +698,7 @@ class Document(QueryTreeHandler):
         self.__sentences = []
         list_of_sentence_str = self.__get_list_of_sentence_strings()
         for index, sentence_str in enumerate(list_of_sentence_str):
-            query_copy = copy.deepcopy(self.query_tree)
+            query_copy = deepcopy(self.query_tree)
             sentence_obj = Sentence(raw_text=sentence_str, query_tree=query_copy, 
                                     position_in_doc=index, weight=self.__weight)
             self.__sentences.append(sentence_obj)
@@ -1142,7 +1144,7 @@ class Ranking(QueryTreeHandler):
 
         _ranking_pos = index + 1
         _weight = MathUtils.calculate_document_weight(results_size, _ranking_pos, self.__ranking_weight_type)
-        _query_copy = copy.deepcopy(self.query_tree)
+        _query_copy = deepcopy(self.query_tree)
         new_doc = Document(query_tree=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
                             weight=_weight, ranking_position=_ranking_pos)
         

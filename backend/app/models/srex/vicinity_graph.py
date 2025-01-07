@@ -1,5 +1,5 @@
 import re
-import copy
+from copy import deepcopy
 from graphviz import Graph
 from utils.vector_utils import VectorUtils
 
@@ -518,7 +518,7 @@ class VicinityGraph:
         for node_term in set(node_terms_from_ext_graph) - set(node_terms_from_copy_graph):
             node_from_ext_graph = external_graph.get_node_by_term(node_term)
             if node_from_ext_graph:    # Double check
-                copy_node_from_ext_graph = copy.deepcopy(node_from_ext_graph)
+                copy_node_from_ext_graph = deepcopy(node_from_ext_graph)
                 united_graph.add_node(copy_node_from_ext_graph)
 
         return united_graph
@@ -581,7 +581,7 @@ class VicinityGraph:
         copy_graph : VicinityGraph
             The copied graph that contain the calculation of the intersected terms
         """
-        copy_graph = copy.deepcopy(self)
+        copy_graph = deepcopy(self)
 
         for node_term in copy_graph.__get_terms_from_intersection_between_graphs(external_graph):
             node_from_copy_graph = copy_graph.get_node_by_term(node_term)
