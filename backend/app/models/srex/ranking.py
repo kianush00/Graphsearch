@@ -498,8 +498,7 @@ class Document(QueryTreeHandler):
         self.__weight = weight
         self.__ranking_position = ranking_position
         self.__sentences: list[Sentence] = []
-
-        self.__calculate_sentences_list_from_documents()
+        self.__build_sentences_list_from_text()
     
 
     @property
@@ -691,10 +690,10 @@ class Document(QueryTreeHandler):
             sentence.calculate_vicinity_matrix()
 
 
-    def __calculate_sentences_list_from_documents(self) -> None:
+    def __build_sentences_list_from_text(self) -> None:
         """
-        Transform the text of each document in the input list into a list of sentences. Split 
-        the text by dots. It also generates a copy of the document tree and adds it as an 
+        Transform the raw text (title and abstract) of the document into a list of sentence objects. 
+        Split the text by dots. It also generates a copy of the document tree and adds it as an 
         attribute of the new sentence.
         """
         self.__sentences = []
@@ -943,8 +942,8 @@ class Ranking(QueryTreeHandler):
             #Calculate term positions and vicinity matrix of each sentence by document
             self.calculate_vicinity_matrix_of_sentences_by_doc()
             
-            #Generate nodes of all graphs
-            self.generate_nodes_of_all_graphs()    
+            #Generate vicinity nodes in all graphs
+            self.generate_vicinity_nodes_in_all_graphs()    
 
 
     def get_ieee_xplore_article(self,
@@ -1029,7 +1028,7 @@ class Ranking(QueryTreeHandler):
             document.calculate_vicinity_matrix_of_sentences()
     
 
-    def generate_nodes_of_all_graphs(self) -> None:
+    def generate_vicinity_nodes_in_all_graphs(self) -> None:
         """
         Generate all the nodes associated with the graphs from both the ranking and all 
         the documents along with their sentences, based on the query terms.

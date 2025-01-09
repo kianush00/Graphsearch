@@ -249,12 +249,9 @@ class HTTPRequestUtils {
         try {
             const url = 'http://localhost:8080/'
             const response = await fetch(url + endpoint, {
-                mode: 'cors',
                 method: 'POST',
                 headers: {
-                'Content-Type': 'application/json',
-                'Origin': 'https://localhost:3000',
-                'Access-Control-Allow-Origin': 'http://localhost:8080'
+                'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(data),
             })

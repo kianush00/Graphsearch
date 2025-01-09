@@ -18,23 +18,18 @@ COPY ./index.html /app/index.html
 # Compilar el código TypeScript y construir el bundle con webpack
 RUN npm run build
 
-# Etapa 2: Servir la aplicación
-FROM node:20
+# Etapa 2: Servir la aplicación con NGINX
+FROM nginx:stable
 
-# Establecer el directorio de trabajo
-WORKDIR /app
+# Eliminar configuración predeterminada de NGINX
+RUN rm /etc/nginx/conf.d/default.conf
 
-# Copiar el build desde la etapa de construcción
-COPY --from=build /app/dist /app/dist
-COPY --from=build /app/index.html /app/index.html
-COPY --from=build /app/package.json /app/package.json
-COPY --from=build /app/package-lock.json /app/package-lock.json
+# Copiar el archivo de configuración de NGINX personalizado
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Instalar http-server
-RUN npm install -g http-server
+# Copiar los archivos compilados al directorio estático de NGINX
+COPY --from=build /app/dist /usr/share/nginx/html/dist
+COPY --from=build /app/index.html /usr/share/nginx/html
 
-# Exponer el puerto 3000
+# Exponer el puerto 3000 para NGINX
 EXPOSE 3000
-
-# Comando para iniciar el servidor
-CMD ["npm", "start"]

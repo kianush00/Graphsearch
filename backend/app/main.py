@@ -18,17 +18,17 @@ nltk.download('wordnet')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-origins = [
+ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080"
+    "http://netbox.cmcc.ufro.cl:3000",
+    "http://200.10.22.105:3000"
 ]
 
 # App configuration
 class Settings:
     PROJECT_NAME: str = "SREX Backend API"
-    ALLOWED_ORIGINS: list = ["*"]
+    ALLOWED_ORIGINS: list = ORIGINS
     ALLOW_METHODS: list = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     ALLOW_HEADERS: list = ["*"]
     ALLOW_CREDENTIALS: bool = False

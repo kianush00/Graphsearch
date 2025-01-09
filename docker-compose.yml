@@ -1,0 +1,28 @@
+services:
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - app_network
+    container_name: frontend_srex
+    ports:
+      - "3000:3000"
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    networks:
+      - app_network
+    container_name: backend_srex
+    ports:
+      - "8080:8080"
+      
+
+networks:
+  app_network:
+    driver: bridge
