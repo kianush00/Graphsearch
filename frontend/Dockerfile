@@ -31,5 +31,5 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html/dist
 COPY --from=build /app/index.html /usr/share/nginx/html
 
-# Exponer el puerto 80 para NGINX
-EXPOSE 80
+# Exponer los puertos para NGINX
+EXPOSE 80 443
