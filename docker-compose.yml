@@ -10,7 +10,7 @@ services:
       - app_network
     container_name: frontend_srex
     ports:
-      - "3000:3000"
+      - "80:80"
 
   backend:
     build:
