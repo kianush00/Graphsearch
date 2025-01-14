@@ -288,7 +288,15 @@ interface EdgeData {
     distance?: number
 }
 
-class Edge {
+interface CyElementAggregator {
+    addCyVisualElement(): void;
+}
+
+interface CyElementRemover {
+    removeCyVisualElement(): void;
+}
+
+class Edge implements CyElementAggregator, CyElementRemover {
     private readonly _id: string
     private readonly _sourceNode: GraphNode
     private readonly _targetNode: GraphNode
@@ -300,15 +308,15 @@ class Edge {
      * 
      * @param sourceNode - The source node of the edge.
      * @param targetNode - The target node of the edge.
-     * @param isUserGraphEdge - A boolean indicating whether the edge is from the user graph.
+     * @param isFromUserGraph - A boolean indicating whether the edge is from the user graph.
      */
-    constructor(sourceNode: GraphNode, targetNode: GraphNode, isUserGraphEdge: boolean) {
+    constructor(sourceNode: GraphNode, targetNode: GraphNode, isFromUserGraph: boolean) {
         this._id = "e_" + targetNode.id
         this._sourceNode = sourceNode
         this._targetNode = targetNode
         this._distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
-        this._cyElement = isUserGraphEdge ? cyUser : cySentence;
-        this._addVisualEdgeToInterface()
+        this._cyElement = isFromUserGraph ? cyUser : cySentence;
+        this.addCyVisualElement()
     }
 
     get distance(): number {
@@ -324,11 +332,22 @@ class Edge {
      * @remarks
      * This method assumes that the source and target nodes are already associated with the edge.
      * It also assumes that the graph is represented using the Cytoscape.js library.
-     *
-     * @returns {void} - This function does not return any value.
      */
     set distance(distance: number) {
         this._distance = distance;
+    }
+
+    /**
+     * Adds a visual edge to the graph interface.
+     * 
+     * This function creates a new edge in the graph using the `toObject` method,
+     * which returns an object containing the edge's data.
+     * The edge is then added to the graph using the `cy.add` method.
+     *
+     * @returns {void} - This function does not return any value.
+     */
+    public addCyVisualElement(): void {
+        this._cyElement.add(this.toObject())
     }
 
     /**
@@ -341,7 +360,7 @@ class Edge {
      * This function should be called when the node is no longer needed in the graph interface.
      * It ensures that the node is removed from the visual representation of the graph.
      */
-    public remove(): void {
+    public removeCyVisualElement(): void {
         this._cyElement.remove(this._cyElement.getElementById(this._id))
     }
 
@@ -360,20 +379,6 @@ class Edge {
 
         return { data: edgeData };
     }
-
-    /**
-     * Adds a visual edge to the graph interface.
-     * 
-     * This function creates a new edge in the graph using the `toObject` method,
-     * which returns an object containing the edge's data.
-     * The edge is then added to the graph using the `cy.add` method.
-     *
-     * @returns {void} - This function does not return any value.
-     */
-    private _addVisualEdgeToInterface(): void {
-        this._cyElement.add(this.toObject())
-    }
-
 }
 
 
@@ -392,12 +397,13 @@ interface NodeData {
     label: string
 }
 
-class GraphNode {
-    protected _id: string
+class GraphNode implements CyElementRemover {
+    protected readonly _id: string
     protected _label: string
-    protected _position: Position
-    protected _type: NodeType
-    protected _cyElement: cytoscape.Core
+    protected _position: Position = {x: 0, y: 0};
+    protected readonly _type: NodeType
+    protected readonly _isFromUserGraph: boolean;
+    protected readonly _cyElement: cytoscape.Core
     
     /**
      * Represents a node in the graph.
@@ -406,14 +412,14 @@ class GraphNode {
      * @param label - The label of the node.
      * @param position - The position of the node in the graph.
      * @param type - The type of the node.
-     * @param isUserGraphNode - A boolean indicating whether the graph node belongs to the user graph.
+     * @param isFromUserGraph - A boolean indicating whether the graph node belongs to the user graph.
      */
-    constructor(id: string, label: string, position: Position, type: NodeType, isUserGraphNode: boolean) {
+    constructor(id: string, label: string, type: NodeType, isFromUserGraph: boolean) {
         this._id = id
         this._label = label
-        this._position = position
         this._type = type
-        this._cyElement = isUserGraphNode ? cyUser : cySentence;
+        this._isFromUserGraph = isFromUserGraph;
+        this._cyElement = isFromUserGraph ? cyUser : cySentence;
     }
 
     public get id(): string {
@@ -454,7 +460,7 @@ class GraphNode {
      * This function removes the node with the given ID from the graph interface.
      * It uses the Cytoscape.js library to select the node by its ID and remove it from the graph.
      */
-    public remove(): void {
+    public removeCyVisualElement(): void {
         this._cyElement.remove(this._cyElement.getElementById(this._id))
     }
 
@@ -480,23 +486,20 @@ class GraphNode {
 }
 
 
-class CentralNode extends GraphNode {
+class CentralNode extends GraphNode implements CyElementAggregator {
     /**
      * Represents a central node in the graph.
      * It manages the associated views, such as the visual node in the graph interface.
      * 
      * @param id - The unique identifier of the central node.
-     * @param x - The x-coordinate of the central node's position in the graph.
-     * @param y - The y-coordinate of the central node's position in the graph.
      * @param isUserGraphNode - A boolean indicating whether the central node belongs to the user graph.
      */
-    constructor(id: string, x: number, y: number, isUserGraphNode: boolean) {
+    constructor(id: string, isUserGraphNode: boolean) {
         let _id = id
         let _label = id
-        let _position = { x, y }
         let _type = NodeType.central_node
-        super(_id, _label, _position, _type, isUserGraphNode)
-        this._addVisualNodeToInterface()
+        super(_id, _label, _type, isUserGraphNode)
+        this.addCyVisualElement()
     }
 
     /**
@@ -508,13 +511,13 @@ class CentralNode extends GraphNode {
      * The node's class is set to the string representation of the node's type.
      * The node is also locked and ungrabified to prevent user interaction.
      */
-    private _addVisualNodeToInterface(): void {
+    public addCyVisualElement(): void {
         this._cyElement.add(this.toObject()).addClass(this._type.toString()).lock().ungrabify()
     }
 }
 
 
-class OuterNode extends GraphNode {
+class OuterNode extends GraphNode implements CyElementAggregator {
     /**
      * Represents an outer node in the graph.
      * It manages the associated views, such as the visual node in the graph interface.
@@ -524,14 +527,13 @@ class OuterNode extends GraphNode {
      *                    Default value is 0, which means the outer node will be positioned randomly.
      * @param isUserGraphNode - A boolean indicating whether the outer node belongs to the user graph.
      */
-    constructor(id: string, isUserGraphNode: boolean, distance: number = 0) {
+    constructor(id: string, isUserGraphNode: boolean) {
         let _id = id
         let _label = id
         // Generates a random angle from the provided distance, to calculate the new position
-        let _position = MathUtils.getAngularPosition(MathUtils.getRandomAngle(), distance)
         let _type = NodeType.outer_node
-        super(_id, _label, _position, _type, isUserGraphNode)
-        this._addVisualNodeToInterface(isUserGraphNode)
+        super(_id, _label, _type, isUserGraphNode)
+        this.addCyVisualElement();
     }
 
     public get position(): Position {
@@ -549,6 +551,22 @@ class OuterNode extends GraphNode {
     public set position(position: Position) {
         this._position = position;
         this._updateVisualPosition();
+    }
+
+    /**
+     * Adds a visual node to the graph interface.
+     * 
+     * @param isUserGraphNode - A boolean indicating whether the outer node belongs to the user graph.
+     * 
+     * @remarks
+     * This function creates a new node in the graph using the `toObject` method,
+     * which returns an object containing the node's data and position.
+     * The node is then added to the graph using the `cy.add` method.
+     * The node's class is set to the string representation of the node's type.
+     */
+    public addCyVisualElement(): void {
+        const element = this._cyElement.add(this.toObject()).addClass(this._type.toString());
+        if (!this._isFromUserGraph) element.ungrabify();
     }
 
     /**
@@ -600,22 +618,6 @@ class OuterNode extends GraphNode {
      */
     private _updateVisualPosition(): void {
         this._cyElement.getElementById(this._id).position(this._position)
-    }
-
-    /**
-     * Adds a visual node to the graph interface.
-     * 
-     * @param isUserGraphNode - A boolean indicating whether the outer node belongs to the user graph.
-     * 
-     * @remarks
-     * This function creates a new node in the graph using the `toObject` method,
-     * which returns an object containing the node's data and position.
-     * The node is then added to the graph using the `cy.add` method.
-     * The node's class is set to the string representation of the node's type.
-     */
-    private _addVisualNodeToInterface(isUserGraphNode: boolean): void {
-        const element = this._cyElement.add(this.toObject()).addClass(this._type.toString());
-        if (!isUserGraphNode) element.ungrabify();
     }
 }
 
@@ -749,8 +751,8 @@ class NeighbourTerm extends Term implements ViewManager {
      * and edges (connecting the CentralNode to the OuterNodes) from the graph interface.
      */
     public removeViews(): void {
-        this._node?.remove()
-        this._edge?.remove()
+        this._node?.removeCyVisualElement()
+        this._edge?.removeCyVisualElement()
     }
 
     /**
@@ -1014,7 +1016,7 @@ class QueryTerm extends Term implements ViewManager {
      * This includes creating and positioning the CentralNode and OuterNodes.
      */
     public displayViews(): void {
-        this._node = new CentralNode(this._value, 0, 0, this._isUserGraph)
+        this._node = new CentralNode(this._value, this._isUserGraph)
         for (let neighbourTerm of this._neighbourTerms) {
             neighbourTerm.displayViews();
         }
@@ -1028,7 +1030,7 @@ class QueryTerm extends Term implements ViewManager {
         for (let neighbourTerm of this._neighbourTerms) {
             neighbourTerm.removeViews()
         }
-        this._node?.remove()
+        this._node?.removeCyVisualElement()
     }
 
     public getNeighbourTermsValues(): string[] {
