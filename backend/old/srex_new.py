@@ -1,21 +1,19 @@
-import numpy as np
-import math
-from collections import defaultdict
+#import numpy as np
+#import math#from collections import defaultdict
 #import pandas as pd
-from nltk.stem import PorterStemmer as st #Stemmer
-from textblob import Word #Lemmatize
-from graphviz import Graph
-import nltk
-from functools import reduce
-from xploreapi import XPLORE
-from sklearn.feature_extraction.text import CountVectorizer
-from numpy.linalg import norm
-from numpy import dot
+#from nltk.stem import PorterStemmer as st #Stemmer
+#from textblob import Word #Lemmatize
+#from graphviz import Graph
+#import nltk
+#from functools import reduce
+#from xploreapi import XPLORE
+#from sklearn.feature_extraction.text import CountVectorizer
+#from numpy.linalg import norm
+#from numpy import dot
 #import copy
 
 #import unittest
 
-xploreID = '6g7w4kfgteeqvy2jur3ak9mn'
 query = XPLORE(xploreID)
 query.outputDataFormat='object'
 

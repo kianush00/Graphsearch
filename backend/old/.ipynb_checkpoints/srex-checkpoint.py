@@ -1,33 +1,32 @@
-import numpy as np
+#import numpy as np
 
-import math
+#import math
 
-from collections import defaultdict
-import pandas as pd
+#from collections import defaultdict
+#import pandas as pd
 
-from nltk.corpus import stopwords
+#from nltk.corpus import stopwords
 
-from many_stop_words import get_stop_words
+#from many_stop_words import get_stop_words
 
-from nltk.stem import PorterStemmer #Stemmer
-from textblob import Word #Lemmatize
+#from nltk.stem import PorterStemmer #Stemmer
+#from textblob import Word #Lemmatize
 
-from graphviz import Graph
+#from graphviz import Graph
 
-import re
-import nltk
+#import re
+#import nltk
 
-from functools import reduce
+#from functools import reduce
 
 
-from xploreapi import XPLORE
+#from xploreapi import XPLORE
 
-from sklearn.feature_extraction.text import CountVectorizer
+#from sklearn.feature_extraction.text import CountVectorizer
 
-import unittest
+#import unittest
 
-xploreID = '6g7w4kfgteeqvy2jur3ak9mn'
-query = XPLORE(xploreID)
+query = XPLORE("asd")
 query.outputDataFormat='object'
 
 
