@@ -636,22 +636,22 @@ class Term {
         this._value = value
     }
 
+    public get value(): string {
+        return this._value;
+    }
+
     /**
-     * Sets the label of the term and updates the associated graph node.
+     * Sets the value of the term and updates the associated graph node label.
      * 
-     * @param value - The new label for the term.
+     * @param value - The new value for the term.
      */
-    public setLabel(value: string): void {
-        this._value = value
+    public set value(value: string) {
+        this._value = value;
         if (this._node !== undefined) this._node.label = value;
     }
 
-    public getValue(): string {
-        return this._value
-    }
-
-    public getNode(): GraphNode | undefined {
-        return this._node
+    public get node(): GraphNode | undefined {
+        return this._node;
     }
 }
 
@@ -696,7 +696,19 @@ class NeighbourTerm extends Term implements ViewManager {
         this._frequencyScore = frequencyScore
         this._criteria = criteria
         this._setInitialHops()
-        this.setLabel(value)
+        this.value = value
+    }
+
+    public get proximityScore(): number {
+        return this._proximityScore;
+    }
+
+    public get frequencyScore(): number {
+        return this._frequencyScore;
+    }
+
+    public get criteria(): string {
+        return this._criteria;
     }
     
     /**
@@ -715,11 +727,11 @@ class NeighbourTerm extends Term implements ViewManager {
      * Finally, the function sets the criteria for the term, which includes changing the node color based on the criteria.
      */
     public displayViews(): void {
-        const centralNode = this._queryTerm.getNode()
+        const centralNode = this._queryTerm.node;
         if (centralNode === undefined) return 
 
         // Build the outer node and its edge, and display them
-        const isUserGraph = this._queryTerm.getIsUserGraph()
+        const isUserGraph = this._queryTerm.isUserGraph;
         this._node = new OuterNode(TextUtils.getRandomString(28), isUserGraph)
         this._node.position = this._nodePosition
         this._node.label = this._value
@@ -741,10 +753,6 @@ class NeighbourTerm extends Term implements ViewManager {
         this._edge?.remove()
     }
 
-    public getHops(): number {
-        return this._hops
-    }
-
     /**
      * Updates the number of hops for the neighbour term.
      * If the query term belongs to the user graph, the function calculates the previous hops,
@@ -755,24 +763,11 @@ class NeighbourTerm extends Term implements ViewManager {
      * @returns {void} - This function does not return any value.
      */
     public updateHops(newHops: number): void {
-        if (this._queryTerm.getIsUserGraph()) {
+        if (this._queryTerm.isUserGraph) {
             let previousHops = this._hops
             this._hops = newHops
             this._updateUserCriteria(previousHops, newHops)
         }
-    }
-
-
-    public getProximityScore(): number {
-        return this._proximityScore
-    }
-
-    public getFrequencyScore(): number {
-        return this._frequencyScore
-    }
-
-    public getCriteria(): string {
-        return this._criteria
     }
 
     /**
@@ -810,8 +805,8 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     public updateSymmetricalAngularPosition(neighbourTermsLength: number, index: number): void {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2 + 0.25
-        const nodeDistance = ConversionUtils.convertHopsToDistance(this._hops, this._queryTerm.getHopLimit(), 
-                this._queryTerm.getIsUserGraph(), this._queryTerm.getGraphZoom());
+        const nodeDistance = ConversionUtils.convertHopsToDistance(this._hops, this._queryTerm.hopLimit, 
+                this._queryTerm.isUserGraph, this._queryTerm.graphZoom);
         this._nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
         this._updateNodePosition(nodeDistance)
     }
@@ -833,7 +828,7 @@ class NeighbourTerm extends Term implements ViewManager {
         const nodeDistance = this._edge?.distance ?? 0
         this._nodePosition = this._validatePositionWithinRange(position, nodeDistance)
         const distance = MathUtils.calculateEuclideanDistance(this._nodePosition.x, this._nodePosition.y)
-        const hops = ConversionUtils.convertDistanceToHops(distance, this._queryTerm.getHopLimit())
+        const hops = ConversionUtils.convertDistanceToHops(distance, this._queryTerm.hopLimit)
         this.updateHops(hops)
         this._updateNodePosition(distance)
     }
@@ -891,7 +886,7 @@ class NeighbourTerm extends Term implements ViewManager {
      * This initial hop value is used to calculate the position of the neighbour term in the graph.
      */
     private _setInitialHops(): void {
-        let initialHops = this._queryTerm.getIsUserGraph() ? 1.0 : this._queryTerm.getHopLimit();
+        let initialHops = this._queryTerm.isUserGraph ? 1.0 : this._queryTerm.hopLimit;
         this._hops = initialHops
     }
 
@@ -962,7 +957,7 @@ class NeighbourTerm extends Term implements ViewManager {
  * It also manages neighbour terms related to the query term.
  */
 class QueryTerm extends Term implements ViewManager {
-    protected _node: CentralNode | undefined = undefined;
+    protected declare _node: CentralNode | undefined;
     private _neighbourTerms: NeighbourTerm[] = []
     private readonly _isUserGraph: boolean
     private _individualQueryTermsList: string[] = []
@@ -984,25 +979,34 @@ class QueryTerm extends Term implements ViewManager {
         this._updateGraphZoom();
     }
 
-
-    public getIsUserGraph(): boolean {
+    public get isUserGraph(): boolean {
         return this._isUserGraph;
     }
 
-    public getHopLimit(): number {
-        return this._hopLimit
+    public get hopLimit(): number {
+        return this._hopLimit;
     }
 
-    public getIndividualQueryTermsList(): string[] {
-        return this._individualQueryTermsList
+    public get individualQueryTermsList(): string[] {
+        return this._individualQueryTermsList;
     }
 
-    public setIndividualQueryTermsList(queryTermsList: string[]): void {
-        this._individualQueryTermsList = queryTermsList
+    public set individualQueryTermsList(queryTermsList: string[]) {
+        this._individualQueryTermsList = queryTermsList;
     }
 
-    public getGraphZoom(): number {
-        return this._graphZoom
+    public get graphZoom(): number {
+        return this._graphZoom;
+    }
+
+    public get neighbourTerms(): NeighbourTerm[] {
+        return this._neighbourTerms;
+    }
+
+    public set neighbourTerms(neighbourTerms: NeighbourTerm[]) {
+        this._neighbourTerms = neighbourTerms;
+        this._updateGraphZoom();
+        this._updateOuterNodesAngles();
     }
 
     /**
@@ -1027,24 +1031,20 @@ class QueryTerm extends Term implements ViewManager {
         this._node?.remove()
     }
 
-    public getNeighbourTerms(): NeighbourTerm[] {
-        return this._neighbourTerms
-    }
-
     public getNeighbourTermsValues(): string[] {
-        return this._neighbourTerms.map(term => term.getValue())
+        return this._neighbourTerms.map(term => term.value)
     }
 
     public getNeighbourProximityTermsValues(): string[] {
         return this._neighbourTerms
-            .filter(term => term.getCriteria() === 'proximity')
-            .map(term => term.getValue());
+            .filter(term => term.criteria === 'proximity')
+            .map(term => term.value);
     }
 
     public getNeighbourFrequencyTermsValues(): string[] {
         return this._neighbourTerms
-            .filter(term => term.getCriteria() === 'frequency')
-            .map(term => term.getValue());
+            .filter(term => term.criteria === 'frequency')
+            .map(term => term.value);
     }
 
     public getNeighbourTermsAsObjects(): NTermObject[] {
@@ -1052,17 +1052,11 @@ class QueryTerm extends Term implements ViewManager {
     }
 
     public getNeighbourTermByNodeId(id: string): NeighbourTerm | undefined {
-        return this._neighbourTerms.find(nterm => nterm.getNode()?.id === id)
+        return this._neighbourTerms.find(nterm => nterm.node?.id === id)
     }
 
     public getNeighbourTermByValue(value: string): NeighbourTerm | undefined {
-        return this._neighbourTerms.find(nterm => nterm.getValue() === value)
-    }
-
-    public setNeighbourTerms(neighbourTerms: NeighbourTerm[]): void {
-        this._neighbourTerms = neighbourTerms
-        this._updateGraphZoom();
-        this._updateOuterNodesAngles()
+        return this._neighbourTerms.find(nterm => nterm.value === value)
     }
 
     public addNeighbourTerm(neighbourTerm: NeighbourTerm): void {
@@ -1121,12 +1115,12 @@ class QueryTerm extends Term implements ViewManager {
      *   a factor that is proportional to the difference between the number of neighbour terms and 60.
      */
     private _getPersonalizedZoomIfSentenceGraph(): number {
-        if (this.getNeighbourTerms().length <= 15) {
+        if (this.neighbourTerms.length <= 15) {
             return 1.2;
-        } else if (this.getNeighbourTerms().length <= 60) {
-            return 1.2 - ((this.getNeighbourTerms().length - 15) / 45);
+        } else if (this.neighbourTerms.length <= 60) {
+            return 1.2 - ((this.neighbourTerms.length - 15) / 45);
         } else {
-            return 0.2 / (1 + 0.01 * (this.getNeighbourTerms().length - 60));
+            return 0.2 / (1 + 0.01 * (this.neighbourTerms.length - 60));
         }
     }
 }
@@ -1168,7 +1162,7 @@ class TextElement {
                 termObject.frequency_score, termObject.criteria)
             neighbourTerms.push(neighbourTerm)
         }
-        this._queryTerm.setNeighbourTerms(neighbourTerms);
+        this._queryTerm.neighbourTerms = neighbourTerms;
     }
 }
 
@@ -1318,7 +1312,7 @@ class Document extends TextElement {
     private _initializeSentencesFromResponse(responseSentences: any[], hopLimit: number): Sentence[] {
         const sentences = []
         for (const sentenceObject of responseSentences) {
-            let sentence = new Sentence(this._queryTerm.getValue(), sentenceObject.all_neighbour_terms, 
+            let sentence = new Sentence(this._queryTerm.value, sentenceObject.all_neighbour_terms, 
                     hopLimit, sentenceObject.position_in_doc, sentenceObject.raw_text, sentenceObject.raw_to_processed_map)
             sentences.push(sentence)
         }
@@ -1534,7 +1528,7 @@ class QueryTermService {
     public async initialize(searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
         // Define the endpoint for retrieving neighbour terms data
         const endpoint = 'get-ranking';
-        const query = this.visibleQueryTerm.getValue();
+        const query = this.visibleQueryTerm.value;
         const data = {query: query, search_results: searchResults, 
                 limit_distance: limitDistance, graph_terms: graphTerms}
 
@@ -1544,7 +1538,7 @@ class QueryTermService {
 
             // Check if the result is not null
             if (result) {
-                this.visibleQueryTerm.setIndividualQueryTermsList(result['individual_query_terms_list']);
+                this.visibleQueryTerm.individualQueryTermsList = result['individual_query_terms_list'];
                 this._generateVisibleNeighbourTerms(result)
                 this._generateCompleteNeighbourTerms(result)
                 this._generateRankingDocuments(result)
@@ -1603,7 +1597,7 @@ class QueryTermService {
      * @param neighbourTerm - The neighbour term to be added.
      */
     public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        if (this.visibleQueryTerm.getNeighbourTerms().length > 19) return
+        if (this.visibleQueryTerm.neighbourTerms.length > 19) return
         this.visibleQueryTerm.addNeighbourTerm(neighbourTerm)
         this._queryService.updateNeighbourTermsTable()
         this._queryService.updateAddTermsTable()
@@ -1621,7 +1615,7 @@ class QueryTermService {
      */
     public removeVisibleNeighbourTerm(id: string): void {
         let neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
-        if (neighbourTerm === undefined || this.visibleQueryTerm.getNeighbourTerms().length < 2) return
+        if (neighbourTerm === undefined || this.visibleQueryTerm.neighbourTerms.length < 2) return
         this.visibleQueryTerm.removeNeighbourTerm(neighbourTerm)
         this._queryService.updateNeighbourTermsTable()
         this._queryService.updateAddTermsTable()
@@ -1736,8 +1730,8 @@ class QueryTermService {
             const weight = documentObject['weight']
             const response_neighbour_terms = documentObject['all_neighbour_terms']
             const sentences = documentObject['sentences']
-            const queryTermValue = this.visibleQueryTerm.getValue()
-            const hopLimit = this.visibleQueryTerm.getHopLimit()
+            const queryTermValue = this.visibleQueryTerm.value
+            const hopLimit = this.visibleQueryTerm.hopLimit
             let document = new Document(queryTermValue, response_neighbour_terms, hopLimit, 
                     [doc_id, title, abstract, preprocessed_text], weight, sentences)
             this._addDocument(document)
@@ -1933,7 +1927,7 @@ class QueryService {
      */
     private _findQueryTermService(queryValue: string): QueryTermService | undefined {
         return this._queryTermServices.find(
-            termService => termService.visibleQueryTerm.getValue() === queryValue
+            termService => termService.visibleQueryTerm.value === queryValue
         )
     }
 
@@ -1997,12 +1991,12 @@ class QueryTermsList {
             const listItem = document.createElement("li")
 
             // Set the text content of the list item to be the value of the query term
-            listItem.textContent = queryTerm.getValue()
+            listItem.textContent = queryTerm.value
 
             // Add a click event listener to the list item
             listItem.addEventListener("click", () => {
                 // When the list item is clicked, set the active query term service to the value of the query term
-                this._queryService.setActiveQueryTermService(queryTerm.getValue())
+                this._queryService.setActiveQueryTermService(queryTerm.value)
             })
 
             // Append the list item to the dynamic list container
@@ -2072,9 +2066,9 @@ class AddTermsTable {
         const visibleNeighbourTermsValues = this._activeTermService.visibleQueryTerm.getNeighbourTermsValues()
 
         // Iterate over the neighbour terms of the active query term
-        for(const term of this._activeTermService.completeQueryTerm.getNeighbourTerms()) {
+        for(const term of this._activeTermService.completeQueryTerm.neighbourTerms) {
             // Check if the term is not already in the visible neighbour terms list
-            if ((!visibleNeighbourTermsValues.includes(term.getValue())) && (term.getCriteria() === "proximity")) {
+            if ((!visibleNeighbourTermsValues.includes(term.value)) && (term.criteria === "proximity")) {
                 // Create a new row in the table
                 const row = tbody.insertRow()
 
@@ -2083,7 +2077,7 @@ class AddTermsTable {
                 const cell2 = row.insertCell(1)
 
                 // Set the text content of the first cell
-                cell1.innerHTML = term.getValue()
+                cell1.innerHTML = term.value
                 
                 // Create the <i> element
                 const icon = this._createIconElement(term)
@@ -2115,10 +2109,10 @@ class AddTermsTable {
 
         // Add the neighbour term to the active query term's visible neighbour terms
         const queryTerm = this._activeTermService.visibleQueryTerm;
-        const value = neighbourTerm.getValue();
-        const proximityScore = neighbourTerm.getProximityScore();
-        const frequencyScore = neighbourTerm.getFrequencyScore();
-        const criteria = neighbourTerm.getCriteria();
+        const value = neighbourTerm.value;
+        const proximityScore = neighbourTerm.proximityScore;
+        const frequencyScore = neighbourTerm.frequencyScore;
+        const criteria = neighbourTerm.criteria;
 
         let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria);
         this._activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm);
@@ -2193,7 +2187,7 @@ class AddTermsTable {
 
         // Add event listener to the icon element
         icon.addEventListener('click', () => {
-            this._handleTermAddition(term.getValue());
+            this._handleTermAddition(term.value);
         });
 
         return icon;
@@ -2250,7 +2244,7 @@ class NeighbourTermsTable {
         if (this._activeTermService === undefined) return
 
         // Iterate over the neighbour terms of the active query term
-        for(const neighbourTerm of this._activeTermService.visibleQueryTerm.getNeighbourTerms()) {
+        for(const neighbourTerm of this._activeTermService.visibleQueryTerm.neighbourTerms) {
             // Create a new row in the table
             const row = tbody.insertRow()
 
@@ -2259,8 +2253,8 @@ class NeighbourTermsTable {
             const cell2 = row.insertCell(1)
 
             // Set the text content of the cells
-            cell1.innerHTML = neighbourTerm.getValue()
-            cell2.innerHTML = neighbourTerm.getCriteria()
+            cell1.innerHTML = neighbourTerm.value
+            cell2.innerHTML = neighbourTerm.criteria;
         }
     }
 }
@@ -2388,7 +2382,7 @@ class ResultsList {
     private _applyHighlightingToSentences(sentenceObjects: Sentence[]): HTMLSpanElement {
         const visibleQueryTerm = this._activeTermService?.visibleQueryTerm;
         if (visibleQueryTerm === undefined) return document.createElement('span');
-        const queryTermsList = visibleQueryTerm.getIndividualQueryTermsList();
+        const queryTermsList = visibleQueryTerm.individualQueryTermsList;
         const userProximityTermsList = visibleQueryTerm.getNeighbourProximityTermsValues()
         const userFrequencyTermsList = visibleQueryTerm.getNeighbourFrequencyTermsValues()
         return this._getHighlightedText(sentenceObjects, queryTermsList, userProximityTermsList, userFrequencyTermsList);
@@ -2419,7 +2413,7 @@ class ResultsList {
 
         for (let sentenceObject of sentenceObjects) {
             const sentenceText = sentenceObject.rawText;
-            if (sentenceObject.queryTerm.getNeighbourTerms().length == 0 || (userProximityTermsList.length == 0 && userFrequencyTermsList.length == 0)) {
+            if (sentenceObject.queryTerm.neighbourTerms.length == 0 || (userProximityTermsList.length == 0 && userFrequencyTermsList.length == 0)) {
                 // If there are no user neighbour terms in the sentence, or no proximity/frequency terms in the user graph, then return the original sentence
                 highlightedSentencesTextObject.push([sentenceText, undefined]);
             } else {
@@ -2485,7 +2479,7 @@ class ResultsList {
         // Create an array to hold the final parts of the sentence
         let highlightedParts: { firstIndex: number; lastIndex: number; text: string }[] = [];
         const processedWordsList = rawToProcessedMap.map(rawToProcessedTuple => rawToProcessedTuple[3]);
-        const limitDistance = this._activeTermService?.visibleQueryTerm.getHopLimit() ?? 0;
+        const limitDistance = this._activeTermService?.visibleQueryTerm.hopLimit ?? 0;
 
         // Iterate over each tuple in rawToProcessedMap
         rawToProcessedMap.forEach(([firstIdx, lastIdx, rawWord, processedWord], wordIndex) => {
