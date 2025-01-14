@@ -1496,6 +1496,26 @@ class QueryTermService {
         this._ranking = new Ranking(queryTermValue, limitDistance)
     }
 
+    get visibleQueryTerm(): QueryTerm {
+        return this._ranking.getVisibleQueryTerm();
+    }
+
+    get completeQueryTerm(): QueryTerm {
+        return this._ranking.getCompleteQueryTerm();
+    }
+
+    get ranking(): Ranking {
+        return this._ranking
+    }
+
+    get visibleSentence(): Sentence | undefined {
+        return this._ranking.getVisibleSentence();
+    }
+
+    set visibleSentence(sentence: Sentence) {
+        this._ranking.setVisibleSentence(sentence);
+    }
+
     /**
      * Retrieves data related to neighbour terms for the current query term.
      * The retrieved data is then used to create new NeighbourTerm instances,
@@ -1510,7 +1530,7 @@ class QueryTermService {
     public async initialize(searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
         // Define the endpoint for retrieving neighbour terms data
         const endpoint = 'get-ranking';
-        const query = this.getVisibleQueryTerm().getValue();
+        const query = this.visibleQueryTerm.getValue();
         const data = {query: query, search_results: searchResults, 
                 limit_distance: limitDistance, graph_terms: graphTerms}
 
@@ -1520,7 +1540,7 @@ class QueryTermService {
 
             // Check if the result is not null
             if (result) {
-                this.getVisibleQueryTerm().setIndividualQueryTermsList(result['individual_query_terms_list'])
+                this.visibleQueryTerm.setIndividualQueryTermsList(result['individual_query_terms_list']);
                 this._generateVisibleNeighbourTerms(result)
                 this._generateCompleteNeighbourTerms(result)
                 this._generateRankingDocuments(result)
@@ -1532,26 +1552,6 @@ class QueryTermService {
         }
     }
 
-    public getVisibleQueryTerm(): QueryTerm {
-        return this._ranking.getVisibleQueryTerm()
-    }
-
-    public getCompleteQueryTerm(): QueryTerm {
-        return this._ranking.getCompleteQueryTerm()
-    }
-
-    public getRanking(): Ranking {
-        return this._ranking
-    }
-
-    public getVisibleSentence(): Sentence | undefined {
-        return this._ranking.getVisibleSentence()
-    }
-
-    public setVisibleSentence(sentence: Sentence): void {
-        this._ranking.setVisibleSentence(sentence)
-    }
-
     /**
      * If the node is dragged, updates the position of the neighbour term node and 
      * updates the neighbour term's hops.
@@ -1559,7 +1559,7 @@ class QueryTermService {
      * @param position - The new position of the neighbour term node.
      */
     public nodeDragged(id: string, position: Position): void {
-        const neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
+        const neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
         if (neighbourTerm === undefined) return
         neighbourTerm.updateNodePositionAndHops(position)
 
@@ -1575,10 +1575,10 @@ class QueryTermService {
         this._isVisible = true // Mark the QueryTerm as visible
 
         // Remove any existing views associated with the QueryTerm
-        this.getVisibleQueryTerm().removeViews()
+        this.visibleQueryTerm.removeViews()
 
         // Display the views associated with the QueryTerm
-        this.getVisibleQueryTerm().displayViews()
+        this.visibleQueryTerm.displayViews()
     }
 
     /**
@@ -1586,8 +1586,8 @@ class QueryTermService {
      */
     public deactivate(): void {
         this._isVisible = false
-        this.getVisibleQueryTerm().removeViews()
-        this.getVisibleSentence()?.getQueryTerm().removeViews()
+        this.visibleQueryTerm.removeViews();
+        this.visibleSentence?.getQueryTerm().removeViews();
         queryService.updateActiveTermServiceInElements(undefined);
     }
 
@@ -1599,8 +1599,8 @@ class QueryTermService {
      * @param neighbourTerm - The neighbour term to be added.
      */
     public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        if (this.getVisibleQueryTerm().getNeighbourTerms().length > 19) return
-        this.getVisibleQueryTerm().addNeighbourTerm(neighbourTerm)
+        if (this.visibleQueryTerm.getNeighbourTerms().length > 19) return
+        this.visibleQueryTerm.addNeighbourTerm(neighbourTerm)
         this._queryService.updateNeighbourTermsTable()
         this._queryService.updateAddTermsTable()
         if (this._isVisible) this.display()
@@ -1616,9 +1616,9 @@ class QueryTermService {
      * @param id - The id of the neighbour term to be removed.
      */
     public removeVisibleNeighbourTerm(id: string): void {
-        let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
-        if (neighbourTerm === undefined || this.getVisibleQueryTerm().getNeighbourTerms().length < 2) return
-        this.getVisibleQueryTerm().removeNeighbourTerm(neighbourTerm)
+        let neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
+        if (neighbourTerm === undefined || this.visibleQueryTerm.getNeighbourTerms().length < 2) return
+        this.visibleQueryTerm.removeNeighbourTerm(neighbourTerm)
         this._queryService.updateNeighbourTermsTable()
         this._queryService.updateAddTermsTable()
         if (this._isVisible) this.display()
@@ -1635,7 +1635,7 @@ class QueryTermService {
      * @returns {void} - This function does not return any value.
      */
     public addCompleteNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        this.getCompleteQueryTerm().addNeighbourTerm(neighbourTerm)
+        this.completeQueryTerm.addNeighbourTerm(neighbourTerm)
     }
 
     /**
@@ -1648,7 +1648,7 @@ class QueryTermService {
     * @returns {void} - This function does not return any value.
     */
     public changeCursorType(id: string, newCursorType: string): void {
-        let neighbourTerm = this.getVisibleQueryTerm().getNeighbourTermByNodeId(id)
+        let neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
         if (neighbourTerm === undefined) return
         $('html,body').css('cursor', newCursorType);
     }
@@ -1667,7 +1667,7 @@ class QueryTermService {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = this._initializeNewNeighbourTerm(this.getVisibleQueryTerm(), termObject)
+            let neighbourTerm = this._initializeNewNeighbourTerm(this.visibleQueryTerm, termObject)
 
             // Add the neighbour term to the visible QueryTerm's neighbour terms list
             this.addVisibleNeighbourTerm(neighbourTerm)
@@ -1690,7 +1690,7 @@ class QueryTermService {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['complete_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = this._initializeNewNeighbourTerm(this.getCompleteQueryTerm(), termObject)
+            let neighbourTerm = this._initializeNewNeighbourTerm(this.completeQueryTerm, termObject)
 
             // Add the neighbour term to the complete QueryTerm's neighbour terms list
             this.addCompleteNeighbourTerm(neighbourTerm)
@@ -1732,8 +1732,8 @@ class QueryTermService {
             const weight = documentObject['weight']
             const response_neighbour_terms = documentObject['all_neighbour_terms']
             const sentences = documentObject['sentences']
-            const queryTermValue = this.getVisibleQueryTerm().getValue()
-            const hopLimit = this.getVisibleQueryTerm().getHopLimit()
+            const queryTermValue = this.visibleQueryTerm.getValue()
+            const hopLimit = this.visibleQueryTerm.getHopLimit()
             let document = new Document(queryTermValue, response_neighbour_terms, hopLimit, 
                     [doc_id, title, abstract, preprocessed_text], weight, sentences)
             this._addDocument(document)
@@ -1753,7 +1753,7 @@ class QueryTermService {
      * It calls the `addDocument` method of the ranking
      */
     private _addDocument(document: Document): void {
-        this.getRanking().addDocument(document)
+        this.ranking.addDocument(document)
     }
 }
 
@@ -1781,6 +1781,10 @@ class QueryService {
         this._resultsList = new ResultsList()
         this._queryTermsList = new QueryTermsList(this)
         this._addTermsTable = new AddTermsTable()
+    }
+
+    get activeQueryTermService(): QueryTermService | undefined { 
+        return this._activeQueryTermService 
     }
 
     /**
@@ -1829,9 +1833,9 @@ class QueryService {
                 // Handle the response accordingly
                 const ranking_new_positions: number[] = response['ranking_new_positions'];
                 const ranking_excluded_documents: number[] = response['ranking_excluded_documents'];
-                this._activeQueryTermService.getRanking().refreshDocumentsExclusion();
-                this._activeQueryTermService.getRanking().setExcludedDocuments(ranking_excluded_documents);
-                this._activeQueryTermService.getRanking().reorderDocuments(ranking_new_positions);
+                this._activeQueryTermService.ranking.refreshDocumentsExclusion();
+                this._activeQueryTermService.ranking.setExcludedDocuments(ranking_excluded_documents);
+                this._activeQueryTermService.ranking.reorderDocuments(ranking_new_positions);
                 this.updateResultsList();
             } else {
                 console.log("Warning: null API response");
@@ -1839,11 +1843,6 @@ class QueryService {
         } catch (error) {
             console.error("Error retrieving rerank data:", error)
         }
-    }
-
-
-    public getActiveQueryTermService(): QueryTermService | undefined { 
-        return this._activeQueryTermService 
     }
 
     /**
@@ -1865,6 +1864,7 @@ class QueryService {
 
     /**
      * Updates the active QueryTermService in the neighbour terms table, add terms table, and results list.
+     * Also updates the corresponding tables and lists values in the UI.
      * 
      * @param queryTermService - The QueryTermService to be set as the active service.
      * If this parameter is `undefined`, the active service in each component will be deactivated.
@@ -1877,9 +1877,9 @@ class QueryService {
      * @returns {void}
      */
     public updateActiveTermServiceInElements(queryTermService: QueryTermService | undefined): void {
-        this._neighbourTermsTable.setActiveTermService(queryTermService);
-        this._addTermsTable.setActiveTermService(queryTermService);
-        this._resultsList.setActiveTermService(queryTermService);
+        this._neighbourTermsTable.activeTermService = queryTermService;
+        this._addTermsTable.activeTermService = queryTermService
+        this._resultsList.activeTermService = queryTermService;
     }
 
 
@@ -1929,7 +1929,7 @@ class QueryService {
      */
     private _findQueryTermService(queryValue: string): QueryTermService | undefined {
         return this._queryTermServices.find(
-            termService => termService.getVisibleQueryTerm().getValue() === queryValue
+            termService => termService.visibleQueryTerm.getValue() === queryValue
         )
     }
 
@@ -1947,7 +1947,7 @@ class QueryService {
      */
     private _updateQueryTermsList(): void {
         this._queryTermsList.updateList(
-            this._queryTermServices.map(termService => termService.getVisibleQueryTerm())
+            this._queryTermServices.map(termService => termService.visibleQueryTerm)
         )
     }
 
@@ -2038,7 +2038,7 @@ class AddTermsTable {
      * This function is responsible for setting the active QueryTermService and updating the table.
      * It is called whenever a new QueryTermService is selected by the user.
      */
-    public setActiveTermService(queryTermService: QueryTermService | undefined): void {
+    set activeTermService(queryTermService: QueryTermService | undefined) {
         this._activeTermService = queryTermService
         this.updateTable()
     }
@@ -2065,10 +2065,10 @@ class AddTermsTable {
         // Check if the activeTermService is defined
         if (this._activeTermService === undefined) return
 
-        const visibleNeighbourTermsValues = this._activeTermService.getVisibleQueryTerm().getNeighbourTermsValues()
+        const visibleNeighbourTermsValues = this._activeTermService.visibleQueryTerm.getNeighbourTermsValues()
 
         // Iterate over the neighbour terms of the active query term
-        for(const term of this._activeTermService.getCompleteQueryTerm().getNeighbourTerms()) {
+        for(const term of this._activeTermService.completeQueryTerm.getNeighbourTerms()) {
             // Check if the term is not already in the visible neighbour terms list
             if ((!visibleNeighbourTermsValues.includes(term.getValue())) && (term.getCriteria() === "proximity")) {
                 // Create a new row in the table
@@ -2106,11 +2106,11 @@ class AddTermsTable {
     private _handleTermAddition(termValue: string): void {
         if (this._activeTermService === undefined) return;
 
-        const neighbourTerm = this._activeTermService.getCompleteQueryTerm().getNeighbourTermByValue(termValue)
+        const neighbourTerm = this._activeTermService.completeQueryTerm.getNeighbourTermByValue(termValue)
         if (neighbourTerm === undefined) return;
 
         // Add the neighbour term to the active query term's visible neighbour terms
-        const queryTerm = this._activeTermService.getVisibleQueryTerm();
+        const queryTerm = this._activeTermService.visibleQueryTerm;
         const value = neighbourTerm.getValue();
         const proximityScore = neighbourTerm.getProximityScore();
         const frequencyScore = neighbourTerm.getFrequencyScore();
@@ -2221,7 +2221,7 @@ class NeighbourTermsTable {
      * This function is responsible for setting the active QueryTermService and updating the table.
      * It is called whenever a new QueryTermService is selected by the user.
      */
-    public setActiveTermService(queryTermService: QueryTermService | undefined): void {
+    set activeTermService(queryTermService: QueryTermService | undefined) {
         this._activeTermService = queryTermService
         this.updateTable()
     }
@@ -2246,7 +2246,7 @@ class NeighbourTermsTable {
         if (this._activeTermService === undefined) return
 
         // Iterate over the neighbour terms of the active query term
-        for(const neighbourTerm of this._activeTermService.getVisibleQueryTerm().getNeighbourTerms()) {
+        for(const neighbourTerm of this._activeTermService.visibleQueryTerm.getNeighbourTerms()) {
             // Create a new row in the table
             const row = tbody.insertRow()
 
@@ -2286,7 +2286,7 @@ class ResultsList {
      * This function is responsible for setting the active QueryTermService and updating the table.
      * It is called whenever a new QueryTermService is selected by the user.
      */
-    public setActiveTermService(queryTermService: QueryTermService | undefined): void {
+    set activeTermService(queryTermService: QueryTermService | undefined) {
         this._activeTermService = queryTermService
         this.updateList()
     }
@@ -2308,7 +2308,7 @@ class ResultsList {
         if (this._activeTermService === undefined) return
 
         // Get the ranking of the active query term
-        let notExcludedDocuments = this._activeTermService.getRanking().getNotExcludedDocuments()
+        let notExcludedDocuments = this._activeTermService.ranking.getNotExcludedDocuments()
     
         for (let i = 0; i < notExcludedDocuments.length; i++) {
             // Create a new list item, title and abstract elements
@@ -2382,9 +2382,9 @@ class ResultsList {
      * The highlighting is applied using different colors for the query terms and neighbour terms.
      */
     private _applyHighlightingToSentences(sentenceObjects: Sentence[]): HTMLSpanElement {
-        const visibleQueryTerm = this._activeTermService?.getVisibleQueryTerm();
+        const visibleQueryTerm = this._activeTermService?.visibleQueryTerm;
         if (visibleQueryTerm === undefined) return document.createElement('span');
-        const queryTermsList = visibleQueryTerm.getIndividualQueryTermsList()
+        const queryTermsList = visibleQueryTerm.getIndividualQueryTermsList();
         const userProximityTermsList = visibleQueryTerm.getNeighbourProximityTermsValues()
         const userFrequencyTermsList = visibleQueryTerm.getNeighbourFrequencyTermsValues()
         return this._getHighlightedText(sentenceObjects, queryTermsList, userProximityTermsList, userFrequencyTermsList);
@@ -2481,7 +2481,7 @@ class ResultsList {
         // Create an array to hold the final parts of the sentence
         let highlightedParts: { firstIndex: number; lastIndex: number; text: string }[] = [];
         const processedWordsList = rawToProcessedMap.map(rawToProcessedTuple => rawToProcessedTuple[3]);
-        const limitDistance = this._activeTermService?.getVisibleQueryTerm().getHopLimit() ?? 0;
+        const limitDistance = this._activeTermService?.visibleQueryTerm.getHopLimit() ?? 0;
 
         // Iterate over each tuple in rawToProcessedMap
         rawToProcessedMap.forEach(([firstIdx, lastIdx, rawWord, processedWord], wordIndex) => {
@@ -2599,7 +2599,7 @@ class ResultsList {
             if (sentenceObject !== undefined) {
                 spanElement.addEventListener("mouseenter", () => {
                     spanElement.style.backgroundColor = "#E4E4E4";
-                    this._activeTermService?.setVisibleSentence(sentenceObject);
+                    if (this._activeTermService) this._activeTermService.visibleSentence = sentenceObject;
                 });
 
                 spanElement.addEventListener("mouseleave", () => {
@@ -2631,7 +2631,7 @@ class ResultsList {
     private _addEventListenersToTitleElement(titleElement: HTMLSpanElement, abstractElement: HTMLParagraphElement): void {
         titleElement.addEventListener('click', () => {
             // When the list item is clicked, opens the original URL document webpage in a new tab
-            //window.open('https://ieeexplore.ieee.org/document/' + documents[i].getId(), '_blank');
+            //window.open('https://ieeexplore.ieee.org/document/' + documents[i].id, '_blank');
             if (abstractElement.style.display === "none") {
                 abstractElement.style.display = "";
             } else {
@@ -2691,7 +2691,7 @@ class QueryComponent {
         this._limitDistanceInput.value = "4";
         this._graphTermsInput.value = "5";
 
-        this.addEventListeners()
+        this._addEventListeners()
     }
 
     /**
@@ -2703,21 +2703,21 @@ class QueryComponent {
      * - Toggling the visibility of search parameters.
      * - Validating and ensuring inputs stay within defined ranges.
      */
-    private addEventListeners(): void {
+    private _addEventListeners(): void {
         // Event listener for "Enter" key presses
         this._input.addEventListener("keyup", event => {
             if(event.key === "Enter") {
-                this.processQuery()
+                this._processQuery()
             }
         })
 
         // Event listener for clicking the search icon
         this._searchIcon.addEventListener("click", () => {
-            this.processQuery()
+            this._processQuery()
         })
 
         // Add validation to ensure inputs stay within defined ranges
-        this.addValidationListeners();
+        this._addValidationListeners();
     }
 
     
@@ -2731,7 +2731,7 @@ class QueryComponent {
      * - `limitDistanceInput`: Validates the limit distance for proximity-based queries. It should be between 2 and 10.
      * - `graphTermsInput`: Validates the number of graph terms to be considered. It should be between 1 and 20.
      */
-    private addValidationListeners(): void {
+    private _addValidationListeners(): void {
         // Add validation to ensure inputs stay within defined ranges
         // Validate search results input
         this._searchResultsInput.addEventListener("change", () => {
@@ -2770,7 +2770,7 @@ class QueryComponent {
      * and checks if the value contains at least one alphanumeric character. If it does, it sends the query to the query service.
      * If the value is empty or does not contain any alphanumeric characters, it alerts the user to enter a valid query.
      */
-    private async processQuery(): Promise<void> {
+    private async _processQuery(): Promise<void> {
         // Disable the input field to prevent further user interaction
         this._input.disabled = true;
         this._loadingBar.show();
@@ -2820,7 +2820,7 @@ class RerankComponent {
         this._loadingBar = loadingBar;
 
         // Add event listener to the button element
-        this._button.addEventListener('click', this.handleRerankClick.bind(this))
+        this._button.addEventListener('click', this._handleRerankClick.bind(this))
     }
 
     /**
@@ -2832,8 +2832,8 @@ class RerankComponent {
      * @remarks
      * This method is asynchronous and uses the await keyword to handle the POST request.
      */
-    private async handleRerankClick(): Promise<void> {
-        const activeTermService = this._queryService.getActiveQueryTermService();
+    private async _handleRerankClick(): Promise<void> {
+        const activeTermService = this._queryService.activeQueryTermService;
         if (activeTermService === undefined) return;
 
         // Disable the button to prevent multiple clicks
@@ -2841,7 +2841,7 @@ class RerankComponent {
         this._loadingBar.show();
         
         // Create the data to be sent in the POST request
-        const ranking = activeTermService.getRanking().toObject();
+        const ranking = activeTermService.ranking.toObject();
         console.log(ranking);
         if (ranking === undefined) return;
 
@@ -2985,27 +2985,27 @@ const cySentence = cytoscape({
 
 // When the user drags a node
 cyUser.on('drag', 'node', evt => {
-    queryService.getActiveQueryTermService()?.nodeDragged(evt.target.id(), evt.target.position())
+    queryService.activeQueryTermService?.nodeDragged(evt.target.id(), evt.target.position())
 })
 
 // When the user right-clicks a node
 cyUser.on('cxttap', "node", evt => {
-    queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id())
+    queryService.activeQueryTermService?.removeVisibleNeighbourTerm(evt.target.id())
 });
 
 // When the user right-clicks a edge
 cyUser.on('cxttap', "edge", evt => {
-    queryService.getActiveQueryTermService()?.removeVisibleNeighbourTerm(evt.target.id().substring(2))
+    queryService.activeQueryTermService?.removeVisibleNeighbourTerm(evt.target.id().substring(2))
 });
 
 // When the user hovers it's mouse over a node
 cyUser.on('mouseover', 'node', (evt: cytoscape.EventObject) => {
-    queryService.getActiveQueryTermService()?.changeCursorType(evt.target.id(), 'pointer');
+    queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'pointer');
 });
 
 // When the user moves it's mouse away from a node
 cyUser.on('mouseout', 'node', (evt: cytoscape.EventObject) => {
-    queryService.getActiveQueryTermService()?.changeCursorType(evt.target.id(), 'default');
+    queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'default');
 });
 
 
