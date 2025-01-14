@@ -11,8 +11,8 @@ class MathUtils {
      * @returns The distance between the two nodes, rounded to the nearest whole number.
      */
     public static getDistanceBetweenNodes(node1: GraphNode, node2: GraphNode): number {
-        const pos1 = node1.getPosition()
-        const pos2 = node2.getPosition()
+        const pos1 = node1.position
+        const pos2 = node2.position
 
         const dx = pos1.x - pos2.x
         const dy = pos1.y - pos2.y
@@ -303,7 +303,7 @@ class Edge {
      * @param isUserGraphEdge - A boolean indicating whether the edge is from the user graph.
      */
     constructor(sourceNode: GraphNode, targetNode: GraphNode, isUserGraphEdge: boolean) {
-        this._id = "e_" + targetNode.getId()
+        this._id = "e_" + targetNode.id
         this._sourceNode = sourceNode
         this._targetNode = targetNode
         this._distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
@@ -354,8 +354,8 @@ class Edge {
     public toObject(): { data: EdgeData } {
         const edgeData = {
             id: this._id,
-            source: this._sourceNode.getId(),
-            target: this._targetNode.getId(),
+            source: this._sourceNode.id,
+            target: this._targetNode.id,
         };
 
         return { data: edgeData };
@@ -416,12 +416,16 @@ class GraphNode {
         this._cyElement = isUserGraphNode ? cyUser : cySentence;
     }
 
-    public getId(): string {
-        return this._id
+    public get id(): string {
+        return this._id;
     }
 
-    public getPosition(): Position { 
-        return this._position
+    public get position(): Position {
+        return this._position;
+    }
+
+    public get label(): string {
+        return this._label;
     }
 
     /**
@@ -433,9 +437,9 @@ class GraphNode {
      * This function updates the label of the node and also updates the label in the graph interface.
      * It uses the Cytoscape.js library to select the node by its ID and update the label data.
      */
-    public setLabel(label: string): void {
-        this._label = label
-        this._cyElement.getElementById(this._id).data('label', label)
+    public set label(label: string) {
+        this._label = label;
+        this._cyElement.getElementById(this._id).data('label', label);
     }
 
 
@@ -467,7 +471,7 @@ class GraphNode {
     public toObject(): { data: NodeData; position: Position } {
         return {
             data: {
-                id: this.getId(),
+                id: this.id,
                 label: this._label,
             },
             position: this._position,
@@ -530,6 +534,10 @@ class OuterNode extends GraphNode {
         this._addVisualNodeToInterface(isUserGraphNode)
     }
 
+    public get position(): Position {
+        return this._position;
+    }
+
     /**
      * Sets the position of the OuterNode in the graph.
      *
@@ -538,7 +546,7 @@ class OuterNode extends GraphNode {
      * @remarks
      * This function updates the position of the OuterNode and also updates the position in the graph interface.
      */
-    public setPosition(position: Position): void {
+    public set position(position: Position) {
         this._position = position;
         this._updateVisualPosition();
     }
@@ -553,7 +561,7 @@ class OuterNode extends GraphNode {
      * It then updates the position of the OuterNode and the position in the graph interface.
      */
     public setPositionFromAngle(angle: number): void {
-        this._position = MathUtils.getAngularPosition(angle, this._getDistance());
+        this._position = MathUtils.getAngularPosition(angle, this._calculateDistance());
         this._updateVisualPosition();
     }
 
@@ -579,7 +587,7 @@ class OuterNode extends GraphNode {
      * @remarks
      * This function calculates the distance from the central node to the OuterNode using the Euclidean distance formula.
      */
-    private _getDistance(): number {
+    private _calculateDistance(): number {
         return MathUtils.calculateEuclideanDistance(this._position.x, this._position.y);
     }
 
@@ -635,7 +643,7 @@ class Term {
      */
     public setLabel(value: string): void {
         this._value = value
-        this._node?.setLabel(value)
+        if (this._node !== undefined) this._node.label = value;
     }
 
     public getValue(): string {
@@ -662,7 +670,7 @@ interface NTermObject {
 
 
 class NeighbourTerm extends Term implements ViewManager {
-    protected _node: OuterNode | undefined = undefined;
+    protected declare _node: OuterNode | undefined
     private readonly _queryTerm: QueryTerm
     private _hops: number = 0.0
     private _nodePosition: Position = { x: 0, y: 0 }
@@ -713,8 +721,8 @@ class NeighbourTerm extends Term implements ViewManager {
         // Build the outer node and its edge, and display them
         const isUserGraph = this._queryTerm.getIsUserGraph()
         this._node = new OuterNode(TextUtils.getRandomString(28), isUserGraph)
-        this._node.setPosition(this._nodePosition)
-        this._node.setLabel(this._value)
+        this._node.position = this._nodePosition
+        this._node.label = this._value
         this._edge = new Edge(centralNode, this._node, isUserGraph)
 
         // Set the node color based on the criteria.
@@ -868,8 +876,8 @@ class NeighbourTerm extends Term implements ViewManager {
      * @returns {void} - This function does not return any value.
      */
     private _updateNodePosition(distance: number): void {
-        this._node?.setPosition(this._nodePosition)
-        if (this._edge) this._edge.distance = distance;
+        if (this._node !== undefined) this._node.position = this._nodePosition;
+        if (this._edge !== undefined) this._edge.distance = distance;
     }
 
     /**
@@ -1044,7 +1052,7 @@ class QueryTerm extends Term implements ViewManager {
     }
 
     public getNeighbourTermByNodeId(id: string): NeighbourTerm | undefined {
-        return this._neighbourTerms.find(nterm => nterm.getNode()?.getId() === id)
+        return this._neighbourTerms.find(nterm => nterm.getNode()?.id === id)
     }
 
     public getNeighbourTermByValue(value: string): NeighbourTerm | undefined {
@@ -1095,7 +1103,7 @@ class QueryTerm extends Term implements ViewManager {
 
         // Center the graph on the CentralNode, if it exists
         if (this._node === undefined) return;
-        cyElement.center(cyElement.getElementById(this._node.getId()))
+        cyElement.center(cyElement.getElementById(this._node.id))
 
         // Pan the graph vertically, if it's a sentence graph, to make it easier to see the neighbour terms
         if (!this._isUserGraph) cyElement.panBy({ x: 0, y: -1 });
@@ -2595,7 +2603,7 @@ class ResultsList {
             if (sentenceObject !== undefined) {
                 spanElement.addEventListener("mouseenter", () => {
                     spanElement.style.backgroundColor = "#E4E4E4";
-                    if (this._activeTermService) this._activeTermService.visibleSentence = sentenceObject;
+                    if (this._activeTermService !== undefined) this._activeTermService.visibleSentence = sentenceObject;
                 });
 
                 spanElement.addEventListener("mouseleave", () => {
