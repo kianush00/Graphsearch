@@ -1141,7 +1141,7 @@ class TextElement {
         this._initializeNeighbourTermsFromResponse(responseNeighbourTerms)
     }
 
-    public getQueryTerm(): QueryTerm {
+    get queryTerm(): QueryTerm {
         return this._queryTerm
     }
 
@@ -1160,7 +1160,7 @@ class TextElement {
                 termObject.frequency_score, termObject.criteria)
             neighbourTerms.push(neighbourTerm)
         }
-        this._queryTerm.setNeighbourTerms(neighbourTerms)
+        this._queryTerm.setNeighbourTerms(neighbourTerms);
     }
 }
 
@@ -1200,15 +1200,11 @@ class Sentence extends TextElement {
         this._rawToProcessedMap = rawToProcessedMap
     }
 
-    public getPositionInDoc(): number {
-        return this._positionInDoc
-    }
-
-    public getRawText(): string {
+    get rawText(): string {
         return this._rawText
     }
 
-    public getRawToProcessedMap(): RawToProcessedMap {
+    get rawToProcessedMap(): RawToProcessedMap {
         return this._rawToProcessedMap
     }
 
@@ -1237,7 +1233,7 @@ class Document extends TextElement {
     private readonly _abstract: string
     private readonly _preprocessed_text: string
     private readonly _weight: number
-    private _excluded: boolean
+    private _isExcluded: boolean
     private readonly _sentences: Sentence[] = []
 
     /**
@@ -1261,32 +1257,32 @@ class Document extends TextElement {
         this._abstract = idTitleAbstractPreprcsdtext[2]
         this._preprocessed_text = idTitleAbstractPreprcsdtext[3]
         this._weight = weight
-        this._excluded = false
+        this._isExcluded = false
         this._sentences = this._initializeSentencesFromResponse(responseSentences, hopLimit)
     }
 
-    public getId(): string {
+    get id(): string {
         return this._id
     }
 
-    public getTitle(): string {
+    get title(): string {
         return this._title
     }
 
-    public getAbstract(): string {
+    get abstract(): string {
         return this._abstract
     }
 
-    public getSentences(): Sentence[] {
+    get sentences(): Sentence[] {
         return this._sentences
     }
 
-    public isExcluded(): boolean {
-        return this._excluded
+    get isExcluded(): boolean {
+        return this._isExcluded
     }
 
-    public setExcluded(excluded: boolean): void {
-        this._excluded = excluded
+    set isExcluded(excluded: boolean) {
+        this._isExcluded = excluded
     }
 
     public toObject(): DocumentObject {
@@ -1350,31 +1346,19 @@ class Ranking {
     }
 
 
-    public getVisibleQueryTerm(): QueryTerm {
+    get visibleQueryTerm(): QueryTerm {
         return this._visibleQueryTerm
     }
 
-    public getCompleteQueryTerm(): QueryTerm {
+    get completeQueryTerm(): QueryTerm {
         return this._completeQueryTerm
     }
 
-    public getDocuments(): Document[] {
+    get documents(): Document[] {
         return this._documents
     }
 
-    public getExcludedDocuments(): Document[] {
-        return this._documents.filter(doc => doc.isExcluded())
-    }
-
-    public getNotExcludedDocuments(): Document[] {
-        return this._documents.filter(doc => !doc.isExcluded())
-    }
-
-    public addDocument(document: Document): void {
-        this._documents.push(document)
-    }
-
-    public getVisibleSentence(): Sentence | undefined {
+    get visibleSentence(): Sentence | undefined {
         return this._visibleSentence
     }
 
@@ -1387,10 +1371,22 @@ class Ranking {
      *
      * @returns {void} - This function does not return any value.
      */
-    public setVisibleSentence(sentence: Sentence): void {
-        this._visibleSentence?.getQueryTerm().removeViews()
+    set visibleSentence(sentence: Sentence) {
+        this._visibleSentence?.queryTerm.removeViews()
         this._visibleSentence = sentence
-        this._visibleSentence.getQueryTerm().displayViews()
+        this._visibleSentence.queryTerm.displayViews()
+    }
+
+    public getExcludedDocuments(): Document[] {
+        return this._documents.filter(doc => doc.isExcluded)
+    }
+
+    public getNotExcludedDocuments(): Document[] {
+        return this._documents.filter(doc => !doc.isExcluded)
+    }
+
+    public addDocument(document: Document): void {
+        this._documents.push(document)
     }
 
 
@@ -1442,7 +1438,7 @@ class Ranking {
      * @returns {void} - This function does not return any value.
      */
     public refreshDocumentsExclusion(): void {
-        this._documents.forEach(doc => doc.setExcluded(false));
+        this._documents.forEach(doc => doc.isExcluded = false);
     }
 
 
@@ -1459,7 +1455,7 @@ class Ranking {
     public setExcludedDocuments(excludedDocuments: number[]): void {
         for (const docIndex of excludedDocuments) {
             if (this._documents[docIndex] !== undefined) {
-                this._documents[docIndex].setExcluded(true);
+                this._documents[docIndex].isExcluded = true;
             } else {
                 console.log(`Warning: Document at index ${docIndex} does not exist.`);
             }
@@ -1497,11 +1493,11 @@ class QueryTermService {
     }
 
     get visibleQueryTerm(): QueryTerm {
-        return this._ranking.getVisibleQueryTerm();
+        return this._ranking.visibleQueryTerm;
     }
 
     get completeQueryTerm(): QueryTerm {
-        return this._ranking.getCompleteQueryTerm();
+        return this._ranking.completeQueryTerm;
     }
 
     get ranking(): Ranking {
@@ -1509,11 +1505,11 @@ class QueryTermService {
     }
 
     get visibleSentence(): Sentence | undefined {
-        return this._ranking.getVisibleSentence();
+        return this._ranking.visibleSentence;
     }
 
     set visibleSentence(sentence: Sentence) {
-        this._ranking.setVisibleSentence(sentence);
+        this._ranking.visibleSentence = sentence;
     }
 
     /**
@@ -1587,7 +1583,7 @@ class QueryTermService {
     public deactivate(): void {
         this._isVisible = false
         this.visibleQueryTerm.removeViews();
-        this.visibleSentence?.getQueryTerm().removeViews();
+        this.visibleSentence?.queryTerm.removeViews();
         queryService.updateActiveTermServiceInElements(undefined);
     }
 
@@ -2340,7 +2336,7 @@ class ResultsList {
         const titleElement = document.createElement('span');
         titleElement.className = 'title';
         // Check if the sentences array is not empty
-        const sentences = doc.getSentences();
+        const sentences = doc.sentences;
         const titleSentenceObject = sentences.length > 0 ? [sentences[0]] : [];
         // Highlight the title element with green color for the query terms and purple color for the neighbour terms
         titleElement.appendChild(document.createTextNode((index + 1) + '. '));
@@ -2360,7 +2356,7 @@ class ResultsList {
         const abstractElement = document.createElement('p');
         abstractElement.className = 'abstract';
         // Check if sentences exist and slice from them
-        const sentences = doc.getSentences();
+        const sentences = doc.sentences;
         const abstractSentenceObjects = sentences.length > 0 ? sentences.slice(1) : [];
         // Highlight the abstract element with green color for the query terms and purple color for the neighbour terms
         const highlightedSpanContainer = this._applyHighlightingToSentences(abstractSentenceObjects);
@@ -2414,14 +2410,14 @@ class ResultsList {
         let highlightedSentencesTextObject: [string, Sentence | undefined][] = []
 
         for (let sentenceObject of sentenceObjects) {
-            const sentenceText = sentenceObject.getRawText();
-            if (sentenceObject.getQueryTerm().getNeighbourTerms().length == 0 || (userProximityTermsList.length == 0 && userFrequencyTermsList.length == 0)) {
+            const sentenceText = sentenceObject.rawText;
+            if (sentenceObject.queryTerm.getNeighbourTerms().length == 0 || (userProximityTermsList.length == 0 && userFrequencyTermsList.length == 0)) {
                 // If there are no user neighbour terms in the sentence, or no proximity/frequency terms in the user graph, then return the original sentence
                 highlightedSentencesTextObject.push([sentenceText, undefined]);
             } else {
                 // Else, split text by spaces and replace matching words
-                const rawToProcessedMap = sentenceObject.getRawToProcessedMap();
-                const sentenceProximityTermsList = sentenceObject.getQueryTerm().getNeighbourProximityTermsValues()
+                const rawToProcessedMap = sentenceObject.rawToProcessedMap;
+                const sentenceProximityTermsList = sentenceObject.queryTerm.getNeighbourProximityTermsValues()
                 const highlightedSentenceText = this._getHighlightedSentence(sentenceText, rawToProcessedMap, queryTermsList, 
                     userProximityTermsList, userFrequencyTermsList, sentenceProximityTermsList);
                 highlightedSentencesTextObject.push([highlightedSentenceText, sentenceObject]);
