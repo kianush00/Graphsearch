@@ -671,6 +671,8 @@ interface NTermObject {
 }
 
 
+type TermCriteria = "proximity" | "frequency" | "exclusion";
+
 class NeighbourTerm extends Term implements ViewManager {
     protected declare _node: OuterNode | undefined
     private readonly _queryTerm: QueryTerm
@@ -679,7 +681,7 @@ class NeighbourTerm extends Term implements ViewManager {
     private _edge: Edge | undefined
     private readonly _proximityScore: number
     private readonly _frequencyScore: number
-    private _criteria: string
+    private _criteria: TermCriteria;
 
     /**
      * Constructor for the NeighbourTerm class.
@@ -691,7 +693,8 @@ class NeighbourTerm extends Term implements ViewManager {
      * @param frequencyScore - The frequency score of the neighbour term.
      * @param criteria - The criteria of the neighbour term, which can be 'proximity', 'frequency', or 'exclusion'.
      */
-    constructor(queryTerm: QueryTerm, value: string, proximityScore: number, frequencyScore: number, criteria: string) {
+    constructor(queryTerm: QueryTerm, value: string, proximityScore: number, frequencyScore: number, 
+        criteria: TermCriteria) {
         super(value)
         this._queryTerm = queryTerm
         this._proximityScore = proximityScore
@@ -709,7 +712,7 @@ class NeighbourTerm extends Term implements ViewManager {
         return this._frequencyScore;
     }
 
-    public get criteria(): string {
+    public get criteria(): TermCriteria {
         return this._criteria;
     }
     
@@ -904,9 +907,9 @@ class NeighbourTerm extends Term implements ViewManager {
      * @returns {void} - This function does not return any value.
      */
     private _initializeNodeColor(): void {
-        if (this._criteria === 'proximity') {
+        if (this._criteria === "proximity") {
             this._setProximityNodeColor();
-        } else if (this._criteria === 'frequency') {
+        } else if (this._criteria === "frequency") {
             this._setFrequencyNodeColor();
         } else {
             this._setExclusionNodeColor();
@@ -1039,13 +1042,13 @@ class QueryTerm extends Term implements ViewManager {
 
     public getNeighbourProximityTermsValues(): string[] {
         return this._neighbourTerms
-            .filter(term => term.criteria === 'proximity')
+            .filter(term => term.criteria === "proximity")
             .map(term => term.value);
     }
 
     public getNeighbourFrequencyTermsValues(): string[] {
         return this._neighbourTerms
-            .filter(term => term.criteria === 'frequency')
+            .filter(term => term.criteria === "frequency")
             .map(term => term.value);
     }
 
