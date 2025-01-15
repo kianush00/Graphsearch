@@ -636,16 +636,6 @@ class Term {
         return this._value;
     }
 
-    /**
-     * Sets the value of the term and updates the associated graph node label.
-     * 
-     * @param value - The new value for the term.
-     */
-    public set value(value: string) {
-        this._value = value;
-        if (this._node !== undefined) this._node.label = value;
-    }
-
     public get node(): GraphNode | undefined {
         return this._node;
     }
@@ -695,7 +685,7 @@ class NeighbourTerm extends Term implements ViewManager {
         this._frequencyScore = frequencyScore
         this._criteria = criteria
         this._setInitialHops()
-        this.value = value
+        this._value = value
     }
 
     public get proximityScore(): number {
@@ -1399,6 +1389,70 @@ class Ranking {
         this._documents.push(document)
     }
 
+    /**
+     * Converts the Ranking instance into a plain JavaScript object (RankingObject).
+     * 
+     * @remarks
+     * The RankingObject includes two properties:
+     * - visible_neighbour_terms: An array of objects representing the neighbour terms associated with the visible QueryTerm.
+     * - documents: An array of objects representing the documents associated with the Ranking.
+     * 
+     * @returns {RankingObject} - A plain JavaScript object containing the necessary data for the Ranking instance.
+     */
+    public toObject(): RankingObject {
+        return {
+            visible_neighbour_terms: this._visibleQueryTerm.getNeighbourTermsAsObjects(),
+            documents: this._documents.map(document => document.toObject())
+        }
+    }
+
+    /**
+     * Updates the order of the documents in the ranking based on the provided excludedDocuments and newPositions arrays.
+     *
+     * @param excludedDocuments - An array of integers representing the indices of the documents to be excluded.
+     * @param newPositions - An array of integers representing the new order of the documents.
+     * Each integer corresponds to the index of a document in the documents array.
+     *
+     * @returns {void} - This function does not return any value.
+     * It refreshes the exclusion status of all documents, sets the indices of the documents to be excluded,
+     * and reorders the documents in the ranking based on the provided positions array.
+     */
+    public updateDocumentsOrder(excludedDocuments: number[], newPositions: number[]): void {
+        this._refreshDocumentsExclusion();
+        this._setExcludedDocuments(excludedDocuments);
+        this._reorderDocuments(newPositions);
+    }
+
+
+    /**
+     * Refreshes the exclusion status of all documents in the ranking.
+     * This function iterates over the documents in the ranking and sets their exclusion status to false.
+     *
+     * @returns {void} - This function does not return any value.
+     */
+    private _refreshDocumentsExclusion(): void {
+        this._documents.forEach(doc => doc.isExcluded = false);
+    }
+
+    /**
+     * Sets the indices of the documents to be excluded in the ranking.
+     * This function iterates over the provided excludedDocuments array,
+     * checks if a document exists at each index, and sets its excluded property to true.
+     * If a document does not exist at an index, logs a warning message to the console.
+     *
+     * @param excludedDocuments - An array of integers representing the indices of the documents to be excluded.
+     *
+     * @returns {void} - This function does not return any value.
+     */
+    private _setExcludedDocuments(excludedDocuments: number[]): void {
+        for (const docIndex of excludedDocuments) {
+            if (this._documents[docIndex] !== undefined) {
+                this._documents[docIndex].isExcluded = true;
+            } else {
+                console.log(`Warning: Document at index ${docIndex} does not exist.`);
+            }
+        }
+    }
 
     /**
      * Reorders the documents in the ranking based on the provided positions array.
@@ -1413,7 +1467,7 @@ class Ranking {
      * in the new order specified by the positions array.
      * It then assigns the reorderedDocuments array back to the documents property of the Ranking instance.
      */
-    public reorderDocuments(newPositions: number[]): void {
+    private _reorderDocuments(newPositions: number[]): void {
         const excludedDocuments: Document[] = this.getExcludedDocuments();
         const notExcludedDocuments: Document[] = this.getNotExcludedDocuments();
 
@@ -1438,46 +1492,6 @@ class Ranking {
         }
 
         this._documents = reorderedDocuments;
-    }
-
-
-    /**
-     * Refreshes the exclusion status of all documents in the ranking.
-     * This function iterates over the documents in the ranking and sets their exclusion status to false.
-     *
-     * @returns {void} - This function does not return any value.
-     */
-    public refreshDocumentsExclusion(): void {
-        this._documents.forEach(doc => doc.isExcluded = false);
-    }
-
-
-    /**
-     * Sets the indices of the documents to be excluded in the ranking.
-     * This function iterates over the provided excludedDocuments array,
-     * checks if a document exists at each index, and sets its excluded property to true.
-     * If a document does not exist at an index, logs a warning message to the console.
-     *
-     * @param excludedDocuments - An array of integers representing the indices of the documents to be excluded.
-     *
-     * @returns {void} - This function does not return any value.
-     */
-    public setExcludedDocuments(excludedDocuments: number[]): void {
-        for (const docIndex of excludedDocuments) {
-            if (this._documents[docIndex] !== undefined) {
-                this._documents[docIndex].isExcluded = true;
-            } else {
-                console.log(`Warning: Document at index ${docIndex} does not exist.`);
-            }
-        }
-    }
-
-
-    public toObject(): RankingObject {
-        return {
-            visible_neighbour_terms: this._visibleQueryTerm.getNeighbourTermsAsObjects(),
-            documents: this._documents.map(document => document.toObject())
-        }
     }
 }
 
@@ -1867,9 +1881,7 @@ class QueryService {
                 const ranking_excluded_documents: number[] = response['ranking_excluded_documents'];
 
                 // Update the ranking's documents exclusion, excluded documents, and reorder the documents
-                this._activeQueryTermService.ranking.refreshDocumentsExclusion();
-                this._activeQueryTermService.ranking.setExcludedDocuments(ranking_excluded_documents);
-                this._activeQueryTermService.ranking.reorderDocuments(ranking_new_positions);
+                this._activeQueryTermService.ranking.updateDocumentsOrder(ranking_excluded_documents, ranking_new_positions);
 
                 // Finally, update the visual results list
                 this.updateResultsList();
@@ -1877,7 +1889,7 @@ class QueryService {
                 console.log("Warning: null API response");
             }
         } catch (error) {
-            console.error("Error retrieving rerank data:", error)
+            console.error("Error while operating rerank function:", error)
         }
     }
 
