@@ -1328,7 +1328,7 @@ class Ranking {
     private readonly _visibleQueryTerm: QueryTerm
     private readonly _completeQueryTerm: QueryTerm
     private _documents: Document[] = []
-    private _visibleSentence: Sentence | undefined
+    private declare _visibleTextElement: TextElement
 
     /**
      * Initializes a new Ranking instance with the provided query term value and limit distance.
@@ -1358,23 +1358,21 @@ class Ranking {
         return this._documents
     }
 
-    get visibleSentence(): Sentence | undefined {
-        return this._visibleSentence
+    get visibleTextElement(): TextElement {
+        return this._visibleTextElement
     }
 
     /**
-     * Sets the visible sentence in the ranking.
-     * Removes the views of the current visible sentence (if any),
-     * sets the new visible sentence, and displays the views of the new visible sentence.
+     * Sets the visible text element in the ranking.
+     * Removes the views of the current visible text element (if any),
+     * sets the new visible text element, and displays its views.
      *
-     * @param sentence - The new visible sentence to be set in the ranking.
-     *
-     * @returns {void} - This function does not return any value.
+     * @param textElement - The new visible text element to be set in the ranking.
      */
-    set visibleSentence(sentence: Sentence) {
-        this._visibleSentence?.queryTerm.removeViews()
-        this._visibleSentence = sentence
-        this._visibleSentence.queryTerm.displayViews()
+    set visibleTextElement(textElement: TextElement) {
+        this._visibleTextElement?.queryTerm.removeViews()
+        this._visibleTextElement = textElement
+        this._visibleTextElement.queryTerm.displayViews()
     }
 
     public getExcludedDocuments(): Document[] {
@@ -1528,12 +1526,12 @@ class QueryTermService {
         return this._ranking
     }
 
-    get visibleSentence(): Sentence | undefined {
-        return this._ranking.visibleSentence;
+    get visibleTextElement(): TextElement {
+        return this._ranking.visibleTextElement;
     }
 
-    set visibleSentence(sentence: Sentence) {
-        this._ranking.visibleSentence = sentence;
+    set visibleTextElement(textElement: TextElement) {
+        this._ranking.visibleTextElement = textElement;
     }
 
     /**
@@ -1615,10 +1613,10 @@ class QueryTermService {
 
         // Remove any existing views associated with the QueryTerm
         this.visibleQueryTerm.removeViews();
-        this.visibleSentence?.queryTerm.removeViews();
+        this.visibleTextElement?.queryTerm.removeViews();
 
         // Update the active term service in the QueryService's elements
-        queryService.updateActiveTermServiceInElements(undefined);
+        this._queryService.updateActiveTermServiceInElements(undefined);
     }
 
     /**
@@ -2417,7 +2415,7 @@ class ResultsList {
      * @param doc - The Document object for which to create the intermediate element.
      * @returns A new HTMLDivElement representing the intermediate element.
      */
-    private _createIntermediateElement(doc: Document): HTMLDivElement {
+    private _createIntermediateElement(docObject: Document): HTMLDivElement {
         const intermediateElement = document.createElement('div');
         intermediateElement.className = 'intermediate';
 
@@ -2432,7 +2430,10 @@ class ResultsList {
         docGraphIcon.className = 'icon';
         docGraphIcon.textContent = 'Document Graph';
         docGraphIcon.onmouseover = () => {
-            console.log('Tooltip: Example info');
+            if (this._activeTermService !== undefined) {
+                this._activeTermService.visibleTextElement = docObject;
+            }
+            
         };
 
         // Full article link
@@ -2441,7 +2442,7 @@ class ResultsList {
         fullArticleLink.textContent = 'Full article here';
         fullArticleLink.onclick = () => {
             // When the list item is clicked, opens the original URL document webpage in a new tab
-            window.open(`https://ieeexplore.ieee.org/document/${doc.id}`, '_blank');
+            window.open(`https://ieeexplore.ieee.org/document/${docObject.id}`, '_blank');
         };
 
         intermediateElement.appendChild(showAbstractIcon);
@@ -2450,7 +2451,6 @@ class ResultsList {
 
         return intermediateElement;
     }
-
 
     /**
      * Creates an abstract element for a document.
@@ -2702,7 +2702,7 @@ class ResultsList {
             if (sentenceObject !== undefined) {
                 spanElement.addEventListener("mouseenter", () => {
                     spanElement.style.backgroundColor = "#E4E4E4";
-                    if (this._activeTermService !== undefined) this._activeTermService.visibleSentence = sentenceObject;
+                    if (this._activeTermService !== undefined) this._activeTermService.visibleTextElement = sentenceObject;
                 });
 
                 spanElement.addEventListener("mouseleave", () => {
@@ -3079,47 +3079,89 @@ class CytoscapeManager {
     public static getCySentenceInstance(): cytoscape.Core {
         return this._cySentence;
     }
+
+    /**
+     * Initializes the application components.
+     * 
+     * This function creates instances of LoadingBar, QueryService, QueryComponent, and RerankComponent.
+     * It also configures user events for the application and exposes instances in the console for debugging purposes.
+     */
+    public static initializeApp(): void {
+        // Initialize the application components
+        const loadingBar = new LoadingBar();
+        const queryService = new QueryService();
+        const queryComponent = new QueryComponent(queryService, loadingBar);
+        const rerankComponent = new RerankComponent(queryService, loadingBar);
+
+        // Configure user events for the application and get instances in console
+        this._configureCyUserEvents(queryService);
+        this._getInstancesInConsole(queryService);
+    }
+
+    /**
+     * Configures user events for the Cytoscape graph in the user interface.
+     * 
+     * @param queryService - The QueryService instance to interact with the graph.
+     * 
+     * @remarks
+     * This function sets up event listeners for the following user interactions:
+     * - Dragging a node.
+     * - Right-clicking a node.
+     * - Right-clicking an edge.
+     * - Hovering the mouse over a node.
+     * - Moving the mouse away from a node.
+     * 
+     * When a node is dragged, the `nodeDragged` method of the `activeQueryTermService` is called with the node's ID and position.
+     * When a node is right-clicked, the `removeVisibleNeighbourTerm` method of the `activeQueryTermService` is called with the node's ID.
+     * When an edge is right-clicked, the `removeVisibleNeighbourTerm` method of the `activeQueryTermService` is called with the edge's ID (without the 'e_').
+     * When the mouse hovers over a node, the `changeCursorType` method of the `activeQueryTermService` is called with the node's ID and 'pointer' as the cursor type.
+     * When the mouse moves away from a node, the `changeCursorType` method of the `activeQueryTermService` is called with the node's ID and 'default' as the cursor type.
+     */
+    private static _configureCyUserEvents(queryService: QueryService): void {
+        // When the user drags a node
+        this._cyUser.on('drag', 'node', evt => {
+            queryService.activeQueryTermService?.nodeDragged(evt.target.id(), evt.target.position())
+        })
+
+        // When the user right-clicks a node
+        this._cyUser.on('cxttap', "node", evt => {
+            queryService.activeQueryTermService?.removeVisibleNeighbourTerm(evt.target.id())
+        });
+
+        // When the user right-clicks an edge
+        this._cyUser.on('cxttap', "edge", evt => {
+            queryService.activeQueryTermService?.removeVisibleNeighbourTerm(evt.target.id().substring(2))
+        });
+
+        // When the user hovers it's mouse over a node
+        this._cyUser.on('mouseover', 'node', (evt: cytoscape.EventObject) => {
+            queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'pointer');
+        });
+
+        // When the user moves it's mouse away from a node
+        this._cyUser.on('mouseout', 'node', (evt: cytoscape.EventObject) => {
+            queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'default');
+        });
+    }
+
+    /**
+     * Provides a quick way to access instances of Cytoscape and QueryService in the browser's console.
+     * 
+     * @param queryService - The QueryService instance to be accessible in the console.
+     * 
+     * @returns {void} - This function does not return any value.
+     * 
+     * @remarks
+     * This function assigns the instances of Cytoscape and QueryService to the `window` object,
+     * allowing them to be accessed directly in the browser's console.
+     * This is useful for debugging and testing purposes.
+     */
+    private static _getInstancesInConsole(queryService: QueryService): void {
+        // quick way to get instances in console
+        ;(window as any).cy = CytoscapeManager.getCyUserInstance()
+        ;(window as any).queryService = queryService
+    }
 }
 
 
-
-//// CYTOSCAPE CONFIGURATION
-
-// When the user drags a node
-CytoscapeManager.getCyUserInstance().on('drag', 'node', evt => {
-    queryService.activeQueryTermService?.nodeDragged(evt.target.id(), evt.target.position())
-})
-
-// When the user right-clicks a node
-CytoscapeManager.getCyUserInstance().on('cxttap', "node", evt => {
-    queryService.activeQueryTermService?.removeVisibleNeighbourTerm(evt.target.id())
-});
-
-// When the user right-clicks a edge
-CytoscapeManager.getCyUserInstance().on('cxttap', "edge", evt => {
-    queryService.activeQueryTermService?.removeVisibleNeighbourTerm(evt.target.id().substring(2))
-});
-
-// When the user hovers it's mouse over a node
-CytoscapeManager.getCyUserInstance().on('mouseover', 'node', (evt: cytoscape.EventObject) => {
-    queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'pointer');
-});
-
-// When the user moves it's mouse away from a node
-CytoscapeManager.getCyUserInstance().on('mouseout', 'node', (evt: cytoscape.EventObject) => {
-    queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'default');
-});
-
-
-const loadingBar = new LoadingBar();
-const queryService = new QueryService();
-const queryComponent = new QueryComponent(queryService, loadingBar);
-const rerankComponent = new RerankComponent(queryService, loadingBar);
-
-
-CytoscapeManager.getCyUserInstance().ready(() => {})
-
-
-// quick way to get instances in console
-;(window as any).cy = CytoscapeManager.getCyUserInstance()
-;(window as any).queryService = queryService
+CytoscapeManager.initializeApp();
