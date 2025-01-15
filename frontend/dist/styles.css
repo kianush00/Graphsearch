@@ -275,17 +275,49 @@ body, input, table, th, td {
     font-family: Arial, Helvetica, sans-serif;
 }
 
+.intermediate {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 16px;
+    margin: 3px 0;
+    padding-top: 3px;
+}
+
+.icon {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    color: #003b7a;
+}
+
+.icon:hover {
+    color: #007bff;
+}
+
+.link {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    color: #003b7a;
+    text-decoration: underline;
+}
+
+.link:hover {
+    color: #007bff;
+}
+
 /* Loading bar container */
 #loadingBar {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 5px; /* Altura de la barra */
-    background-color: #f0f0f0; /* Color de fondo para la barra */
+    height: 5px; /* Bar height */
+    background-color: #f0f0f0; /* Same color as the page background */
     overflow: hidden;
-    z-index: 1000; /* Asegúrate de que esté por encima de otros elementos */
-    display: none; /* Ocultar por defecto */
+    z-index: 1000; /* To make sure it is above other elements */
+    display: none; /* Hide by default */
 }
 
 /* Loading bar animation */
@@ -295,22 +327,22 @@ body, input, table, th, td {
     left: 0;
     width: 0;
     height: 100%;
-    background-color: #98a5ee; /* Color de la barra animada */
-    animation: loadingAnimation 2s linear infinite; /* Animación continua */
+    background-color: #98a5ee;
+    animation: loadingAnimation 2s linear infinite; /* Continuous animation */
 }
 
 /* Keyframes for loading animation */
 @keyframes loadingAnimation {
     0% {
-        left: -100%; /* Comienza fuera de la pantalla */
+        left: -100%; /* Start off screen */
         width: 100%;
     }
     50% {
-        left: 25%; /* Desplaza hacia la derecha */
+        left: 25%; /* Move to the right */
         width: 50%;
     }
     100% {
-        left: 100%; /* Sale completamente de la pantalla */
+        left: 100%; /* Goes completely off screen */
         width: 0;
     }
 }

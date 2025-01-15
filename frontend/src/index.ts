@@ -2374,13 +2374,12 @@ class ResultsList {
             // Create a new list item, title and abstract elements
             const listItem = document.createElement('li');
             const titleElement = this._createTitleElement(i, notExcludedDocuments[i])
+            const intermediateElement = this._createIntermediateElement(notExcludedDocuments[i]);
             const abstractElement = this._createAbstractElement(notExcludedDocuments[i])
-    
-            // Add a click event listener and mouse event listeners to the title element
-            this._addEventListenersToTitleElement(titleElement, abstractElement)
     
             // Append the title and abstract to the list item
             listItem.appendChild(titleElement);
+            listItem.appendChild(intermediateElement);
             listItem.appendChild(abstractElement);
     
             // Append the list item to the dynamic list container
@@ -2403,11 +2402,55 @@ class ResultsList {
         const sentences = doc.sentences;
         const titleSentenceObject = sentences.length > 0 ? [sentences[0]] : [];
         // Highlight the title element with green color for the query terms and purple color for the neighbour terms
-        titleElement.appendChild(document.createTextNode((index + 1) + '. '));
+        titleElement.appendChild(document.createTextNode(`${index + 1}. `));
         const highlightedSpanContainer = this._applyHighlightingToSentences(titleSentenceObject);
         titleElement.appendChild(highlightedSpanContainer);
         return titleElement;
     }
+
+    /**
+     * Creates an intermediate element for a document.
+     * 
+     * The intermediate element contains icons and a link to show or hide the abstract,
+     * view the document graph, and open the full article in a new tab.
+     * 
+     * @param doc - The Document object for which to create the intermediate element.
+     * @returns A new HTMLDivElement representing the intermediate element.
+     */
+    private _createIntermediateElement(doc: Document): HTMLDivElement {
+        const intermediateElement = document.createElement('div');
+        intermediateElement.className = 'intermediate';
+
+        // Show abstract icon
+        const showAbstractIcon = document.createElement('span');
+        showAbstractIcon.className = 'icon';
+        showAbstractIcon.textContent = '🔽 Abstract';
+        this._addEventListenersToAbstractIcon(showAbstractIcon, intermediateElement);
+
+        // Document graph icon
+        const docGraphIcon = document.createElement('span');
+        docGraphIcon.className = 'icon';
+        docGraphIcon.textContent = 'Document Graph';
+        docGraphIcon.onmouseover = () => {
+            console.log('Tooltip: Example info');
+        };
+
+        // Full article link
+        const fullArticleLink = document.createElement('span');
+        fullArticleLink.className = 'link';
+        fullArticleLink.textContent = 'Full article here';
+        fullArticleLink.onclick = () => {
+            // When the list item is clicked, opens the original URL document webpage in a new tab
+            window.open(`https://ieeexplore.ieee.org/document/${doc.id}`, '_blank');
+        };
+
+        intermediateElement.appendChild(showAbstractIcon);
+        intermediateElement.appendChild(docGraphIcon);
+        intermediateElement.appendChild(fullArticleLink);
+
+        return intermediateElement;
+    }
+
 
     /**
      * Creates an abstract element for a document.
@@ -2677,37 +2720,31 @@ class ResultsList {
         return mainSpanContainer;
     }
 
+    
     /**
-     * Adds event listeners to the title element and the abstract element.
+     * Adds event listeners to the intermediate element and show abstract icon.
      * 
-     * @param titleElement - The HTMLSpanElement representing the title of a list item.
-     * @param abstractElement - The HTMLParagraphElement representing the abstract of a list item.
+     * This function sets up two event listeners for the show abstract icon:
+     * 1. A click event listener that toggles the display of the abstract element.
+     * 2. A mouseenter event listener that changes the cursor style to "pointer".
+     * 3. A mouseleave event listener that resets the color of the show abstract icon to "black".
      * 
-     * @remarks
-     * When the title element is clicked, the abstract element is displayed or hidden.
-     * When the mouse hovers over the title element, the color changes to dark blue and the cursor becomes a pointer.
-     * When the mouse leaves the title element, the color changes back to black.
+     * @param showAbstractIcon - The HTMLSpanElement representing the icon to show or hide the abstract.
+     * @param intermediateElement - The HTMLDivElement representing the intermediate element containing the abstract.
      */
-    private _addEventListenersToTitleElement(titleElement: HTMLSpanElement, abstractElement: HTMLParagraphElement): void {
-        titleElement.addEventListener('click', () => {
-            // When the list item is clicked, opens the original URL document webpage in a new tab
-            //window.open('https://ieeexplore.ieee.org/document/' + documents[i].id, '_blank');
-            if (abstractElement.style.display === "none") {
-                abstractElement.style.display = "";
+    private _addEventListenersToAbstractIcon(showAbstractIcon: HTMLSpanElement, intermediateElement: HTMLDivElement): void {
+        showAbstractIcon.onclick = () => {
+            const abstract = intermediateElement.nextElementSibling as HTMLElement;
+            if (abstract.style.display === 'none') {
+                abstract.style.display = 'block';
+                showAbstractIcon.textContent = '🔼 Abstract';
             } else {
-                abstractElement.style.display = "none";
+                abstract.style.display = 'none';
+                showAbstractIcon.textContent = '🔽 Abstract';
             }
-        });
-
-        titleElement.addEventListener("mouseenter", () => {
-            titleElement.style.color = "darkblue";
-            titleElement.style.cursor = "pointer";
-        });
-
-        titleElement.addEventListener("mouseleave", () => {
-            titleElement.style.color = "black";
-        });
+        };
     }
+
 }
 
 
