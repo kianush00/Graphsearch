@@ -33,23 +33,6 @@ class MathUtils {
     }
 
     /**
-     * A static method that generates a random position within a circular area.
-     * The position is represented as an object with x and y coordinates.
-     *
-     * @returns {Position} - An object representing the random position within the circular area.
-     * The object has properties x and y, representing the coordinates of the position.
-     *
-     * @example
-     * const randomPosition = MathUtils.getRandomAngularPosition();
-     * console.log(randomPosition); // Output: { x: 123.45, y: 67.89 }
-     */
-    public static getRandomAngularPosition(): Position {
-        const randomDistance = this.getRandomFloat(0.0, 200.0)
-        const randomAngle = this.getRandomAngle()
-        return this.getAngularPosition(randomAngle, randomDistance)
-    }
-
-    /**
      * A static method that generates a random angle in radians.
      *
      * @returns {number} A random angle between 0 (inclusive) and 2pi (exclusive).
@@ -80,21 +63,6 @@ class MathUtils {
     }
 
     /**
-     * A static method that generates a random angular position with a given distance.
-     *
-     * @param distance - The distance from the origin for the position.
-     * @returns {Position} - An object representing the position with x and y coordinates.
-     *
-     * @example
-     * const randomPosition = MathUtils.getRandomAngularPositionWithDistance(100);
-     * console.log(randomPosition); // Output: { x: 70.71, y: 70.71 }
-     */
-    public static getRandomAngularPositionWithDistance(distance: number): Position {
-        const randomAngle = this.getRandomAngle()
-        return this.getAngularPosition(randomAngle, distance)
-    }
-
-    /**
      * Generates a random floating-point number within a specified range.
      *
      * @param min - The minimum value (inclusive) of the range.
@@ -111,6 +79,38 @@ class MathUtils {
         window.crypto.getRandomValues(randomBuffer);
         const randomNumber = randomBuffer[0] / (0xFFFFFFFF + 1); // 0xFFFFFFFF is the max value for Uint32
         return randomNumber * (max - min) + min;
+    }
+
+    /**
+     * A static method that generates a random position within a circular area.
+     * The position is represented as an object with x and y coordinates.
+     *
+     * @returns {Position} - An object representing the random position within the circular area.
+     * The object has properties x and y, representing the coordinates of the position.
+     *
+     * @example
+     * const randomPosition = MathUtils.getRandomAngularPosition();
+     * console.log(randomPosition); // Output: { x: 123.45, y: 67.89 }
+     */
+    public static getRandomAngularPosition(): Position {
+        const randomDistance = this.getRandomFloat(0.0, 200.0)
+        const randomAngle = this.getRandomAngle()
+        return this.getAngularPosition(randomAngle, randomDistance)
+    }
+
+    /**
+     * A static method that generates a random angular position with a given distance.
+     *
+     * @param distance - The distance from the origin for the position.
+     * @returns {Position} - An object representing the position with x and y coordinates.
+     *
+     * @example
+     * const randomPosition = MathUtils.getRandomAngularPositionWithDistance(100);
+     * console.log(randomPosition); // Output: { x: 70.71, y: 70.71 }
+     */
+    public static getRandomAngularPositionWithDistance(distance: number): Position {
+        const randomAngle = this.getRandomAngle()
+        return this.getAngularPosition(randomAngle, distance)
     }
 }
 
@@ -272,6 +272,7 @@ class HTTPRequestUtils {
             }
         } catch (error) {
             console.error('Error:', error)
+            alert('An error occurred while sending the request.')
         }
     }
 
@@ -315,7 +316,7 @@ class Edge implements CyElementAggregator, CyElementRemover {
         this._sourceNode = sourceNode
         this._targetNode = targetNode
         this._distance = MathUtils.getDistanceBetweenNodes(sourceNode, targetNode)
-        this._cyElement = isFromUserGraph ? cyUser : cySentence;
+        this._cyElement = isFromUserGraph ? CytoscapeManager.getCyUserInstance() : CytoscapeManager.getCySentenceInstance();
         this.addCyVisualElement()
     }
 
@@ -328,10 +329,6 @@ class Edge implements CyElementAggregator, CyElementRemover {
      * This method updates the distance value and the corresponding edge data in the graph.
      *
      * @param distance - The new distance for the edge.
-     *
-     * @remarks
-     * This method assumes that the source and target nodes are already associated with the edge.
-     * It also assumes that the graph is represented using the Cytoscape.js library.
      */
     set distance(distance: number) {
         this._distance = distance;
@@ -343,8 +340,6 @@ class Edge implements CyElementAggregator, CyElementRemover {
      * This function creates a new edge in the graph using the `toObject` method,
      * which returns an object containing the edge's data.
      * The edge is then added to the graph using the `cy.add` method.
-     *
-     * @returns {void} - This function does not return any value.
      */
     public addCyVisualElement(): void {
         this._cyElement.add(this.toObject())
@@ -355,10 +350,6 @@ class Edge implements CyElementAggregator, CyElementRemover {
      * 
      * This function removes the node with the given ID from the graph interface.
      * It uses the Cytoscape.js library to select the node by its ID and remove it from the graph.
-     *
-     * @remarks
-     * This function should be called when the node is no longer needed in the graph interface.
-     * It ensures that the node is removed from the visual representation of the graph.
      */
     public removeCyVisualElement(): void {
         this._cyElement.remove(this._cyElement.getElementById(this._id))
@@ -402,10 +393,9 @@ interface NodeData {
 
 class GraphNode implements CyElementRemover {
     protected readonly _id: string
-    protected _label: string
+    protected _label!: string;
     protected _position: Position = {x: 0, y: 0};
     protected readonly _type: NodeType
-    protected readonly _isFromUserGraph: boolean;
     protected readonly _cyElement: cytoscape.Core
     
     /**
@@ -419,10 +409,9 @@ class GraphNode implements CyElementRemover {
      */
     constructor(id: string, label: string, type: NodeType, isFromUserGraph: boolean) {
         this._id = id
-        this._label = label
         this._type = type
-        this._isFromUserGraph = isFromUserGraph;
-        this._cyElement = isFromUserGraph ? cyUser : cySentence;
+        this._cyElement = isFromUserGraph ? CytoscapeManager.getCyUserInstance() : CytoscapeManager.getCySentenceInstance();
+        this.label = label;
     }
 
     public get id(): string {
@@ -498,10 +487,10 @@ class CentralNode extends GraphNode implements CyElementAggregator {
      * @param isUserGraphNode - A boolean indicating whether the central node belongs to the user graph.
      */
     constructor(id: string, isUserGraphNode: boolean) {
-        let _id = id
-        let _label = id
-        let _type = NodeType.central_node
-        super(_id, _label, _type, isUserGraphNode)
+        const _id = id
+        const label = id
+        const type = NodeType.central_node
+        super(_id, label, type, isUserGraphNode)
         this.addCyVisualElement()
     }
 
@@ -522,22 +511,24 @@ class CentralNode extends GraphNode implements CyElementAggregator {
 
 class OuterNode extends GraphNode implements CyElementAggregator {
     /**
-     * Represents an outer node in the graph.
-     * It manages the associated views, such as the visual node in the graph interface.
-     * 
+     * Constructor for the OuterNode class. Initializes a new OuterNode instance with the provided parameters.
+     *
      * @param id - The unique identifier of the outer node.
-     * @param distance - The distance from the central node to the outer node.
-     *                    Default value is 0, which means the outer node will be positioned randomly.
+     * @param label - The label of the outer node.
+     * @param position - The position of the outer node in the graph.
      * @param isUserGraphNode - A boolean indicating whether the outer node belongs to the user graph.
+     *
+     * @remarks
+     * The constructor sets the type of the outer node to `NodeType.outer_node`,
+     * initializes the position of the outer node, and calls the `addCyVisualElement` method to add the node to the graph.
      */
-    constructor(id: string, isUserGraphNode: boolean) {
-        let _id = id
-        let _label = id
-        // Generates a random angle from the provided distance, to calculate the new position
-        let _type = NodeType.outer_node
-        super(_id, _label, _type, isUserGraphNode)
+    constructor(id: string, label: string, position: Position, isUserGraphNode: boolean) {
+        const type = NodeType.outer_node
+        super(id, label, type, isUserGraphNode)
+        this.position = position;
         this.addCyVisualElement();
     }
+
 
     public get position(): Position {
         return this._position;
@@ -569,7 +560,7 @@ class OuterNode extends GraphNode implements CyElementAggregator {
      */
     public addCyVisualElement(): void {
         const element = this._cyElement.add(this.toObject()).addClass(this._type.toString());
-        if (!this._isFromUserGraph) element.ungrabify();
+        if (this._cyElement === CytoscapeManager.getCySentenceInstance()) element.ungrabify();
     }
 
     /**
@@ -735,15 +726,18 @@ class NeighbourTerm extends Term implements ViewManager {
      * Finally, the function sets the criteria for the term, which includes changing the node color based on the criteria.
      */
     public displayViews(): void {
+        // Check if the CentralNode is defined in the graph
         const centralNode = this._queryTerm.node;
         if (centralNode === undefined) return 
 
-        // Build the outer node and its edge, and display them
+        // Get the data for displaying the views
+        const id = TextUtils.getRandomString(28);
         const isUserGraph = this._queryTerm.isUserGraph;
-        this._node = new OuterNode(TextUtils.getRandomString(28), isUserGraph)
-        this._node.position = this._nodePosition
-        this._node.label = this._value
-        this._edge = new Edge(centralNode, this._node, isUserGraph)
+
+        // Build the outer node and its edge, and display them
+        const outerNode = new OuterNode(id, this._value, this._nodePosition, isUserGraph);
+        this._node = outerNode;
+        this._edge = new Edge(centralNode, outerNode, isUserGraph);
 
         // Set the node color based on the criteria.
         this._initializeNodeColor();
@@ -837,7 +831,7 @@ class NeighbourTerm extends Term implements ViewManager {
      */
     private _updateHops(newHops: number): void {
         if (this._queryTerm.isUserGraph) {
-            let previousHops = this._hops
+            const previousHops = this._hops
             this._hops = newHops
             this._updateUserCriteria(previousHops, newHops)
         }
@@ -858,13 +852,13 @@ class NeighbourTerm extends Term implements ViewManager {
      * The adjusted position is then returned.
      */
     private _validatePositionWithinRange(position: Position, nodeDistance: number): Position {
-        let positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
+        const positionDistance = MathUtils.calculateEuclideanDistance(position.x, position.y)
 
         if (this._edge !== undefined && this._node !== undefined ) {
             if (ConversionUtils.validateDistanceOutOfRange(positionDistance)) {
-                let angle = Math.atan2(position.y, position.x)
-                let adjustedX = Math.cos(angle) * nodeDistance
-                let adjustedY = Math.sin(angle) * nodeDistance
+                const angle = Math.atan2(position.y, position.x)
+                const adjustedX = Math.cos(angle) * nodeDistance
+                const adjustedY = Math.sin(angle) * nodeDistance
                 position.x = adjustedX
                 position.y = adjustedY
             }
@@ -901,8 +895,7 @@ class NeighbourTerm extends Term implements ViewManager {
      * This initial hop value is used to calculate the position of the neighbour term in the graph.
      */
     private _setInitialHops(): void {
-        let initialHops = this._queryTerm.isUserGraph ? 1.0 : this._queryTerm.hopLimit;
-        this._hops = initialHops
+        this._hops = this._queryTerm.isUserGraph ? 1.0 : this._queryTerm.hopLimit;
     }
 
     /**
@@ -1105,7 +1098,7 @@ class QueryTerm extends Term implements ViewManager {
      * If the node exists and is a CentralNode, it centers the graph on the node.
      */
     private _centerAndZoomNode(): void {
-        const cyElement = this._isUserGraph ? cyUser : cySentence;
+        const cyElement = this._isUserGraph ? CytoscapeManager.getCyUserInstance() : CytoscapeManager.getCySentenceInstance();
 
         // Zoom the graph. If its a sentence graph, then do a personalized zoom based on the lenght of neighbour terms
         cyElement.zoom(this._graphZoom);
@@ -1173,7 +1166,7 @@ class TextElement {
     private _initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[]): void {
         const neighbourTerms = []
         for (const termObject of responseNeighbourTerms) {
-            let neighbourTerm = new NeighbourTerm(this._queryTerm, termObject.term, termObject.proximity_score, 
+            const neighbourTerm = new NeighbourTerm(this._queryTerm, termObject.term, termObject.proximity_score, 
                 termObject.frequency_score, termObject.criteria)
             neighbourTerms.push(neighbourTerm)
         }
@@ -1327,7 +1320,7 @@ class Document extends TextElement {
     private _initializeSentencesFromResponse(responseSentences: any[], hopLimit: number): Sentence[] {
         const sentences = []
         for (const sentenceObject of responseSentences) {
-            let sentence = new Sentence(this._queryTerm.value, sentenceObject.all_neighbour_terms, 
+            const sentence = new Sentence(this._queryTerm.value, sentenceObject.all_neighbour_terms, 
                     hopLimit, sentenceObject.position_in_doc, sentenceObject.raw_text, sentenceObject.raw_to_processed_map)
             sentences.push(sentence)
         }
@@ -1561,6 +1554,7 @@ class QueryTermService {
                 console.log("Warning: null API response");
             }
         } catch (error) {
+            alert("Error retrieving data:" + error);
             console.error("Error retrieving neighbour terms data:", error)
         }
     }
@@ -1572,8 +1566,11 @@ class QueryTermService {
      * @param position - The new position of the neighbour term node.
      */
     public nodeDragged(id: string, position: Position): void {
+        // Check if the neighbour term exists
         const neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
-        if (neighbourTerm === undefined) return
+        if (neighbourTerm === undefined) return;
+
+        // Update the position of the neighbour term node and its hops
         neighbourTerm.updateNodePositionAndHops(position)
 
         // Update the neighbour terms table with the new hops values
@@ -1585,12 +1582,13 @@ class QueryTermService {
      * This includes creating and positioning the CentralNode and OuterNodes.
      */
     public display(): void {
-        this._isVisible = true // Mark the QueryTerm as visible
+        // Mark the QueryTerm as visible
+        this._isVisible = true
 
-        // Remove any existing views associated with the QueryTerm
+        // Remove any existing views associated with the visible QueryTerm
         this.visibleQueryTerm.removeViews()
 
-        // Display the views associated with the QueryTerm
+        // Display the views associated with the visible QueryTerm
         this.visibleQueryTerm.displayViews()
     }
 
@@ -1598,9 +1596,14 @@ class QueryTermService {
      * This method removes the visual nodes and edges from the graph interface.
      */
     public deactivate(): void {
+        // Mark the QueryTerm as not visible
         this._isVisible = false
+
+        // Remove any existing views associated with the QueryTerm
         this.visibleQueryTerm.removeViews();
         this.visibleSentence?.queryTerm.removeViews();
+
+        // Update the active term service in the QueryService's elements
         queryService.updateActiveTermServiceInElements(undefined);
     }
 
@@ -1612,10 +1615,17 @@ class QueryTermService {
      * @param neighbourTerm - The neighbour term to be added.
      */
     public addVisibleNeighbourTerm(neighbourTerm: NeighbourTerm): void {
-        if (this.visibleQueryTerm.neighbourTerms.length > 19) return
+        // Ensure the visible query term has less than 20 neighbour terms
+        if (this.visibleQueryTerm.neighbourTerms.length > 19) return;
+
+        // Add the neighbour term to the visible query term's neighbour terms list
         this.visibleQueryTerm.addNeighbourTerm(neighbourTerm)
+
+        // Update the neighbour terms table with the new neighbour term
         this._queryService.updateNeighbourTermsTable()
         this._queryService.updateAddTermsTable()
+
+        // Display the views of the neighbour term if it is currently visible
         if (this._isVisible) this.display()
     }
 
@@ -1629,11 +1639,18 @@ class QueryTermService {
      * @param id - The id of the neighbour term to be removed.
      */
     public removeVisibleNeighbourTerm(id: string): void {
-        let neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
-        if (neighbourTerm === undefined || this.visibleQueryTerm.neighbourTerms.length < 2) return
+        // Retrieve the neighbour term associated with the provided id
+        const neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
+
+        // If the neighbour term is found and there are more than 1 neighbour term left, remove it
+        if (neighbourTerm === undefined || this.visibleQueryTerm.neighbourTerms.length < 2) return;
         this.visibleQueryTerm.removeNeighbourTerm(neighbourTerm)
+
+        // Update the neighbour terms table in the query service
         this._queryService.updateNeighbourTermsTable()
         this._queryService.updateAddTermsTable()
+
+        // Display the views of the neighbour term if it is currently visible
         if (this._isVisible) this.display()
     }
 
@@ -1661,8 +1678,11 @@ class QueryTermService {
     * @returns {void} - This function does not return any value.
     */
     public changeCursorType(id: string, newCursorType: string): void {
-        let neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
+        // Check if the neighbour term is already in the graph
+        const neighbourTerm = this.visibleQueryTerm.getNeighbourTermByNodeId(id)
         if (neighbourTerm === undefined) return
+
+        // Update the cursor style for the HTML document
         $('html,body').css('cursor', newCursorType);
     }
 
@@ -1680,7 +1700,7 @@ class QueryTermService {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['visible_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = this._initializeNewNeighbourTerm(this.visibleQueryTerm, termObject)
+            const neighbourTerm = this._initializeNewNeighbourTerm(this.visibleQueryTerm, termObject);
 
             // Add the neighbour term to the visible QueryTerm's neighbour terms list
             this.addVisibleNeighbourTerm(neighbourTerm)
@@ -1703,7 +1723,7 @@ class QueryTermService {
         // Iterate over the neighbour terms in the result
         for (let termObject of result['complete_neighbour_terms']) {
             // Create a new NeighbourTerm instance for each term object
-            let neighbourTerm = this._initializeNewNeighbourTerm(this.completeQueryTerm, termObject)
+            const neighbourTerm = this._initializeNewNeighbourTerm(this.completeQueryTerm, termObject)
 
             // Add the neighbour term to the complete QueryTerm's neighbour terms list
             this.addCompleteNeighbourTerm(neighbourTerm)
@@ -1747,7 +1767,7 @@ class QueryTermService {
             const sentences = documentObject['sentences']
             const queryTermValue = this.visibleQueryTerm.value
             const hopLimit = this.visibleQueryTerm.hopLimit
-            let document = new Document(queryTermValue, response_neighbour_terms, hopLimit, 
+            const document = new Document(queryTermValue, response_neighbour_terms, hopLimit, 
                     [doc_id, title, abstract, preprocessed_text], weight, sentences)
             this._addDocument(document)
         }
@@ -1817,10 +1837,8 @@ class QueryService {
         // Wait for the new QueryTermService to be generated
         await this._generateNewQueryTermService(queryValue, searchResults, limitDistance, graphTerms);
 
-        // If the list is not empty, set the new service active
-        if (this._queryTermServices.length > 0) {
-            this.setActiveQueryTermService(queryValue);
-        }
+        // Set the new service as active
+        this.setActiveQueryTermService(queryValue);
     }
 
     /**
@@ -1834,6 +1852,7 @@ class QueryService {
      * @returns {Promise<void>} - A promise that resolves when the reranking process is complete.
      */
     public async setRerank(ranking: RankingObject): Promise<void> {
+        // Check if the active QueryTermService is defined
         if (this._activeQueryTermService === undefined) return;
 
         // Send the POST request
@@ -1846,9 +1865,13 @@ class QueryService {
                 // Handle the response accordingly
                 const ranking_new_positions: number[] = response['ranking_new_positions'];
                 const ranking_excluded_documents: number[] = response['ranking_excluded_documents'];
+
+                // Update the ranking's documents exclusion, excluded documents, and reorder the documents
                 this._activeQueryTermService.ranking.refreshDocumentsExclusion();
                 this._activeQueryTermService.ranking.setExcludedDocuments(ranking_excluded_documents);
                 this._activeQueryTermService.ranking.reorderDocuments(ranking_new_positions);
+
+                // Finally, update the visual results list
                 this.updateResultsList();
             } else {
                 console.log("Warning: null API response");
@@ -1866,11 +1889,18 @@ class QueryService {
      * @param queryValue - The value of the query term for which to set the active QueryTermService.
      */
     public setActiveQueryTermService(queryValue: string): void {
+        // Deactivate the active QueryTermService
         this._activeQueryTermService?.deactivate();
+
+        // Set the QueryTermService as active
         const queryTermService = this._findQueryTermService(queryValue);
         if (queryTermService === undefined) return;
         this._activeQueryTermService = queryTermService
+
+        // Display the views associated with the active QueryTermService
         this._activeQueryTermService.display()
+
+        // Update the active term service in the QueryService's elements
         this.updateActiveTermServiceInElements(this._activeQueryTermService);
         
     }
@@ -1921,12 +1951,17 @@ class QueryService {
      */
     private async _generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, 
         graphTerms: number): Promise<void> {
-        if (this._findQueryTermService(queryValue) === undefined) {
-            let queryTermService = new QueryTermService(this, queryValue, limitDistance);
-            await queryTermService.initialize(searchResults, limitDistance, graphTerms);
-            this._queryTermServices.push(queryTermService)
-            this._updateQueryTermsList()
-        }
+        // Check if a QueryTermService for the given query value already exists
+        if (this._findQueryTermService(queryValue) !== undefined) return;
+
+        // Create a new QueryTermService and initialize it with the given parameters
+        const queryTermService = new QueryTermService(this, queryValue, limitDistance);
+        await queryTermService.initialize(searchResults, limitDistance, graphTerms);
+
+        // Add the new QueryTermService to the queryTermServices array and update the query terms list
+        this._queryTermServices.push(queryTermService)
+        this._updateQueryTermsList()
+        
     }
 
     /**
@@ -2129,7 +2164,7 @@ class AddTermsTable {
         const frequencyScore = neighbourTerm.frequencyScore;
         const criteria = neighbourTerm.criteria;
 
-        let visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria);
+        const visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria);
         this._activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm);
     }
 
@@ -2321,7 +2356,7 @@ class ResultsList {
         if (this._activeTermService === undefined) return
 
         // Get the ranking of the active query term
-        let notExcludedDocuments = this._activeTermService.ranking.getNotExcludedDocuments()
+        const notExcludedDocuments = this._activeTermService.ranking.getNotExcludedDocuments()
     
         for (let i = 0; i < notExcludedDocuments.length; i++) {
             // Create a new list item, title and abstract elements
@@ -2788,7 +2823,7 @@ class QueryComponent {
         this._input.disabled = true;
         this._loadingBar.show();
 
-        let queryValue = this._input.value.trim() // Get the trimmed input value
+        const queryValue = this._input.value.trim() // Get the trimmed input value
         this._input.value = '' // Clear the input field
         const alphanumericRegex = /[a-zA-Z0-9]/
 
@@ -2856,7 +2891,6 @@ class RerankComponent {
         // Create the data to be sent in the POST request
         const ranking = activeTermService.ranking.toObject();
         console.log(ranking);
-        if (ranking === undefined) return;
 
         try {
             // Send the POST request
@@ -2902,122 +2936,128 @@ class LoadingBar {
 }
 
 
-
-//// GLOBAL VARIABLES
-
-const cyUser = cytoscape({
-    container: document.getElementById("cy") as HTMLElement,
-    layout: {
-        name: "preset",
-    },
-    style: [
-        {
-            selector: '.' + NodeType.central_node,
-            style: {
-            "background-color": '#f0d200',
-            'width': '20px',
-            'height': '20px',
-            'label': "data(id)",
-            'font-size': '13px',
-            'color': '#5d5d5d'
-            },
+class CytoscapeManager {
+    private static readonly _cyUser = cytoscape({
+        container: document.getElementById("cy") as HTMLElement,
+        layout: {
+            name: "preset",
         },
-        {
-            selector: "edge",
-            style: {
-            "curve-style": "bezier",
-            "target-arrow-shape": "triangle",
-            "line-color": "#ccc",
-            "width": "2px", // set the width of the edge
-            "font-size": "12px" // set the font size of the label            
+        style: [
+            {
+                selector: '.' + NodeType.central_node,
+                style: {
+                "background-color": '#f0d200',
+                'width': '20px',
+                'height': '20px',
+                'label': "data(id)",
+                'font-size': '13px',
+                'color': '#5d5d5d'
+                },
             },
-        },
-        {
-            selector: '.' + NodeType.outer_node,
-            style: {
-              'background-color': '#73b201',
-              'width': '15px',
-              'height': '15px',
-              'label': 'data(label)',
-              'font-size': '12px',
-              'color': '#4b4b4b'
+            {
+                selector: "edge",
+                style: {
+                "curve-style": "bezier",
+                "target-arrow-shape": "triangle",
+                "line-color": "#ccc",
+                "width": "2px", // set the width of the edge
+                "font-size": "12px" // set the font size of the label            
+                },
+            },
+            {
+                selector: '.' + NodeType.outer_node,
+                style: {
+                  'background-color': '#73b201',
+                  'width': '15px',
+                  'height': '15px',
+                  'label': 'data(label)',
+                  'font-size': '12px',
+                  'color': '#4b4b4b'
+                }
             }
-        }
-    ],
-    userZoomingEnabled: false,
-    userPanningEnabled: false
-})
+        ],
+        userZoomingEnabled: false,
+        userPanningEnabled: false
+    });
 
-
-const cySentence = cytoscape({
-    container: document.getElementById("cySentence") as HTMLElement,
-    layout: {
-        name: "preset",
-    },
-    style: [
-        {
-            selector: '.' + NodeType.central_node,
-            style: {
-            "background-color": '#f0d200',
-            'width': '16px',
-            'height': '16px',
-            'label': "data(id)",
-            'font-size': '10px',
-            'color': '#5d5d5d'
-            },
+    private static readonly _cySentence = cytoscape({
+        container: document.getElementById("cySentence") as HTMLElement,
+        layout: {
+            name: "preset",
         },
-        {
-            selector: "edge",
-            style: {
-            "curve-style": "bezier",
-            "target-arrow-shape": "triangle",
-            "line-color": "#ccc",
-            "width": "2px", // set the width of the edge
-            "font-size": "11px" // set the font size of the label            
+        style: [
+            {
+                selector: '.' + NodeType.central_node,
+                style: {
+                "background-color": '#f0d200',
+                'width': '16px',
+                'height': '16px',
+                'label': "data(id)",
+                'font-size': '10px',
+                'color': '#5d5d5d'
+                },
             },
-        },
-        {
-            selector: '.' + NodeType.outer_node,
-            style: {
-                'background-color': '#73b201',
-                'width': '12px',
-                'height': '12px',
-                'label': 'data(label)',
-                'font-size': '9px',
-                'color': '#4b4b4b'
+            {
+                selector: "edge",
+                style: {
+                "curve-style": "bezier",
+                "target-arrow-shape": "triangle",
+                "line-color": "#ccc",
+                "width": "2px", // set the width of the edge
+                "font-size": "11px" // set the font size of the label            
+                },
+            },
+            {
+                selector: '.' + NodeType.outer_node,
+                style: {
+                    'background-color': '#73b201',
+                    'width': '12px',
+                    'height': '12px',
+                    'label': 'data(label)',
+                    'font-size': '9px',
+                    'color': '#4b4b4b'
+                }
             }
-        }
-    ],
-    userZoomingEnabled: true,
-    userPanningEnabled: true
-})
+        ],
+        userZoomingEnabled: true,
+        userPanningEnabled: true
+    });
+
+    public static getCyUserInstance(): cytoscape.Core {
+        return this._cyUser;
+    }
+
+    public static getCySentenceInstance(): cytoscape.Core {
+        return this._cySentence;
+    }
+}
 
 
 
 //// CYTOSCAPE CONFIGURATION
 
 // When the user drags a node
-cyUser.on('drag', 'node', evt => {
+CytoscapeManager.getCyUserInstance().on('drag', 'node', evt => {
     queryService.activeQueryTermService?.nodeDragged(evt.target.id(), evt.target.position())
 })
 
 // When the user right-clicks a node
-cyUser.on('cxttap', "node", evt => {
+CytoscapeManager.getCyUserInstance().on('cxttap', "node", evt => {
     queryService.activeQueryTermService?.removeVisibleNeighbourTerm(evt.target.id())
 });
 
 // When the user right-clicks a edge
-cyUser.on('cxttap', "edge", evt => {
+CytoscapeManager.getCyUserInstance().on('cxttap', "edge", evt => {
     queryService.activeQueryTermService?.removeVisibleNeighbourTerm(evt.target.id().substring(2))
 });
 
 // When the user hovers it's mouse over a node
-cyUser.on('mouseover', 'node', (evt: cytoscape.EventObject) => {
+CytoscapeManager.getCyUserInstance().on('mouseover', 'node', (evt: cytoscape.EventObject) => {
     queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'pointer');
 });
 
 // When the user moves it's mouse away from a node
-cyUser.on('mouseout', 'node', (evt: cytoscape.EventObject) => {
+CytoscapeManager.getCyUserInstance().on('mouseout', 'node', (evt: cytoscape.EventObject) => {
     queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'default');
 });
 
@@ -3028,9 +3068,9 @@ const queryComponent = new QueryComponent(queryService, loadingBar);
 const rerankComponent = new RerankComponent(queryService, loadingBar);
 
 
-cyUser.ready(() => {})
+CytoscapeManager.getCyUserInstance().ready(() => {})
 
 
 // quick way to get instances in console
-;(window as any).cy = cyUser
+;(window as any).cy = CytoscapeManager.getCyUserInstance()
 ;(window as any).queryService = queryService
