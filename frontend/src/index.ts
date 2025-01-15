@@ -20,7 +20,6 @@ class MathUtils {
         return parseFloat(this.calculateEuclideanDistance(dx, dy).toFixed(0))
     }
 
-
     /**
      * Calculates the Euclidean distance between two points in a 2D space.
      *
@@ -32,7 +31,6 @@ class MathUtils {
     public static calculateEuclideanDistance(dx: number, dy: number): number {
         return Math.sqrt(dx * dx + dy * dy);
     }
-
 
     /**
      * A static method that generates a random position within a circular area.
@@ -281,19 +279,21 @@ class HTTPRequestUtils {
 
 
 
-interface EdgeData {
-    id: string
-    source: string
-    target: string
-    distance?: number
-}
-
 interface CyElementAggregator {
     addCyVisualElement(): void;
 }
 
 interface CyElementRemover {
     removeCyVisualElement(): void;
+}
+
+interface EdgeData {
+    data: {
+        id: string
+        source: string
+        target: string
+        distance?: number
+    }
 }
 
 class Edge implements CyElementAggregator, CyElementRemover {
@@ -370,7 +370,7 @@ class Edge implements CyElementAggregator, CyElementRemover {
      * @returns An object containing the data of the Edge.
      * The object has properties: id, source and target.
      */
-    public toObject(): { data: EdgeData } {
+    public toObject(): EdgeData {
         const edgeData = {
             id: this._id,
             source: this._sourceNode.id,
@@ -393,8 +393,11 @@ enum NodeType {
 }
 
 interface NodeData {
-    id: string
-    label: string
+    data: {
+        id: string,
+        label: string,
+    },
+    position: Position
 }
 
 class GraphNode implements CyElementRemover {
@@ -474,7 +477,7 @@ class GraphNode implements CyElementRemover {
      * This function is responsible for converting the GraphNode instance into a serializable object.
      * It returns an object containing the node's data and position.
      */
-    public toObject(): { data: NodeData; position: Position } {
+    public toObject(): NodeData {
         return {
             data: {
                 id: this.id,
@@ -746,7 +749,6 @@ class NeighbourTerm extends Term implements ViewManager {
         this._initializeNodeColor();
     }
 
-
     /**
      * Removes the views of the neighbour terms and the central node.
      * 
@@ -756,23 +758,6 @@ class NeighbourTerm extends Term implements ViewManager {
     public removeViews(): void {
         this._node?.removeCyVisualElement()
         this._edge?.removeCyVisualElement()
-    }
-
-    /**
-     * Updates the number of hops for the neighbour term.
-     * If the query term belongs to the user graph, the function calculates the previous hops,
-     * updates the current hops, and calls the `updateUserCriteria` method to update the criteria.
-     *
-     * @param newHops - The new number of hops from the central node to the neighbour term.
-     *
-     * @returns {void} - This function does not return any value.
-     */
-    public updateHops(newHops: number): void {
-        if (this._queryTerm.isUserGraph) {
-            let previousHops = this._hops
-            this._hops = newHops
-            this._updateUserCriteria(previousHops, newHops)
-        }
     }
 
     /**
@@ -812,8 +797,8 @@ class NeighbourTerm extends Term implements ViewManager {
         const newAngle = (index / neighbourTermsLength) * Math.PI * 2 + 0.25
         const nodeDistance = ConversionUtils.convertHopsToDistance(this._hops, this._queryTerm.hopLimit, 
                 this._queryTerm.isUserGraph, this._queryTerm.graphZoom);
-        this._nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
-        this._updateNodePosition(nodeDistance)
+        const nodePosition = MathUtils.getAngularPosition(newAngle, nodeDistance)
+        this._updateNodePosition(nodePosition, nodeDistance)
     }
 
     /**
@@ -830,12 +815,32 @@ class NeighbourTerm extends Term implements ViewManager {
      * @returns {void} - This function does not return any value.
      */
     public updateNodePositionAndHops(position: Position): void {
+        // Calculate the values
         const nodeDistance = this._edge?.distance ?? 0
-        this._nodePosition = this._validatePositionWithinRange(position, nodeDistance)
-        const distance = MathUtils.calculateEuclideanDistance(this._nodePosition.x, this._nodePosition.y)
+        const nodePosition = this._validatePositionWithinRange(position, nodeDistance)
+        const distance = MathUtils.calculateEuclideanDistance(nodePosition.x, nodePosition.y)
         const hops = ConversionUtils.convertDistanceToHops(distance, this._queryTerm.hopLimit)
-        this.updateHops(hops)
-        this._updateNodePosition(distance)
+
+        // Update the hops and node position
+        this._updateHops(hops)
+        this._updateNodePosition(nodePosition, distance)
+    }
+
+    /**
+     * Updates the number of hops for the neighbour term.
+     * If the query term belongs to the user graph, the function calculates the previous hops,
+     * updates the current hops, and calls the `updateUserCriteria` method to update the criteria.
+     *
+     * @param newHops - The new number of hops from the central node to the neighbour term.
+     *
+     * @returns {void} - This function does not return any value.
+     */
+    private _updateHops(newHops: number): void {
+        if (this._queryTerm.isUserGraph) {
+            let previousHops = this._hops
+            this._hops = newHops
+            this._updateUserCriteria(previousHops, newHops)
+        }
     }
 
     /**
@@ -868,14 +873,19 @@ class NeighbourTerm extends Term implements ViewManager {
     }
 
     /**
-     * Updates the position of the neighbour term node and the neighbour term's hops.
+     * Updates the position and distance of the node in the graph.
      *
-     * @param distance - The distance from the central node to the neighbour term node.
-     * This distance is used to update the neighbour term's hops and the position of the neighbour term node.
+     * @param nodePosition - The new position of the node in the graph.
+     * @param distance - The new distance between the node and its connected neighbour term.
      *
      * @returns {void} - This function does not return any value.
+     *
+     * @remarks
+     * This function updates the position and distance of the node in the graph.
+     * It checks if the node and edge exist before updating their properties.
      */
-    private _updateNodePosition(distance: number): void {
+    private _updateNodePosition(nodePosition: Position, distance: number): void {
+        this._nodePosition = nodePosition;
         if (this._node !== undefined) this._node.position = this._nodePosition;
         if (this._edge !== undefined) this._edge.distance = distance;
     }
