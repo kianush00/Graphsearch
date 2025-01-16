@@ -7,16 +7,16 @@ WORKDIR /app
 # Copiar los archivos de configuración y las dependencias
 COPY package.json package-lock.json tsconfig.json webpack.config.js /app
 COPY ./dist/styles.css /app/dist/styles.css
+COPY ./src /app/src
+COPY ./index.html /app/index.html
+COPY .env.production /app/.env.production
 
 # Instalar dependencias
 RUN npm install
 
-# Copiar el código fuente
-COPY ./src /app/src
-COPY ./index.html /app/index.html
-
-# Compilar el código TypeScript y construir el bundle con webpack
-RUN npm run build
+# Establece el entorno para producción y construye el bundle con webpack
+ENV NODE_ENV=production
+RUN npm run build:prod
 
 # Etapa 2: Servir la aplicación con NGINX
 FROM nginx:stable

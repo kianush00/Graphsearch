@@ -1,7 +1,9 @@
 {
   "devDependencies": {
     "@types/jquery": "^3.5.32",
+    "cross-env": "^7.0.3",
     "css-loader": "^7.1.2",
+    "dotenv-webpack": "^8.1.0",
     "http-server": "^14.1.1",
     "mini-css-extract-plugin": "^2.9.2",
     "node-sass": "^9.0.0",
@@ -18,7 +20,8 @@
     "jquery": "^3.7.1"
   },
   "scripts": {
-    "start": "npx http-server -p 3000",
-    "build": "webpack"
+    "start": "cross-env NODE_ENV=development npx http-server -p 3000",
+    "build:dev": "cross-env NODE_ENV=development webpack",
+    "build:prod": "cross-env NODE_ENV=production webpack"
   }
 }

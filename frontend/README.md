@@ -14,10 +14,10 @@ To install frontend dependencies, use the following command:
 
 # Build the project
 
-To use TypeScript, the files located in the ./src directory must be compiled with output in ./dist. To do this, just run the following command:
+To use TypeScript, the files located in the ./src directory must be compiled with output in ./dist. To do this, run the following command:
 
 ```bash
-    npm run build
+    npm run build:dev
 ```
 
 

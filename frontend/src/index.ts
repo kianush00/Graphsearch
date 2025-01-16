@@ -245,7 +245,11 @@ class HTTPRequestUtils {
      */
     public static async postData(endpoint: string, data: any): Promise<any> {
         try {
-            const url = 'http://localhost:8080/'
+            const url = process.env.API_URL; // Gets the environment URL
+            if (!url) {
+                throw new Error("Environment variable 'URL' is not defined");
+            }
+
             const response = await fetch(url + endpoint, {
                 method: 'POST',
                 headers: {
@@ -1810,6 +1814,9 @@ class QueryService {
     private readonly _addTermsTable: AddTermsTable
     private readonly _queryTermsList: QueryTermsList
     private readonly _resultsList: ResultsList
+    private readonly _loadingBar: LoadingBar
+    private readonly _queryComponent: QueryComponent
+    private readonly _rerankComponent: RerankComponent
 
     /**
      * Initializes a new instance of the QueryService class.
@@ -1826,6 +1833,9 @@ class QueryService {
         this._resultsList = new ResultsList()
         this._queryTermsList = new QueryTermsList(this)
         this._addTermsTable = new AddTermsTable()
+        this._loadingBar = new LoadingBar();
+        this._queryComponent = new QueryComponent(this, this._loadingBar);
+        this._rerankComponent = new RerankComponent(this, this._loadingBar);
     }
 
     get activeQueryTermService(): QueryTermService | undefined { 
@@ -3088,10 +3098,7 @@ class CytoscapeManager {
      */
     public static initializeApp(): void {
         // Initialize the application components
-        const loadingBar = new LoadingBar();
         const queryService = new QueryService();
-        const queryComponent = new QueryComponent(queryService, loadingBar);
-        const rerankComponent = new RerankComponent(queryService, loadingBar);
 
         // Configure user events for the application and get instances in console
         this._configureCyUserEvents(queryService);
@@ -3110,12 +3117,6 @@ class CytoscapeManager {
      * - Right-clicking an edge.
      * - Hovering the mouse over a node.
      * - Moving the mouse away from a node.
-     * 
-     * When a node is dragged, the `nodeDragged` method of the `activeQueryTermService` is called with the node's ID and position.
-     * When a node is right-clicked, the `removeVisibleNeighbourTerm` method of the `activeQueryTermService` is called with the node's ID.
-     * When an edge is right-clicked, the `removeVisibleNeighbourTerm` method of the `activeQueryTermService` is called with the edge's ID (without the 'e_').
-     * When the mouse hovers over a node, the `changeCursorType` method of the `activeQueryTermService` is called with the node's ID and 'pointer' as the cursor type.
-     * When the mouse moves away from a node, the `changeCursorType` method of the `activeQueryTermService` is called with the node's ID and 'default' as the cursor type.
      */
     private static _configureCyUserEvents(queryService: QueryService): void {
         // When the user drags a node
@@ -3148,8 +3149,6 @@ class CytoscapeManager {
      * Provides a quick way to access instances of Cytoscape and QueryService in the browser's console.
      * 
      * @param queryService - The QueryService instance to be accessible in the console.
-     * 
-     * @returns {void} - This function does not return any value.
      * 
      * @remarks
      * This function assigns the instances of Cytoscape and QueryService to the `window` object,
