@@ -32,4 +32,4 @@ COPY --from=build /app/dist /usr/share/nginx/html/dist
 COPY --from=build /app/index.html /usr/share/nginx/html
 
 # Exponer los puertos para NGINX
-EXPOSE 80 443
+EXPOSE 80
