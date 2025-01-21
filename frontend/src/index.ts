@@ -2432,7 +2432,7 @@ class ResultsList {
         // Show abstract icon
         const showAbstractIcon = document.createElement('span');
         showAbstractIcon.className = 'icon';
-        showAbstractIcon.textContent = '🔽 Abstract';
+        showAbstractIcon.innerHTML = '&#x1F53D; Abstract'; // Use HTML Entity
         this._addEventListenersToAbstractIcon(showAbstractIcon, intermediateElement);
 
         // Document graph icon
@@ -2736,8 +2736,6 @@ class ResultsList {
      * 
      * This function sets up two event listeners for the show abstract icon:
      * 1. A click event listener that toggles the display of the abstract element.
-     * 2. A mouseenter event listener that changes the cursor style to "pointer".
-     * 3. A mouseleave event listener that resets the color of the show abstract icon to "black".
      * 
      * @param showAbstractIcon - The HTMLSpanElement representing the icon to show or hide the abstract.
      * @param intermediateElement - The HTMLDivElement representing the intermediate element containing the abstract.
@@ -2747,10 +2745,10 @@ class ResultsList {
             const abstract = intermediateElement.nextElementSibling as HTMLElement;
             if (abstract.style.display === 'none') {
                 abstract.style.display = 'block';
-                showAbstractIcon.textContent = '🔼 Abstract';
+                showAbstractIcon.innerHTML = '&#x1F53C; Abstract'; // Use HTML Entity
             } else {
                 abstract.style.display = 'none';
-                showAbstractIcon.textContent = '🔽 Abstract';
+                showAbstractIcon.innerHTML = '&#x1F53D; Abstract'; // Use HTML Entity
             }
         };
     }
