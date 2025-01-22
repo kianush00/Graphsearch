@@ -2843,6 +2843,8 @@ class QueryComponent {
             let value = parseInt(this._searchResultsInput.value, 10);
             if (isNaN(value) || value < 5) {
                 this._searchResultsInput.value = "5";
+            } else if (value > 50) {
+                this._searchResultsInput.value = "50";
             }
         });
 
