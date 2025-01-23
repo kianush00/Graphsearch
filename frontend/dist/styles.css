@@ -23,7 +23,15 @@ input {
 }
 
 header {
-    padding-left: 3.5%;
+    padding-left: 3.3%;
+}
+
+body {
+    font-size: 13px;
+}
+
+input, table, th, td {
+    font-size: 0.75rem;
 }
 
 #rootContainer {
@@ -69,8 +77,8 @@ header {
     -webkit-appearance: none; /* Compatibilidad con Safari */
     -moz-appearance: none; /* Compatibilidad con Firefox */
     border-radius: 4px 0 0 4px; /* Round right corners */
-    font-size: 7.5pt;
-    padding: 0 0.6rem; /* Espacio para el texto e ícono */
+    font-size: 0.7rem;
+    padding: 0 0.08rem 0 0.22rem; /* Espacio para el texto e ícono */
     cursor: pointer;
     background-color: #f9f9f9; /* Fondo blanco */
     background-image: none; /* Elimina cualquier estilo por defecto */
@@ -100,8 +108,8 @@ header {
 #queryInput {
     font-size: 10.5pt;
     outline: none;
-    padding: 0 0.8rem; /* Add horizontal padding */
-    width: 80%;
+    padding: 0 0.5rem; /* Add horizontal padding */
+    width: 79%;
 }
 
 #searchIcon {
@@ -110,7 +118,7 @@ header {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 4.3rem; /* Width of the icon box */
+    width: 4rem; /* Width of the icon box */
     background-color: #f9f9f9; /* Background color of the box */
     cursor: pointer;
     color: gray;
@@ -129,7 +137,7 @@ header {
     color: white;
     padding: 5px 10px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     white-space: nowrap;
     z-index: 10;
     box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
@@ -146,10 +154,11 @@ header {
     text-align: right;
     padding: 0.5rem 1rem; /* Add horizontal padding */
     margin-top: 0.3rem;
+    font-size: 0.75rem;
 }
 
 #searchParameters input[type="number"] {
-    width: 60px; /* Adjust the width as needed */
+    width: 54px; /* Adjust the width as needed */
 }
 
 #cy, #cySentence {
@@ -202,7 +211,7 @@ header {
 #rerankButton {
     position: relative; /* Necessary for tooltips positioning */
     padding: 10px 20px;
-    font-size: 20px;
+    font-size: 1.25rem;
     font-weight: bold;
     cursor: pointer;
 }
@@ -333,10 +342,6 @@ header {
     border-bottom: none;
 }
 
-body, input, table, th, td {
-    font-size: 13px;
-}
-
 .title {
     font-size: 1rem;
     line-height: 1.25;
@@ -364,7 +369,7 @@ body, input, table, th, td {
 
 .icon, .link {
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: bold;
     color: #003b7a;
 }
