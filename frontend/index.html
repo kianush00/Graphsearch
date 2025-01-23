@@ -24,13 +24,16 @@
             </div>
             <div id="searchParameters">
                 <label for="searchResults">Search results:</label>
-                <input type="number" id="searchResults" name="searchResults" min="5">
+                <input type="number" id="searchResults" name="searchResults" min="5" max="50">
+                <span class="tooltip">The maximum number of results to display in the search.</span>
                 <br>
                 <label for="limitDistance">Limit distance:</label>
                 <input type="number" id="limitDistance" name="limitDistance" min="2" max="10">
+                <span class="tooltip">The maximum distance allowed between proximity terms.</span>
                 <br>
                 <label for="graphTerms">Number of graph terms:</label>
                 <input type="number" id="graphTerms" name="graphTerms" min="1" max="20">
+                <span class="tooltip">The number of terms displayed in the User Graph visualization.</span>
             </div>
             <div id="cy">
                 <div class="circle-green"></div>
@@ -38,6 +41,7 @@
             </div>
             <div id="rerank">
                 <button id="rerankButton">Rerank</button>
+                <span class="tooltip">Reorder the results of the initial ranking,<br>from the previous configuration.</span>
             </div>
             <div id="neighbourTermsContainer">
                 <h3>Neighbour Terms</h3>
