@@ -19,6 +19,17 @@
     <div id="rootContainer">
         <div id="leftContainer">
             <div id="queryBar">
+                <div id="dropdownContainer">
+                    <select id="categoryDropdown">
+                        <option value="all">All</option>
+                        <option value="books">Books</option>
+                        <option value="conferences">Conferences</option>
+                        <option value="courses">Courses</option>
+                        <option value="journals">Journals & Magazines</option>
+                        <option value="standards">Standards</option>
+                    </select>
+                    <i class="fas fa-caret-down" id="dropdownIcon"></i>
+                </div>
                 <input type="text" id="queryInput" size="36" placeholder="New query..." autofocus>
                 <i id="searchIcon" class="fas fa-search fa-2x"></i>
             </div>
@@ -41,7 +52,7 @@
             </div>
             <div id="rerank">
                 <button id="rerankButton">Rerank</button>
-                <span class="tooltip">Reorder the results of the initial ranking,<br>from the previous configuration.</span>
+                <span class="tooltip">Based on the previous configuration, reorder<br>the results of the initial ranking.</span>
             </div>
             <div id="neighbourTermsContainer">
                 <h3>Neighbour Terms</h3>

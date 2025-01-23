@@ -18,6 +18,10 @@ html, body {
     overflow-y: auto; /* Enable scrolling on the vertical axis */
 }
 
+input {
+    color: #333333; /* Text color */
+}
+
 header {
     padding-left: 3.5%;
 }
@@ -30,7 +34,7 @@ header {
 }
 
 #leftContainer {
-    width: 28.5rem;
+    width: 31rem;
     height: inherit;
     display: block;
     margin-left: 3%;
@@ -42,39 +46,71 @@ header {
     max-width: 95rem;
     height: inherit;
     margin-left: 1%;
-    margin-right: 9.5%;
+    margin-right: 8.5%;
 }
 
 #queryBar {
     width: 100%;
-    text-align: center;
-    margin-bottom: -0.4rem;
+    margin-bottom: -0.35rem;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-#queryInput, #searchIcon {
-    height: 32px; /* Height of the box, same as input */
+#dropdownContainer {
+    position: relative; /* Para posicionar el ícono dentro del contenedor */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+#categoryDropdown {
+    appearance: none; /* Oculta el ícono del sistema para el menú desplegable */
+    -webkit-appearance: none; /* Compatibilidad con Safari */
+    -moz-appearance: none; /* Compatibilidad con Firefox */
+    border-radius: 4px 0 0 4px; /* Round right corners */
+    font-size: 7.5pt;
+    padding: 0 0.6rem; /* Espacio para el texto e ícono */
+    cursor: pointer;
+    background-color: #f9f9f9; /* Fondo blanco */
+    background-image: none; /* Elimina cualquier estilo por defecto */
+    text-align: left; /* Alinea el texto a la izquierda */
+    outline: none;
+    line-height: 2rem; /* Alinea el texto verticalmente */
+}
+
+#categoryDropdown:focus {
+    border-color: #666;
+}
+
+#dropdownIcon {
+    position: absolute;
+    right: 0.6rem; /* Posiciona el ícono dentro del menú */
+    pointer-events: none; /* Permite que los clics pasen al menú desplegable */
+    color: #999;
+    font-size: 14px;
+}
+
+#queryInput, #searchIcon, #categoryDropdown {
+    height: 2rem; /* Height of the box, same as input */
     border: 1px solid #999; /* Add a border to the input */
+    box-sizing: border-box; /* Incluye padding y border en las dimensiones */
 }
 
 #queryInput {
-    font-size: 12pt;
-    border-radius: 4px 0 0 4px; /* Round the left corners of the input */
-    margin-left: -1rem;
+    font-size: 10.5pt;
     outline: none;
     padding: 0 0.8rem; /* Add horizontal padding */
+    width: 80%;
 }
 
 #searchIcon {
-    font-size: 24px;
+    font-size: 1.25rem;
     border-radius: 0 4px 4px 0; /* Round right corners */
-    margin-right: -1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 60px; /* Width of the icon box */
+    width: 4.3rem; /* Width of the icon box */
     background-color: #f9f9f9; /* Background color of the box */
     cursor: pointer;
     color: gray;
