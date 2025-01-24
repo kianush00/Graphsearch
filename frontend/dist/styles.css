@@ -4,7 +4,6 @@ html, body {
     line-height: 1.5;
     width: 100%;
     height: 100vh;
-    color: #333333; /* Text color */
     background-color: #ffffff;
 
     /* Reset and structure */
@@ -18,7 +17,7 @@ html, body {
     overflow-y: auto; /* Enable scrolling on the vertical axis */
 }
 
-input {
+html, body, input, button {
     color: #333333; /* Text color */
 }
 
@@ -46,18 +45,18 @@ input, table, th, td {
     height: inherit;
     display: block;
     margin-left: 3%;
-    margin-right: 0.6%;
+    margin-right: 0.65%;
 }
 
 #rightContainer {
     flex: 1;
     max-width: 95rem;
     height: inherit;
-    margin-left: 1%;
+    margin-left: 0.65%;
     margin-right: 8.5%;
 }
 
-#queryBar {
+#queryBarContainer {
     width: 100%;
     margin-bottom: -0.35rem;
     display: flex;
@@ -67,66 +66,95 @@ input, table, th, td {
 
 #dropdownContainer {
     position: relative; /* Para posicionar el ícono dentro del contenedor */
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
 }
 
-#categoryDropdown {
+#dropdownButton, #searchIcon {
+    background-color: #f9f9f9;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    justify-content: center;
+}
+
+#dropdownButton {
     appearance: none; /* Oculta el ícono del sistema para el menú desplegable */
     -webkit-appearance: none; /* Compatibilidad con Safari */
     -moz-appearance: none; /* Compatibilidad con Firefox */
     border-radius: 4px 0 0 4px; /* Round right corners */
-    font-size: 0.7rem;
-    padding: 0 0.08rem 0 0.22rem; /* Espacio para el texto e ícono */
-    cursor: pointer;
-    background-color: #f9f9f9; /* Fondo blanco */
-    background-image: none; /* Elimina cualquier estilo por defecto */
-    text-align: left; /* Alinea el texto a la izquierda */
+    font-size: 0.75rem;
+    padding: 0.4rem 0.6rem 0.4rem 0.4rem;
+    width: 100%;
     outline: none;
-    line-height: 2rem; /* Alinea el texto verticalmente */
 }
 
-#categoryDropdown:focus {
-    border-color: #666;
+#dropdownButton:hover, #searchIcon:hover {
+    background-color: #ebebeb;
 }
 
 #dropdownIcon {
-    position: absolute;
-    right: 0.6rem; /* Posiciona el ícono dentro del menú */
-    pointer-events: none; /* Permite que los clics pasen al menú desplegable */
+    margin-left: 0.5rem;
     color: #999;
     font-size: 14px;
 }
 
-#queryInput, #searchIcon, #categoryDropdown {
+#dropdownMenu, #queryInput, #searchIcon, #dropdownButton, #cy, #cySentence {
+    border: 1px solid #999;
+}
+
+#dropdownMenu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem;
+    display: none; /* Oculto por defecto */
+    z-index: 1000;
+}
+
+#dropdownContainer:hover #dropdownMenu {
+    display: block; /* Muestra el menú cuando el contenedor es hovered */
+}
+
+#dropdownMenu label {
+    display: flex;
+    align-items: center;
+    font-size: 0.8rem;
+    padding: 0.2rem 0;
+    cursor: pointer;
+}
+
+#dropdownMenu label input {
+    margin-right: 0.5rem;
+    cursor: pointer;
+}
+
+#dropdownMenu label:hover {
+    background-color: #f3f3f3;
+}
+
+#queryInput, #searchIcon, #dropdownButton {
     height: 2rem; /* Height of the box, same as input */
-    border: 1px solid #999; /* Add a border to the input */
     box-sizing: border-box; /* Incluye padding y border en las dimensiones */
 }
 
 #queryInput {
-    font-size: 10.5pt;
+    font-size: 0.9rem;
     outline: none;
     padding: 0 0.5rem; /* Add horizontal padding */
-    width: 79%;
+    width: 100%;
 }
 
 #searchIcon {
     font-size: 1.25rem;
     border-radius: 0 4px 4px 0; /* Round right corners */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 4rem; /* Width of the icon box */
-    background-color: #f9f9f9; /* Background color of the box */
-    cursor: pointer;
+    width: 4.3rem; /* Width of the icon box */
     color: gray;
 }
 
 #searchIcon:hover {
     color: black;
-    background-color: #e0e0e0;
 }
 
 .tooltip {
@@ -162,7 +190,6 @@ input, table, th, td {
 }
 
 #cy, #cySentence {
-    border: 1px solid #999;
     border-radius: 0.9rem;
 }
 

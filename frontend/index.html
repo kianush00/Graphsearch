@@ -18,17 +18,15 @@
     </header>
     <div id="rootContainer">
         <div id="leftContainer">
-            <div id="queryBar">
+            <div id="queryBarContainer">
                 <div id="dropdownContainer">
-                    <select id="categoryDropdown">
-                        <option value="all">All</option>
-                        <option value="books">Books</option>
-                        <option value="conferences">Conferences</option>
-                        <option value="courses">Courses</option>
-                        <option value="journals">Journals & Magazines</option>
-                        <option value="standards">Standards</option>
-                    </select>
-                    <i class="fas fa-caret-down" id="dropdownIcon"></i>
+                    <button id="dropdownButton">Categories <i class="fas fa-caret-down" id="dropdownIcon"></i></button>
+                    <div id="dropdownMenu">
+                        <label><input type="checkbox" value="Conferences" checked>Conferences</label>
+                        <label><input type="checkbox" value="Journals" checked>Journals</label>
+                        <label><input type="checkbox" value="Magazines" checked>Magazines</label>
+                        <label><input type="checkbox" value="Early Access Articles" checked>Early Access Articles</label>
+                    </div>
                 </div>
                 <input type="text" id="queryInput" size="36" placeholder="New query..." autofocus>
                 <i id="searchIcon" class="fas fa-search fa-2x"></i>
