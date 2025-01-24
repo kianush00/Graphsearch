@@ -279,7 +279,102 @@ class HTTPRequestUtils {
             alert('An error occurred while sending the request.')
         }
     }
+}
 
+class ObjectValidationUtils {
+    public static isRankingResponseData(obj: any): obj is RankingResponseData {
+        // Validate arrays structure in object, also validate visible_neighbour_terms and complete_neighbour_terms
+        if (!this._isRankingStructure(obj) 
+            || !this._areNeighbourTerms([...obj.visible_neighbour_terms, ...obj.complete_neighbour_terms])
+        ) {
+            return false;
+        }
+    
+        // Validate documents and all_neighbour_terms inside each document
+        for (const document of obj.documents) {
+            // Validate document first-level structure
+            if (!this._isDocumentStructure(document) 
+                || !this._areNeighbourTerms(document.all_neighbour_terms)
+            ) {
+                return false;
+            }
+    
+            // Validate sentences inside each document
+            for (const sentence of document.sentences) {
+                // Validate sentence first-level structure, raw_to_processed_map and all_neighbour_terms inside each sentence
+                if (!this._isSentenceStructure(sentence) 
+                    || !this._isRawToProcessMap(sentence.raw_to_processed_map) 
+                    || !this._areNeighbourTerms(sentence.all_neighbour_terms)
+                ) {
+                    return false;
+                }
+            }
+        }
+    
+        // If all validations passed, return true
+        return true;
+    }
+
+    private static _areNeighbourTerms(neighbourTerms: any): boolean {
+        for (const term of neighbourTerms) {
+            if (
+                typeof term.term !== "string" ||
+                typeof term.proximity_score !== "number" ||
+                typeof term.frequency_score !== "number" ||
+                typeof term.criteria !== "string"
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static _isRawToProcessMap(rawToProcessMap: any): boolean {
+        for (const map of rawToProcessMap) {
+            if (
+                !Array.isArray(map) ||
+                map.length !== 4 ||
+                typeof map[0] !== "number" ||
+                typeof map[1] !== "number" ||
+                typeof map[2] !== "string" ||
+                typeof map[3] !== "string"
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static _isRankingStructure(ranking: any): boolean {
+        return (
+            !ranking ||
+            !Array.isArray(ranking.visible_neighbour_terms) ||
+            !Array.isArray(ranking.complete_neighbour_terms) ||
+            !Array.isArray(ranking.documents) ||
+            !Array.isArray(ranking.individual_query_terms_list)
+        );
+    }
+
+    private static _isDocumentStructure(document: any): boolean {
+        return (
+            typeof document.doc_id !== "string" ||
+            typeof document.title !== "string" ||
+            typeof document.abstract !== "string" ||
+            typeof document.preprocessed_text !== "string" ||
+            typeof document.weight !== "number" ||
+            !Array.isArray(document.all_neighbour_terms) ||
+            !Array.isArray(document.sentences)
+        );
+    }
+
+    private static _isSentenceStructure(sentence: any): boolean {
+        return (
+            typeof sentence.position_in_doc !== "number" ||
+            typeof sentence.raw_text !== "string" ||
+            !Array.isArray(sentence.raw_to_processed_map) ||
+            !Array.isArray(sentence.all_neighbour_terms)
+        );
+    }
 }
 
 
@@ -655,7 +750,7 @@ interface NTermObject {
     term: string;
     proximity_score: number;
     frequency_score: number;
-    criteria: string;
+    criteria: TermCriteria;
 }
 
 
@@ -676,20 +771,17 @@ class NeighbourTerm extends Term implements ViewManager {
      * Initializes a new NeighbourTerm instance with the provided parameters.
      *
      * @param queryTerm - The QueryTerm instance associated with the neighbour term.
-     * @param value - The value of the neighbour term.
-     * @param proximityScore - The proximity score of the neighbour term.
-     * @param frequencyScore - The frequency score of the neighbour term.
-     * @param criteria - The criteria of the neighbour term, which can be 'proximity', 'frequency', or 'exclusion'.
+     * @param termObject - The neighbour term object, which contains the term, proximity score, 
+     * frequency score and the criteria.
      */
-    constructor(queryTerm: QueryTerm, value: string, proximityScore: number, frequencyScore: number, 
-        criteria: TermCriteria) {
-        super(value)
-        this._queryTerm = queryTerm
-        this._proximityScore = proximityScore
-        this._frequencyScore = frequencyScore
-        this._criteria = criteria
+    constructor(queryTerm: QueryTerm, termObject: NTermObject) {
+        super(termObject.term);
+        this._queryTerm = queryTerm;
+        this._proximityScore = termObject.proximity_score;
+        this._frequencyScore = termObject.frequency_score;
+        this._criteria = termObject.criteria;
         this._setInitialHops()
-        this._value = value
+        this._value = termObject.term
     }
 
     public get proximityScore(): number {
@@ -1140,7 +1232,7 @@ class TextElement {
     ​ * Each object should have properties: term, distance, and ponderation.
     ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
     ​ */
-    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number) {
+    constructor(queryTermValue: string, responseNeighbourTerms: NTermObject[], hopLimit: number) {
         this._queryTerm = new QueryTerm(queryTermValue, false, hopLimit)
         this._initializeNeighbourTermsFromResponse(responseNeighbourTerms)
     }
@@ -1157,11 +1249,10 @@ class TextElement {
      * 
      * @returns {void} - This function does not return any value.
      */
-    private _initializeNeighbourTermsFromResponse(responseNeighbourTerms: any[]): void {
+    private _initializeNeighbourTermsFromResponse(responseNeighbourTerms: NTermObject[]): void {
         const neighbourTerms = []
         for (const termObject of responseNeighbourTerms) {
-            const neighbourTerm = new NeighbourTerm(this._queryTerm, termObject.term, termObject.proximity_score, 
-                termObject.frequency_score, termObject.criteria)
+            const neighbourTerm = new NeighbourTerm(this._queryTerm, termObject)
             neighbourTerms.push(neighbourTerm)
         }
         this._queryTerm.neighbourTerms = neighbourTerms;
@@ -1185,24 +1276,23 @@ class Sentence extends TextElement {
     private readonly _rawToProcessedMap: RawToProcessedMap
 
     /**
-    ​ * Constructor for the Sentence class.
-    ​ * Initializes a new Sentence instance with the provided query term value, neighbour terms, and sentence details.
-    ​ *
-    ​ * @param queryTermValue - The value of the query term associated with the sentence.
-    ​ * @param responseNeighbourTerms - An array of objects representing neighbour terms retrieved from the response.
-    ​ * Each object should have properties: term, distance, and ponderation.
-    ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
-    ​ * @param positionInDoc - The position of the sentence in the document.
-    ​ * @param rawText - The raw text of the sentence.
-     * @param rawToProcessedMap - The map of raw to processed words in the sentence
-    ​ */
-    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number, positionInDoc: number, 
-        rawText: string, rawToProcessedMap: RawToProcessedMap){
-        super(queryTermValue, responseNeighbourTerms, hopLimit)
-        this._positionInDoc = positionInDoc
-        this._rawText = rawText
-        this._rawToProcessedMap = rawToProcessedMap
+     * Initializes a new Sentence instance with the provided query term value, hop limit, and sentence data.
+     *
+     * @param queryTermValue - The value of the query term associated with the sentence.
+     * @param hopLimit - The maximum number of hops allowed for neighbour terms in the sentence.
+     * @param sentenceObject - An object containing the sentence data retrieved from the response.
+     * The object should have properties: position_in_doc, raw_text, raw_to_processed_map, and all_neighbour_terms.
+     *
+     * It initializes the Sentence instance with the provided query term value, hop limit, and sentence data.
+     * It also initializes the sentence's position in the document, raw text, and raw to processed map.
+     */
+    constructor(queryTermValue: string, hopLimit: number, sentenceObject: SentenceResponseData){
+        super(queryTermValue, sentenceObject.all_neighbour_terms, hopLimit)
+        this._positionInDoc = sentenceObject.position_in_doc
+        this._rawText = sentenceObject.raw_text
+        this._rawToProcessedMap = sentenceObject.raw_to_processed_map
     }
+
 
     get rawText(): string {
         return this._rawText
@@ -1241,29 +1331,28 @@ class Document extends TextElement {
     private readonly _sentences: Sentence[] = []
 
     /**
-    ​ * Constructor for the Document class.
-    ​ * Initializes a new Document instance with the provided query term value, neighbour terms, document details, and sentence data.
-    ​ *
-    ​ * @param queryTermValue - The value of the query term associated with the document.
-    ​ * @param responseNeighbourTerms - An array of objects representing neighbour terms retrieved from the response.
-    ​ * Each object has properties: term, distance, and ponderation.
-    ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the document.
-    ​ * @param idTitleAbstractPreprcsdtext - An array containing the document's id, title, abstract and preprocessed text.
-    ​ * @param weight - The weight of the document.
-    ​ * @param responseSentences - An array of objects representing sentences retrieved from the response.
-    ​ * Each object has properties: position_in_doc, raw_text, and neighbour_terms.
-    ​ */
-    constructor(queryTermValue: string, responseNeighbourTerms: any[], hopLimit: number, idTitleAbstractPreprcsdtext: [string, string, string, string], 
-        weight: number, responseSentences: any[]){
-        super(queryTermValue, responseNeighbourTerms, hopLimit)
-        this._id = idTitleAbstractPreprcsdtext[0]
-        this._title = idTitleAbstractPreprcsdtext[1]
-        this._abstract = idTitleAbstractPreprcsdtext[2]
-        this._preprocessed_text = idTitleAbstractPreprcsdtext[3]
-        this._weight = weight
-        this._isExcluded = false
-        this._sentences = this._initializeSentencesFromResponse(responseSentences, hopLimit)
+     * Initializes a new Document instance with the provided query term value, hop limit, and document data.
+     *
+     * @param queryTermValue - The value of the query term associated with the document.
+     * @param hopLimit - The maximum number of hops allowed for neighbour terms in the document.
+     * @param documentObject - An object containing the document data retrieved from the response.
+     * The object should have properties: doc_id, title, abstract, preprocessed_text, weight, and all_neighbour_terms.
+     *
+     * It initializes the Document instance with the provided query term value, hop limit, and document data.
+     * It also initializes the document's ID, title, abstract, preprocessed text, weight, exclusion status,
+     * and sentences using the provided document data and hop limit.
+     */
+    constructor(queryTermValue: string, hopLimit: number, documentObject: DocumentResponseData){
+        super(queryTermValue, documentObject.all_neighbour_terms, hopLimit)
+        this._id = documentObject.doc_id;
+        this._title = documentObject.title;
+        this._abstract = documentObject.abstract;
+        this._preprocessed_text = documentObject.preprocessed_text;
+        this._weight = documentObject.weight;
+        this._isExcluded = false;
+        this._sentences = this._initializeSentencesFromResponse(documentObject.sentences, hopLimit)
     }
+
 
     get id(): string {
         return this._id
@@ -1305,17 +1394,15 @@ class Document extends TextElement {
     ​ * 
     ​ * @param responseSentences - An array of objects representing sentences retrieved from the response.
     ​ * Each object has properties 'position_in_doc', 'raw_text', and 'neighbour_terms'.
-    ​ * 
     ​ * @param hopLimit - The maximum number of hops allowed for the neighbour terms in the sentences.
     ​ * 
     ​ * @returns An array of Sentence instances, each representing a sentence from the response data.
     ​ * Each Sentence instance is created with the query term value, neighbour terms, hop limit, position, and raw text.
     ​ */
-    private _initializeSentencesFromResponse(responseSentences: any[], hopLimit: number): Sentence[] {
+    private _initializeSentencesFromResponse(responseSentences: SentenceResponseData[], hopLimit: number): Sentence[] {
         const sentences = []
         for (const sentenceObject of responseSentences) {
-            const sentence = new Sentence(this._queryTerm.value, sentenceObject.all_neighbour_terms, 
-                    hopLimit, sentenceObject.position_in_doc, sentenceObject.raw_text, sentenceObject.raw_to_processed_map)
+            const sentence = new Sentence(this._queryTerm.value, hopLimit, sentenceObject)
             sentences.push(sentence)
         }
         return sentences
@@ -1498,6 +1585,38 @@ class Ranking {
 }
 
 
+interface RankingRequestData {
+    query: string;
+    search_results: number;
+    limit_distance: number;
+    graph_terms: number;
+    selected_categories: string[];
+}
+
+interface SentenceResponseData {
+    position_in_doc: number;
+    raw_text: string;
+    raw_to_processed_map: RawToProcessedMap;
+    all_neighbour_terms: NTermObject[];
+}
+
+interface DocumentResponseData {
+    doc_id: string;
+    title: string;
+    abstract: string;
+    preprocessed_text: string;
+    weight: number;
+    all_neighbour_terms: NTermObject[];
+    sentences: SentenceResponseData[];
+}
+
+interface RankingResponseData {
+    visible_neighbour_terms: NTermObject[];
+    complete_neighbour_terms: NTermObject[];
+    documents: DocumentResponseData[];
+    individual_query_terms_list: string[];
+}
+
 /**
  * A service class responsible for managing query terms and their associated data.
  */
@@ -1546,32 +1665,42 @@ class QueryTermService {
      * @param searchResults - The number of search results to retrieve.
      * @param limitDistance - The maximum distance limit for neighbour terms.
      * @param graphTerms - The number of neighbour terms to include in the graph.
+     * @param selectedCategories - The number of selected categories to include in the ranking.
      *
      * @returns {Promise<void>} - A promise that resolves when the data retrieval and processing are complete.
      */
-    public async initialize(searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
+    public async initialize(searchResults: number, limitDistance: number, graphTerms: number, 
+        selectedCategories: string[]): Promise<void> {
         // Define the endpoint for retrieving neighbour terms data
         const endpoint = 'get-ranking';
         const query = this.visibleQueryTerm.value;
-        const data = {query: query, search_results: searchResults, 
-                limit_distance: limitDistance, graph_terms: graphTerms}
+
+        // Use the defined interface for the data object
+        const data: RankingRequestData = {
+            query: query,
+            search_results: searchResults,
+            limit_distance: limitDistance,
+            graph_terms: graphTerms,
+            selected_categories: selectedCategories
+        };
 
         try {
             // Send a POST request to the endpoint with the query term value
             const result = await HTTPRequestUtils.postData(endpoint, data)
 
-            // Check if the result is not null
-            if (result) {
-                this.visibleQueryTerm.individualQueryTermsList = result['individual_query_terms_list'];
+            // Check if the result complies with RankingResponseData
+            if (ObjectValidationUtils.isRankingResponseData(result)) {
+                this._setIndividualQueryTermsList(result.individual_query_terms_list);
                 this._generateVisibleNeighbourTerms(result)
                 this._generateCompleteNeighbourTerms(result)
                 this._generateRankingDocuments(result)
             } else {
-                console.log("Warning: null API response");
+                console.error("Invalid response format:", result);
+                alert("The server returned an invalid response.");
             }
         } catch (error) {
-            alert("Error retrieving data:" + error);
-            console.error("Error retrieving neighbour terms data:", error)
+            alert("Error retrieving ranking data:" + error);
+            console.error("Error retrieving ranking data:", error)
         }
     }
 
@@ -1702,6 +1831,10 @@ class QueryTermService {
         $('html,body').css('cursor', newCursorType);
     }
 
+    private _setIndividualQueryTermsList(individual_query_terms_list: string[]): void {
+        this.visibleQueryTerm.individualQueryTermsList = individual_query_terms_list;
+    }
+
     /**
      * Generates visible neighbour terms for the current query term.
      * 
@@ -1712,9 +1845,9 @@ class QueryTermService {
      * 
      * @returns {void} - This function does not return any value.
      */
-    private _generateVisibleNeighbourTerms(result: any): void {
+    private _generateVisibleNeighbourTerms(result: RankingResponseData): void {
         // Iterate over the neighbour terms in the result
-        for (let termObject of result['visible_neighbour_terms']) {
+        for (let termObject of result.visible_neighbour_terms) {
             // Create a new NeighbourTerm instance for each term object
             const neighbourTerm = this._initializeNewNeighbourTerm(this.visibleQueryTerm, termObject);
 
@@ -1735,9 +1868,9 @@ class QueryTermService {
      * It iterates over the neighbour terms in the result, creates a new NeighbourTerm instance for each term object,
      * and adds the neighbour term to the complete QueryTerm's neighbour terms list.
      */
-    private _generateCompleteNeighbourTerms(result: any): void {
+    private _generateCompleteNeighbourTerms(result: RankingResponseData): void {
         // Iterate over the neighbour terms in the result
-        for (let termObject of result['complete_neighbour_terms']) {
+        for (let termObject of result.complete_neighbour_terms) {
             // Create a new NeighbourTerm instance for each term object
             const neighbourTerm = this._initializeNewNeighbourTerm(this.completeQueryTerm, termObject)
 
@@ -1749,17 +1882,19 @@ class QueryTermService {
         this._queryService.updateAddTermsTable()
     }
 
+
     /**
-     * Initializes a new NeighbourTerm instance based on the provided term object and hop limit.
+     * Initializes a new instance of NeighbourTerm.
      * 
-     * @param termObject - An object containing properties 'term', 'distance', and 'ponderation' representing a neighbour term.
+     * @param queryTerm - The QueryTerm to which the new neighbour term belongs.
+     * @param termObject - The NTermObject containing the term, distance, and ponderation data for the new neighbour term.
      * 
-     * @returns A new NeighbourTerm instance with the provided term value, distance, ponderation, and hop limit.
+     * @returns {NeighbourTerm} - A new instance of NeighbourTerm initialized with the provided queryTerm and termObject.
      */
-    private _initializeNewNeighbourTerm(queryTerm: QueryTerm, termObject: any): NeighbourTerm {
-        return new NeighbourTerm(queryTerm, termObject.term, termObject.proximity_score, 
-            termObject.frequency_score, termObject.criteria)
+    private _initializeNewNeighbourTerm(queryTerm: QueryTerm, termObject: NTermObject): NeighbourTerm {
+        return new NeighbourTerm(queryTerm, termObject);
     }
+
 
     /**
      * Generates ranking documents for the current query term, and updates the results list component.
@@ -1771,20 +1906,12 @@ class QueryTermService {
      * 
      * @returns {void} - This function does not return any value.
      */
-    private _generateRankingDocuments(result: any): void {
+    private _generateRankingDocuments(result: RankingResponseData): void {
         // Iterate over the documents in the result
-        for (let documentObject of result['documents']) {
-            const doc_id = documentObject['doc_id']
-            const title = documentObject['title']
-            const abstract = documentObject['abstract']
-            const preprocessed_text = documentObject['preprocessed_text']
-            const weight = documentObject['weight']
-            const response_neighbour_terms = documentObject['all_neighbour_terms']
-            const sentences = documentObject['sentences']
+        for (let documentObject of result.documents) {
             const queryTermValue = this.visibleQueryTerm.value
             const hopLimit = this.visibleQueryTerm.hopLimit
-            const document = new Document(queryTermValue, response_neighbour_terms, hopLimit, 
-                    [doc_id, title, abstract, preprocessed_text], weight, sentences)
+            const document = new Document(queryTermValue, hopLimit, documentObject)
             this._addDocument(document)
         }
 
@@ -1851,13 +1978,15 @@ class QueryService {
      * @param searchResults - The number of search results to retrieve.
      * @param limitDistance - The maximum distance limit for neighbour terms.
      * @param graphTerms - The number of neighbour terms to include in the graph.
+     * @param selectedCategories - The number of selected categories to include in the ranking.
      */
-    public async setQuery(queryValue: string, searchResults: number, limitDistance: number, graphTerms: number): Promise<void> {
+    public async setQuery(queryValue: string, searchResults: number, limitDistance: number, 
+        graphTerms: number, selectedCategories: string[]): Promise<void> {
         // Deactivate the currently active service
         this._activeQueryTermService?.deactivate();
 
         // Wait for the new QueryTermService to be generated
-        await this._generateNewQueryTermService(queryValue, searchResults, limitDistance, graphTerms);
+        await this._generateNewQueryTermService(queryValue, searchResults, limitDistance, graphTerms, selectedCategories);
 
         // Set the new service as active
         this.setActiveQueryTermService(queryValue);
@@ -1968,15 +2097,16 @@ class QueryService {
      * @param searchResults - The number of search results to retrieve.
      * @param limitDistance - The maximum distance limit for neighbour terms.
      * @param graphTerms - The number of neighbour terms to include in the graph.
+     * @param selectedCategories - The number of selected categories to include in the ranking.
      */
     private async _generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, 
-        graphTerms: number): Promise<void> {
+        graphTerms: number, selectedCategories: string[]): Promise<void> {
         // Check if a QueryTermService for the given query value already exists
         if (this._findQueryTermService(queryValue) !== undefined) return;
 
         // Create a new QueryTermService and initialize it with the given parameters
         const queryTermService = new QueryTermService(this, queryValue, limitDistance);
-        await queryTermService.initialize(searchResults, limitDistance, graphTerms);
+        await queryTermService.initialize(searchResults, limitDistance, graphTerms, selectedCategories);
 
         // Add the new QueryTermService to the queryTermServices array and update the query terms list
         this._queryTermServices.push(queryTermService)
@@ -2179,12 +2309,14 @@ class AddTermsTable {
 
         // Add the neighbour term to the active query term's visible neighbour terms
         const queryTerm = this._activeTermService.visibleQueryTerm;
-        const value = neighbourTerm.value;
-        const proximityScore = neighbourTerm.proximityScore;
-        const frequencyScore = neighbourTerm.frequencyScore;
-        const criteria = neighbourTerm.criteria;
+        const neighbourTermObject: NTermObject = {
+            term: neighbourTerm.value,
+            proximity_score: neighbourTerm.proximityScore,
+            frequency_score: neighbourTerm.frequencyScore,
+            criteria: neighbourTerm.criteria,
+        }
 
-        const visibleNeighbourTerm = new NeighbourTerm(queryTerm, value, proximityScore, frequencyScore, criteria);
+        const visibleNeighbourTerm = new NeighbourTerm(queryTerm, neighbourTermObject);
         this._activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm);
     }
 
@@ -2943,13 +3075,14 @@ class QueryComponent {
         const alphanumericRegex = /[a-zA-Z0-9]/
 
         if (alphanumericRegex.test(queryValue)) {   // Check if the value contains at least one alphanumeric character
-            const searchResults = parseInt(this._searchResultsInput.value, 10);
-            const limitDistance = parseInt(this._limitDistanceInput.value, 10);
-            const graphTerms = parseInt(this._graphTermsInput.value, 10);
+            const searchResults = this._getSearchResultsValue();
+            const limitDistance = this._getLimitDistanceValue();
+            const graphTerms = this._getGraphTermsValue();
+            const selectedCategories = this._getSelectedCategories();  // Get the selected checkbox values as an array of strings
 
             try {
                 //Send the query to the query service
-                await this._queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms) 
+                await this._queryService.setQuery(queryValue, searchResults, limitDistance, graphTerms, selectedCategories);
             } catch (error) {
                 console.error("Error processing query:", error);
                 alert("Failed to process the query.");
@@ -2962,6 +3095,24 @@ class QueryComponent {
         // Re-enable the input field after the process is complete, and end the loading bar
         this._queryInput.disabled = false;
         this._loadingBar.hide();
+    }
+
+    private _getSearchResultsValue(): number {
+        return parseInt(this._searchResultsInput.value, 10);
+    }
+
+    private _getLimitDistanceValue(): number {
+        return parseInt(this._limitDistanceInput.value, 10);
+    }
+
+    private _getGraphTermsValue(): number {
+        return parseInt(this._graphTermsInput.value, 10);
+    }
+
+    private _getSelectedCategories(): string[] {
+        return Array.from(this._dropdownCheckboxes)
+        .filter(checkbox => checkbox.checked) // Only include checked checkboxes
+        .map(checkbox => checkbox.value); // Extract the value of each checkbox
     }
 }
 
