@@ -2764,12 +2764,13 @@ class ResultsList {
  */
 class QueryComponent {
     private readonly _queryService: QueryService
-    private readonly _input: HTMLInputElement
+    private readonly _queryInput: HTMLInputElement
     private readonly _searchIcon: HTMLElement
     private readonly _searchResultsInput: HTMLInputElement
     private readonly _limitDistanceInput: HTMLInputElement
     private readonly _graphTermsInput: HTMLInputElement
     private readonly _loadingBar: LoadingBar;
+    private readonly _dropdownCheckboxes: NodeListOf<HTMLInputElement>
 
     /**
      * Constructs a new instance of QueryComponent.
@@ -2784,11 +2785,12 @@ class QueryComponent {
      */
     constructor(queryService: QueryService, loadingBar: LoadingBar) {
         this._queryService = queryService
-        this._input = document.getElementById('queryInput') as HTMLInputElement
+        this._queryInput = document.getElementById('queryInput') as HTMLInputElement
         this._searchIcon = document.getElementById('searchIcon') as HTMLElement
         this._searchResultsInput = document.getElementById('searchResults') as HTMLInputElement;
         this._limitDistanceInput = document.getElementById('limitDistance') as HTMLInputElement;
         this._graphTermsInput = document.getElementById('graphTerms') as HTMLInputElement;
+        this._dropdownCheckboxes = document.querySelectorAll<HTMLInputElement>(".dropdownCheckbox");
         this._loadingBar = loadingBar;
 
         // Set default values for the inputs
@@ -2810,7 +2812,7 @@ class QueryComponent {
      */
     private _addEventListeners(): void {
         // Event listener for "Enter" key presses
-        this._input.addEventListener("keyup", event => {
+        this._queryInput.addEventListener("keyup", event => {
             if(event.key === "Enter") {
                 this._processQuery()
             }
@@ -2822,7 +2824,8 @@ class QueryComponent {
         })
 
         // Add validation to ensure inputs stay within defined ranges
-        this._addValidationListeners();
+        this._addParametersValidationListeners();
+        this._addCheckboxValidationListener();
     }
 
     
@@ -2836,7 +2839,7 @@ class QueryComponent {
      * - `limitDistanceInput`: Validates the limit distance for proximity-based queries. It should be between 2 and 10.
      * - `graphTermsInput`: Validates the number of graph terms to be considered. It should be between 1 and 20.
      */
-    private _addValidationListeners(): void {
+    private _addParametersValidationListeners(): void {
         // Add validation to ensure inputs stay within defined ranges
         // Validate search results input
         this._searchResultsInput.addEventListener("change", () => {
@@ -2869,6 +2872,59 @@ class QueryComponent {
         });
     }
 
+    /**
+     * Adds an event listener to the checkboxes to validate the checkbox selection.
+     * This function is called when the DOM is fully loaded.
+     * 
+     * @remarks
+     * The function iterates over each checkbox and adds a change event listener to it.
+     * When a checkbox is changed, the `_handleCheckboxChange` method is called.
+     * This method ensures that only one checkbox is checked at a time.
+     */
+    private _addCheckboxValidationListener(): void {
+        document.addEventListener("DOMContentLoaded", () => {
+            this._dropdownCheckboxes.forEach((checkbox) => {
+                checkbox.addEventListener("change", this._handleCheckboxChange.bind(this));
+            });
+        });
+    }
+
+    /**
+     * Handles the checkbox change event by validating the checkbox selection.
+     * If only one checkbox is checked, it disables all other checkboxes.
+     * If more than one checkbox is checked, it enables all checkboxes.
+     *
+     * @remarks
+     * This function is called when a checkbox is changed.
+     * It retrieves the count of checked checkboxes using the `_getCheckedCount` method.
+     * Depending on the count, it either disables or enables the unchecked checkboxes using the `_disableUncheckedCheckboxes` and `_enableAllCheckboxes` methods.
+     */
+    private _handleCheckboxChange(): void {
+        const checkedCount = this._getCheckedCount();
+
+        if (checkedCount === 1) {
+            this._disableUncheckedCheckboxes();
+        } else {
+            this._enableAllCheckboxes();
+        }
+    }
+
+    
+    private _getCheckedCount(): number {
+        return Array.from(this._dropdownCheckboxes).filter((cb) => cb.checked).length;
+    }
+    
+    private _disableUncheckedCheckboxes(): void {
+        this._dropdownCheckboxes.forEach((cb) => {
+            if (cb.checked) {
+                cb.disabled = true;
+            }
+        });
+    }
+    
+    private _enableAllCheckboxes(): void {
+        this._dropdownCheckboxes.forEach((cb) => (cb.disabled = false));
+    }
 
     /**
      * Handles the query input and sends the query to the query service.
@@ -2879,11 +2935,11 @@ class QueryComponent {
      */
     private async _processQuery(): Promise<void> {
         // Disable the input field to prevent further user interaction
-        this._input.disabled = true;
+        this._queryInput.disabled = true;
         this._loadingBar.show();
 
-        const queryValue = this._input.value.trim() // Get the trimmed input value
-        this._input.value = '' // Clear the input field
+        const queryValue = this._queryInput.value.trim() // Get the trimmed input value
+        this._queryInput.value = '' // Clear the input field
         const alphanumericRegex = /[a-zA-Z0-9]/
 
         if (alphanumericRegex.test(queryValue)) {   // Check if the value contains at least one alphanumeric character
@@ -2904,7 +2960,7 @@ class QueryComponent {
         }
 
         // Re-enable the input field after the process is complete, and end the loading bar
-        this._input.disabled = false;
+        this._queryInput.disabled = false;
         this._loadingBar.hide();
     }
 }
