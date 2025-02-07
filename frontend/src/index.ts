@@ -2234,8 +2234,6 @@ class AddTermsTable {
      * @param queryTermService - The QueryTermService to be set as the active service.
      * This service will be used to retrieve and display data in the table.
      *
-     * @returns {void} - This function does not return any value.
-     *
      * @remarks
      * This function is responsible for setting the active QueryTermService and updating the table.
      * It is called whenever a new QueryTermService is selected by the user.
@@ -2274,20 +2272,17 @@ class AddTermsTable {
             // Check if the term is not already in the visible neighbour terms list
             if ((!visibleNeighbourTermsValues.includes(term.value)) && (term.criteria === "proximity")) {
                 // Create a new row in the table
-                const row = tbody.insertRow()
-
-                // Create cells for the row
-                const cell1 = row.insertCell(0)
-                const cell2 = row.insertCell(1)
-
-                // Set the text content of the first cell
-                cell1.innerHTML = term.value
+                const row = tbody.insertRow();
+                const cell = row.insertCell(0);
+                cell.innerHTML = term.value
                 
-                // Create the <i> element
-                const icon = this._createIconElement(term)
+                // Apply classes for styles
+                row.classList.add('clickable-row');
 
-                // Append the <i> element to the second cell
-                cell2.appendChild(icon);
+                // Handle click on row
+                row.addEventListener('click', () => {
+                    this._handleTermAddition(term.value);
+            });
             }
         }
 
@@ -2308,10 +2303,11 @@ class AddTermsTable {
     private _handleTermAddition(termValue: string): void {
         if (this._activeTermService === undefined) return;
 
+        // Retrieve the neighbour term by its value from the complete query term
         const neighbourTerm = this._activeTermService.completeQueryTerm.getNeighbourTermByValue(termValue)
         if (neighbourTerm === undefined) return;
 
-        // Add the neighbour term to the active query term's visible neighbour terms
+        // Create a new neighbour term object, from the retrieved one
         const queryTerm = this._activeTermService.visibleQueryTerm;
         const neighbourTermObject: NTermObject = {
             term: neighbourTerm.value,
@@ -2319,8 +2315,9 @@ class AddTermsTable {
             frequency_score: neighbourTerm.frequencyScore,
             criteria: neighbourTerm.criteria,
         }
-
         const visibleNeighbourTerm = new NeighbourTerm(queryTerm, neighbourTermObject);
+
+        // Add the neighbour term to the active query term's visible neighbour terms
         this._activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm);
     }
 
@@ -2374,29 +2371,6 @@ class AddTermsTable {
             // Show the filter input if there are rows
             filterInput.style.display = 'block';
         }
-    }
-
-    /**
-    ​ * Creates an icon element for adding a neighbour term to the active query term's visible neighbour terms.
-    ​ * 
-    ​ * @param term - The neighbour term for which to create the icon element.
-    ​ * 
-    ​ * @returns A new HTML element representing the icon.
-    ​ * 
-    ​ * The icon is a fontawesome plus-circle icon with a pointer cursor.
-    ​ * When clicked, it triggers the `handleTermAddition` method with the term's value as a parameter.
-    ​ */
-    private _createIconElement(term: NeighbourTerm): HTMLElement {
-        const icon = document.createElement('i');
-        icon.className = 'fas fa-plus-circle';
-        icon.style.cursor = 'pointer';
-
-        // Add event listener to the icon element
-        icon.addEventListener('click', () => {
-            this._handleTermAddition(term.value);
-        });
-
-        return icon;
     }
 }
 
@@ -2463,8 +2437,6 @@ class ResultsList {
      *
      * @param queryTermService - The QueryTermService to be set as the active service.
      * This service will be used to retrieve and display data in the list.
-     *
-     * @returns {void} - This function does not return any value.
      *
      * @remarks
      * This function is responsible for setting the active QueryTermService and updating the table.
