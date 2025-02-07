@@ -1936,7 +1936,7 @@ class QueryTermService {
 
 class QueryService {
     private _activeQueryTermService: QueryTermService | undefined
-    private readonly _queryTermServices: QueryTermService[]
+    private _queryTermServices: QueryTermService[]
     private readonly _neighbourTermsTable: NeighbourTermsTable
     private readonly _addTermsTable: AddTermsTable
     private readonly _queryTermsList: QueryTermsList
@@ -2101,8 +2101,11 @@ class QueryService {
      */
     private async _generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, 
         graphTerms: number, selectedCategories: string): Promise<void> {
-        // Check if a QueryTermService for the given query value already exists
-        if (this._findQueryTermService(queryValue) !== undefined) return;
+        // If the QueryTermService for the given query value already exists, then delet it and create a new one in the next steps
+        if (this._findQueryTermService(queryValue) !== undefined) {
+            this._queryTermServices = this._deleteQueryTermService(queryValue);
+            this._updateQueryTermsList();
+        }
 
         // Create a new QueryTermService and initialize it with the given parameters
         const queryTermService = new QueryTermService(this, queryValue, limitDistance);
@@ -2111,7 +2114,6 @@ class QueryService {
         // Add the new QueryTermService to the queryTermServices array and update the query terms list
         this._queryTermServices.push(queryTermService)
         this._updateQueryTermsList()
-        
     }
 
     /**
@@ -2149,6 +2151,19 @@ class QueryService {
         )
     }
 
+    /**
+     * Deletes and returns a new array of QueryTermService objects, excluding the one with the given query value.
+     * 
+     * @param queryValue - The value of the query term for which to delete the QueryTermService.
+     * 
+     * @returns A new array of QueryTermService objects, excluding the one with the given query value.
+     * 
+     * @remarks This function is used to remove a QueryTermService from the array of QueryTermServices,
+     * when a new QueryTermService is created for a query term that already exists.
+     */
+    private _deleteQueryTermService(queryValue: string): QueryTermService[] {
+        return this._queryTermServices.filter(termService => termService.visibleQueryTerm.value !== queryValue);
+    }
 }
 
 
