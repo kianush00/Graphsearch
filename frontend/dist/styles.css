@@ -244,62 +244,73 @@ input, table, th, td {
     cursor: pointer;
 }
 
+#tablesContainer {
+    display: flex;
+    justify-content: space-between;
+}
 
-#neighbourTermsTableContainer, #addTermsTableContainer, #queryList, #rankingContainer {
+#criteriaTypesTableContainer, #addTermsTableContainer, #queryList, #rankingContainer {
     overflow-y: auto;
     border: 1px solid #eee; /* Add a border to the input */
     background-color: #fcfcfc;
     border-radius: 0.4rem;
 }
 
-#neighbourTermsContainer, #addTermsContainer {
-    width: 44%; /* Adjust the width as needed */
-    display: inline-block;
-    vertical-align: top;
+#criteriaTypesContainer, #addTermsContainer {
     margin-bottom: 0.6rem;
     line-height: 1.0;
 }
 
-#neighbourTermsTableContainer, #addTermsTableContainer {
+#criteriaTypesContainer {
+    flex-basis: 27%; /* Adjust the width as needed */
+}
+
+#addTermsContainer {
+    flex-basis: 44%; /* Adjust the width as needed */
+}
+
+#criteriaTypesTableContainer, #addTermsTableContainer {
     max-height: 219px; /* Set the fixed height as needed */
     overflow-y: auto; /* Enable vertical scrolling */
     border: 1px solid #ccc; /* Optional: add a border for better visibility */
 }
 
-#neighboursTermsTable, #addTermsTable {
+#criteriaTypesTable, #addTermsTable {
     border-collapse: collapse;
     width: 100%;
 }
 
-#addTermsTable th, #addTermsTable td, #neighboursTermsTable th, #neighboursTermsTable td {
+#addTermsTable th, #addTermsTable td, #criteriaTypesTable th, #criteriaTypesTable td {
     border: 1px solid #aaa; /* Optional: add a border for better visibility */
     padding: 2px; /* Optional: add padding for better readability */
 }
 
-#neighboursTermsTable th, #addTermsContainer th{
+#criteriaTypesTable th, #addTermsContainer th{
     background-color: #f2f2f2;
 }
 
-#neighboursTermsTable td:nth-child(1), #addTermsTable td:nth-child(1) {
-    width: 75%; 
-}
-
-#neighboursTermsTable td:nth-child(2), #addTermsTable td:nth-child(2) {
-    width: 25%;
-}
-
-
-
-#addTermsContainer {
-    margin-left: 50px;
-}
-
-#addTermsTable td:nth-child(2) {
+#criteriaTypesTable td:nth-child(1), #criteriaTypesTable td:nth-child(2), #addTermsTable td:nth-child(1), #addTermsTable td:nth-child(2) {
     text-align: center;
 }
 
+#criteriaTypesTable td:nth-child(1){
+    width: 40%; 
+}
+
+#criteriaTypesTable td:nth-child(2){
+    width: 60%;
+}
+
+#addTermsTable td:nth-child(1) {
+    width: 75%; 
+}
+
+#addTermsTable td:nth-child(2) {
+    width: 25%;
+}
+
 #addTermsFilterContainer {
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 #addTermsFilter {

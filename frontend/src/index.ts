@@ -1717,9 +1717,6 @@ class QueryTermService {
 
         // Update the position of the neighbour term node and its hops
         neighbourTerm.updateNodePositionAndHops(position)
-
-        // Update the neighbour terms table with the new hops values
-        this._queryService.updateNeighbourTermsTable()
     }
 
     /**
@@ -1766,8 +1763,7 @@ class QueryTermService {
         // Add the neighbour term to the visible query term's neighbour terms list
         this.visibleQueryTerm.addNeighbourTerm(neighbourTerm)
 
-        // Update the neighbour terms table with the new neighbour term
-        this._queryService.updateNeighbourTermsTable()
+        // Update the add terms table with the new neighbour term
         this._queryService.updateAddTermsTable()
 
         // Display the views of the neighbour term if it is currently visible
@@ -1792,7 +1788,6 @@ class QueryTermService {
         this.visibleQueryTerm.removeNeighbourTerm(neighbourTerm)
 
         // Update the neighbour terms table in the query service
-        this._queryService.updateNeighbourTermsTable()
         this._queryService.updateAddTermsTable()
 
         // Display the views of the neighbour term if it is currently visible
@@ -1937,7 +1932,7 @@ class QueryTermService {
 class QueryService {
     private _activeQueryTermService: QueryTermService | undefined
     private _queryTermServices: QueryTermService[]
-    private readonly _neighbourTermsTable: NeighbourTermsTable
+    private readonly _criteriaTypesTable: CriteriaTypesTable
     private readonly _addTermsTable: AddTermsTable
     private readonly _queryTermsList: QueryTermsList
     private readonly _resultsList: ResultsList
@@ -1956,7 +1951,7 @@ class QueryService {
      */
     constructor() {
         this._queryTermServices = []
-        this._neighbourTermsTable = new NeighbourTermsTable()
+        this._criteriaTypesTable = new CriteriaTypesTable()
         this._resultsList = new ResultsList()
         this._queryTermsList = new QueryTermsList(this)
         this._addTermsTable = new AddTermsTable()
@@ -2069,14 +2064,8 @@ class QueryService {
      * @returns {void}
      */
     public updateActiveTermServiceInElements(queryTermService: QueryTermService | undefined): void {
-        this._neighbourTermsTable.activeTermService = queryTermService;
         this._addTermsTable.activeTermService = queryTermService
         this._resultsList.activeTermService = queryTermService;
-    }
-
-
-    public updateNeighbourTermsTable(): void {
-        this._neighbourTermsTable.updateTable()
     }
 
     public updateResultsList(): void {
@@ -2412,33 +2401,16 @@ class AddTermsTable {
 }
 
 
-class NeighbourTermsTable {
-    private _activeTermService: QueryTermService | undefined
+class CriteriaTypesTable {
     private readonly _dynamicTable: HTMLElement
 
     /**
-     * Constructor for the NeighbourTermsTable class.
-     * Initializes the dynamicTable property with the HTML element with the id 'neighboursTermsTable'.
+     * Constructor for the CriteriaTypesTable class.
+     * Initializes the dynamicTable property with the HTML element with the id 'criteriaTypesTable'.
      */
     constructor() {
-        this._dynamicTable = document.getElementById('neighboursTermsTable') as HTMLElement
-    }
-
-    /**
-     * Sets the active QueryTermService and updates the table.
-     *
-     * @param queryTermService - The QueryTermService to be set as the active service.
-     * This service will be used to retrieve and display data in the table.
-     *
-     * @returns {void} - This function does not return any value.
-     *
-     * @remarks
-     * This function is responsible for setting the active QueryTermService and updating the table.
-     * It is called whenever a new QueryTermService is selected by the user.
-     */
-    set activeTermService(queryTermService: QueryTermService | undefined) {
-        this._activeTermService = queryTermService
-        this.updateTable()
+        this._dynamicTable = document.getElementById('criteriaTypesTable') as HTMLElement
+        this._initializeTable();
     }
     
     /**
@@ -2450,18 +2422,15 @@ class NeighbourTermsTable {
      * @remarks
      * This function assumes that the table body element is already present in the HTML structure.
      */
-    public updateTable(): void {
+    private _initializeTable(): void {
         // Get the table body element
         const tbody = this._dynamicTable.getElementsByTagName('tbody')[0]
 
         // Clear existing rows in the table
         tbody.innerHTML = '' 
 
-        // Check if the activeTermService is defined
-        if (this._activeTermService === undefined) return
-
         // Iterate over the neighbour terms of the active query term
-        for(const neighbourTerm of this._activeTermService.visibleQueryTerm.neighbourTerms) {
+        for(const criteriaType of [["green", "proximity"], ["blue", "frequency"], ["red", "exclusion"]]) {
             // Create a new row in the table
             const row = tbody.insertRow()
 
@@ -2470,8 +2439,8 @@ class NeighbourTermsTable {
             const cell2 = row.insertCell(1)
 
             // Set the text content of the cells
-            cell1.innerHTML = neighbourTerm.value
-            cell2.innerHTML = neighbourTerm.criteria;
+            cell1.innerHTML = criteriaType[0];
+            cell2.innerHTML = criteriaType[1];
         }
     }
 }
@@ -2482,7 +2451,7 @@ class ResultsList {
     private readonly _dynamicList: HTMLElement
 
     /**
-     * Constructor for the NeighbourTermsTable class.
+     * Constructor for the CriteriaTypesTable class.
      * Initializes the dynamicList property with the HTML element with the id 'resultsList'.
      */
     constructor() {

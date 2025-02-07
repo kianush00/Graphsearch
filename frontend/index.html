@@ -52,39 +52,41 @@
                 <button id="rerankButton">Rerank</button>
                 <span class="tooltip">Based on the previous configuration, reorder<br>the results of the initial ranking.</span>
             </div>
-            <div id="neighbourTermsContainer">
-                <h3>Neighbour Terms</h3>
-                <div id="neighbourTermsTableContainer">
-                    <table id="neighboursTermsTable" class="termsTable">
-                        <thead>
-                            <tr>
-                                <th>Neighbour Term</th>
-                                <th>Criteria</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Rows will be added here dynamically -->
-                        </tbody>
-                    </table>
+            <div id="tablesContainer">
+                <div id="criteriaTypesContainer">
+                    <h3 style="text-align: center;">Criteria Types</h3>
+                    <div id="criteriaTypesTableContainer">
+                        <table id="criteriaTypesTable" class="termsTable">
+                            <thead>
+                                <tr>
+                                    <th>Color</th>
+                                    <th>Criteria</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rows will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-            <div id="addTermsContainer">
-                <h3>Add Terms</h3>
-                <div id="addTermsTableContainer">
-                    <table id="addTermsTable" class="termsTable">
-                        <thead>
-                            <tr>
-                                <th>Term</th>
-                                <th style="text-align: center;">Add</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Rows will be added here dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-                <div id="addTermsFilterContainer">
-                    <input type="text" id="addTermsFilter" size="16" placeholder="Filter terms...">
+                <div id="addTermsContainer">
+                    <h3 style="text-align: center;">Add Terms</h3>
+                    <div id="addTermsTableContainer">
+                        <table id="addTermsTable" class="termsTable">
+                            <thead>
+                                <tr>
+                                    <th>Term</th>
+                                    <th>Add</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rows will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="addTermsFilterContainer">
+                        <input type="text" id="addTermsFilter" size="16" placeholder="Filter terms...">
+                    </div>
                 </div>
             </div>
         </div>
