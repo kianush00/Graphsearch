@@ -288,6 +288,22 @@ class XPLORE:
     def publication_year(self, value):
 
         self.add_parameter('publication_year', value)
+    
+
+    def content_type(self, value: str) -> None:
+        """
+        Adds a query parameter for the 'content_type' field to the XPLORE API request.
+
+        Parameters:
+        value (str): The type of content to query. For example: 'Conferences,Journals,Magazines,Early Access Articles'
+
+        Returns:
+        None
+
+        This function calls the 'add_parameter' method with the 'content_type' parameter and the provided value. It adds the query parameter to the 'parameters' dictionary and sets the 'query_provided' flag to True.
+        """
+        self.add_parameter('content_type', value)
+
 
 
     def query_text(self, value: str) -> None:

@@ -7,7 +7,7 @@ class QueryTerm(BaseModel):
     search_results: int
     limit_distance: int
     graph_terms: int
-    selected_categories: List[str]
+    selected_categories: str
 
 
 class PydanticNeighbourTermRequest(BaseModel):

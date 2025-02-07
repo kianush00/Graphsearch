@@ -18,7 +18,7 @@ class QueryService:
         nr_search_results: int, 
         limit_distance: int, 
         nr_of_graph_terms: int, 
-        selected_categories: List[str]
+        selected_categories: str
         ) -> PydanticRanking:
         """
         Processes a query and generates a PydanticRanking object containing visible neighbour terms, complete neighbour terms,
@@ -29,6 +29,7 @@ class QueryService:
         - nr_search_results (int): The number of search results to retrieve.
         - limit_distance (int): The maximum distance for neighbour terms.
         - nr_of_graph_terms (int): The number of neighbour terms to include in the user graph.
+        - selected_categories (list[str]): The list of selected categories to include in the ranking.
 
         Returns:
         - PydanticRanking: An object containing the processed ranking information.
@@ -45,7 +46,7 @@ class QueryService:
         
         try:
             # Generate ranking graphs from the results of the search
-            ranking = Ranking(query_text, nr_search_results, ranking_weight_type, stop_words_list, lema, stem)
+            ranking = Ranking(query_text, nr_search_results, selected_categories, ranking_weight_type, stop_words_list, lema, stem)
             ranking.build_ieee_xplore_ranking()
             ranking.generate_all_graphs(nr_of_graph_terms, limit_distance, include_query_terms, summarize)
             

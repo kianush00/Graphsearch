@@ -1590,7 +1590,7 @@ interface RankingRequestData {
     search_results: number;
     limit_distance: number;
     graph_terms: number;
-    selected_categories: string[];
+    selected_categories: string;
 }
 
 interface SentenceResponseData {
@@ -1665,12 +1665,12 @@ class QueryTermService {
      * @param searchResults - The number of search results to retrieve.
      * @param limitDistance - The maximum distance limit for neighbour terms.
      * @param graphTerms - The number of neighbour terms to include in the graph.
-     * @param selectedCategories - The number of selected categories to include in the ranking.
+     * @param selectedCategories - The selected categories to include in the ranking, separated by commas.
      *
      * @returns {Promise<void>} - A promise that resolves when the data retrieval and processing are complete.
      */
     public async initialize(searchResults: number, limitDistance: number, graphTerms: number, 
-        selectedCategories: string[]): Promise<void> {
+        selectedCategories: string): Promise<void> {
         // Define the endpoint for retrieving neighbour terms data
         const endpoint = 'get-ranking';
         const query = this.visibleQueryTerm.value;
@@ -1978,10 +1978,10 @@ class QueryService {
      * @param searchResults - The number of search results to retrieve.
      * @param limitDistance - The maximum distance limit for neighbour terms.
      * @param graphTerms - The number of neighbour terms to include in the graph.
-     * @param selectedCategories - The number of selected categories to include in the ranking.
+     * @param selectedCategories - The selected categories to include in the ranking, separated by commas.
      */
     public async setQuery(queryValue: string, searchResults: number, limitDistance: number, 
-        graphTerms: number, selectedCategories: string[]): Promise<void> {
+        graphTerms: number, selectedCategories: string): Promise<void> {
         // Deactivate the currently active service
         this._activeQueryTermService?.deactivate();
 
@@ -2097,10 +2097,10 @@ class QueryService {
      * @param searchResults - The number of search results to retrieve.
      * @param limitDistance - The maximum distance limit for neighbour terms.
      * @param graphTerms - The number of neighbour terms to include in the graph.
-     * @param selectedCategories - The number of selected categories to include in the ranking.
+     * @param selectedCategories - The selected categories to include in the ranking, separated by commas.
      */
     private async _generateNewQueryTermService(queryValue: string, searchResults: number, limitDistance: number, 
-        graphTerms: number, selectedCategories: string[]): Promise<void> {
+        graphTerms: number, selectedCategories: string): Promise<void> {
         // Check if a QueryTermService for the given query value already exists
         if (this._findQueryTermService(queryValue) !== undefined) return;
 
@@ -3109,10 +3109,11 @@ class QueryComponent {
         return parseInt(this._graphTermsInput.value, 10);
     }
 
-    private _getSelectedCategories(): string[] {
+    private _getSelectedCategories(): string {
         return Array.from(this._dropdownCheckboxes)
         .filter(checkbox => checkbox.checked) // Only include checked checkboxes
-        .map(checkbox => checkbox.value); // Extract the value of each checkbox
+        .map(checkbox => checkbox.value) // Extract the value of each checkbox
+        .join(',');  // Convert the array to a comma-separated string
     }
 }
 

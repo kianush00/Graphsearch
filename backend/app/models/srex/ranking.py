@@ -4,6 +4,7 @@ import re
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import json
 
 from models.ieee_xplore.xploreapi import XPLORE
 from models.srex.vicinity_graph import VicinityGraph
@@ -768,21 +769,30 @@ class TextTransformationsConfig:
 
 class Ranking(QueryTreeHandler):
     
-    def __init__(self, query_text: str, nr_search_results: int = 10, ranking_weight_type: str = 'linear', 
-                 stop_words: tuple[str] = (), lemmatization: bool = True, stemming: bool = False):
+    def __init__( self, 
+        query_text: str, 
+        nr_search_results: int = 10, 
+        selected_categories: str = "Conferences,Journals,Magazines,Early Access Articles", 
+        ranking_weight_type: str = 'linear', 
+        stop_words: tuple[str] = (), 
+        lemmatization: bool = True, 
+        stemming: bool = False
+        ):
         """
         Initialize a new Ranking object.
         
         Parameters:
-        query_text (str): The query text for the ranking.
-        nr_search_results (int, optional): The number of search results to retrieve from the ranking. Default is 10.
-        ranking_weight_type (str, optional): The type of weighting to be applied to the ranking. It can be 'none', 'linear' or 'inverse'. Default is 'linear'.
-        stop_words (tuple[str], optional): A tuple of stop words to be excluded from the ranking. Default is an empty tuple.
-        lemmatization (bool, optional): A boolean indicating whether lemmatization should be applied to the ranking. Default is True.
-        stemming (bool, optional): A boolean indicating indicating whether stemming should be applied to the ranking. Default is False.
+        - query_text (str): The query text for the ranking.
+        - nr_search_results (int, optional): The number of search results to retrieve from the ranking. Default is 10.
+        - selected_categories (str): The selected categories to include in the ranking, separated by commas.
+        - ranking_weight_type (str, optional): The type of weighting to be applied to the ranking. It can be 'none', 'linear' or 'inverse'. Default is 'linear'.
+        - stop_words (tuple[str], optional): A tuple of stop words to be excluded from the ranking. Default is an empty tuple.
+        - lemmatization (bool, optional): A boolean indicating whether lemmatization should be applied to the ranking. Default is True.
+        - stemming (bool, optional): A boolean indicating indicating whether stemming should be applied to the ranking. Default is False.
         """
         self.__initialize_binary_expression_tree(query_text)
         self.__nr_search_results = nr_search_results
+        self.__selected_categories = selected_categories
         self.__ranking_weight_type = ranking_weight_type
         self.__text_transformations_config = TextTransformationsConfig(stop_words, lemmatization, stemming)
         self.__documents: list[Document] = []
@@ -1088,6 +1098,7 @@ class Ranking(QueryTreeHandler):
         query = XPLORE(api_key)
         query.output_data_format='object'
         query.maximum_results(self.__nr_search_results)
+        query.content_type(self.__selected_categories)
         query.query_text(self.query_tree.raw_query)
         data = query.call_api()
         results = data.get('articles', [{}])
