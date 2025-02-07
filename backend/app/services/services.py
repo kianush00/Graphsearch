@@ -13,7 +13,13 @@ stop_words_list = DataUtils.load_stopwords()
 
 
 class QueryService:
-    def process_query(self, query_text: str, nr_search_results: int, limit_distance: int, nr_of_graph_terms: int) -> PydanticRanking:
+    def process_query(self, 
+        query_text: str, 
+        nr_search_results: int, 
+        limit_distance: int, 
+        nr_of_graph_terms: int, 
+        selected_categories: List[str]
+        ) -> PydanticRanking:
         """
         Processes a query and generates a PydanticRanking object containing visible neighbour terms, complete neighbour terms,
         and documents with their neighbour terms.

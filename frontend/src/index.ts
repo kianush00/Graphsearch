@@ -347,32 +347,32 @@ class ObjectValidationUtils {
 
     private static _isRankingStructure(ranking: any): boolean {
         return (
-            !ranking ||
-            !Array.isArray(ranking.visible_neighbour_terms) ||
-            !Array.isArray(ranking.complete_neighbour_terms) ||
-            !Array.isArray(ranking.documents) ||
-            !Array.isArray(ranking.individual_query_terms_list)
+            ranking &&
+            Array.isArray(ranking.visible_neighbour_terms) &&
+            Array.isArray(ranking.complete_neighbour_terms) &&
+            Array.isArray(ranking.documents) &&
+            Array.isArray(ranking.individual_query_terms_list)
         );
     }
 
     private static _isDocumentStructure(document: any): boolean {
         return (
-            typeof document.doc_id !== "string" ||
-            typeof document.title !== "string" ||
-            typeof document.abstract !== "string" ||
-            typeof document.preprocessed_text !== "string" ||
-            typeof document.weight !== "number" ||
-            !Array.isArray(document.all_neighbour_terms) ||
-            !Array.isArray(document.sentences)
+            typeof document.doc_id === "string" &&
+            typeof document.title === "string" &&
+            typeof document.abstract === "string" &&
+            typeof document.preprocessed_text === "string" &&
+            typeof document.weight === "number" &&
+            Array.isArray(document.all_neighbour_terms) &&
+            Array.isArray(document.sentences)
         );
     }
 
     private static _isSentenceStructure(sentence: any): boolean {
         return (
-            typeof sentence.position_in_doc !== "number" ||
-            typeof sentence.raw_text !== "string" ||
-            !Array.isArray(sentence.raw_to_processed_map) ||
-            !Array.isArray(sentence.all_neighbour_terms)
+            typeof sentence.position_in_doc === "number" &&
+            typeof sentence.raw_text === "string" &&
+            Array.isArray(sentence.raw_to_processed_map) &&
+            Array.isArray(sentence.all_neighbour_terms)
         );
     }
 }
