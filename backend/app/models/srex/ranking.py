@@ -478,7 +478,8 @@ class Sentence(QueryTreeHandler):
 class Document(QueryTreeHandler):
     
     def __init__(self, query_tree: BinaryExpressionTree, abstract: str = "", title: str = "", 
-                 doc_id: str = "1", weight: float = 1.0, ranking_position: int = 1):
+                 doc_id: str = "1", weight: float = 1.0, ranking_position: int = 1, authors: str = "",
+                 content_type: str = "", publication_year: int = 0, citing_paper_count: int = 0):
         """
         Initialize a new Document object.
 
@@ -490,27 +491,24 @@ class Document(QueryTreeHandler):
         doc_id (str, optional): The unique identifier of the document. Default is "1".
         weight (float, optional): The weight of the document in the ranking. Default is 1.0.
         ranking_position (int, optional): The position of the document in the ranking. Default is 1.
+        authors (str, optional): The authors of the document. Default is an empty string.
+        content_type (str, optional): The content type of the document. Default is an empty string.
+        publication_year (int, optional): The publication year of the document. Default is 0.
+        citing_paper_count (int, optional): The number of citing papers of the document. Default is 0.
         """
         super().__init__(query_tree=query_tree)
         self.__title = title
         self.__abstract = abstract
-        self.__preprocessed_text: str = ""
         self.__doc_id = doc_id
         self.__weight = weight
         self.__ranking_position = ranking_position
+        self.__authors = authors
+        self.__content_type = content_type
+        self.__publication_year = publication_year
+        self.__citing_paper_count = citing_paper_count
+        self.__preprocessed_text: str = ""
         self.__sentences: list[Sentence] = []
         self.__build_sentences_list_from_text()
-    
-
-    @property
-    def abstract(self) -> str:
-        """
-        Retrieve the abstract of the current Document object.
-
-        Returns:
-        str: The abstract of the document.
-        """
-        return self.__abstract
     
 
     @property
@@ -525,6 +523,17 @@ class Document(QueryTreeHandler):
     
 
     @property
+    def abstract(self) -> str:
+        """
+        Retrieve the abstract of the current Document object.
+
+        Returns:
+        str: The abstract of the document.
+        """
+        return self.__abstract
+    
+
+    @property
     def doc_id(self) -> str:
         """
         Retrieve the unique identifier of the current document.
@@ -533,17 +542,6 @@ class Document(QueryTreeHandler):
         str: The unique identifier of the document.
         """
         return self.__doc_id
-    
-
-    @property
-    def sentences(self) -> list[Sentence]:
-        """
-        Retrieve a list of Sentence objects from the current Document object.
-
-        Returns:
-        list[Sentence]: A list of Sentence objects representing the sentences in the document.
-        """
-        return self.__sentences
     
 
     @property
@@ -562,9 +560,6 @@ class Document(QueryTreeHandler):
         """
         Retrieve the ranking position of the current document.
 
-        Parameters:
-        None
-
         Returns:
         int: The ranking position of the document. The position index is 1-based.
         """
@@ -572,17 +567,69 @@ class Document(QueryTreeHandler):
     
     
     @property
+    def authors(self) -> str:
+        """
+        Retrieve the authors of the document, in the format of "First author full name" + et al.
+
+        Returns:
+        str: The authors of the document
+        """
+        return self.__authors
+    
+    
+    @property
+    def content_type(self) -> str:
+        """
+        Retrieve the article type of the document, which can be: Conference, Journal, Magazine or Early Access Article.
+
+        Returns:
+        str: The content type of the document
+        """
+        return self.__content_type
+    
+    
+    @property
+    def publication_year(self) -> int:
+        """
+        Retrieve the publication year of the document.
+
+        Returns:
+        int: The publciation year of the document
+        """
+        return self.__publication_year
+    
+    
+    @property
+    def citing_paper_count(self) -> int:
+        """
+        Retrieve the citing paper count of the document.
+
+        Returns:
+        int: The number of papers that have cited the document
+        """
+        return self.__citing_paper_count
+    
+    
+    @property
     def preprocessed_text(self) -> str:
         """
         Retrieve the preprocessed text of the document, which consists of the title and abstract joined.
-        
-        Parameters:
-        None
 
         Returns:
         str: The preprocessed text of the document
         """
         return self.__preprocessed_text
+    
+    
+    @property
+    def sentences(self) -> list[Sentence]:
+        """
+        Retrieve a list of Sentence objects from the current Document object.
+
+        Returns:
+        list[Sentence]: A list of Sentence objects representing the sentences in the document.
+        """
+        return self.__sentences
     
 
     def get_sentence_by_raw_text(self, text: str) -> Sentence | None:
@@ -1146,7 +1193,7 @@ class Ranking(QueryTreeHandler):
         Parameters
         ----------
         article : dict
-            Article dictionary with title, abstract and id.
+            Article dictionary with at least title, abstract and doc id.
         index : int
             Index (position) of the document in the ranking
         results_size : int
@@ -1162,24 +1209,29 @@ class Ranking(QueryTreeHandler):
         ValueError: If the abstract and title are both empty
         TypeError: If the abstract, title or doc_id is not a string
         """
-        # Calculate the weight depending on the argument value and the position of the document in the ranking
+        # Get the abstract, title, document id, ranking position, authors, publication year, article type and citing paper count
         _abstract = article.get('abstract', "")
         _title = article.get('title', "")
         _doc_id = article.get('article_number', "1")
-
-        # Check if abstract, title and doc_id are strings
-        if not all(isinstance(atribute, str) for atribute in [_abstract, _title, _doc_id]):
-            raise TypeError("All variables must be strings")
-        
-        # Check if abstract and title are not empty strings
-        if not _abstract and not _title:
-            raise ValueError("Abstract and title cannot be both empty")
-
+        _authors = self.__get_authors_from_article(article)
+        _content_type = self.__get_content_type_from_article(article)
+        _pub_year = article.get('publication_year', 0)
+        _citing_count = article.get('citing_paper_count', 0)
         _ranking_pos = index + 1
+        
+        # Validate the above article attributes
+        self.__validate_article_attributes(_abstract, _title, _doc_id, _authors, _content_type, _pub_year, _citing_count)
+        
+        # Calculate the weight depending on the argument value and the position of the document in the ranking
         _weight = MathUtils.calculate_document_weight(results_size, _ranking_pos, self.__ranking_weight_type)
+        
+        # Create a deep copy of the ranking query tree for the new document object to ensure the original tree is not modified
         _query_copy = deepcopy(self.query_tree)
+        
+        # Create a new document object with the required attributes
         new_doc = Document(query_tree=_query_copy, abstract=_abstract, title=_title, doc_id=_doc_id, 
-                            weight=_weight, ranking_position=_ranking_pos)
+                            weight=_weight, ranking_position=_ranking_pos, authors=_authors, 
+                            content_type=_content_type, publication_year=_pub_year, citing_paper_count=_citing_count)
         
         return new_doc
     
@@ -1245,3 +1297,75 @@ class Ranking(QueryTreeHandler):
             raise MissingEnvironmentVariableError("The environment variable 'IEEE_XPLORE_API_KEY' is missing.")
         
         return api_key
+    
+    
+    def __validate_article_attributes(self, 
+        abstract: any, 
+        title: any, 
+        doc_id: any,
+        authors: any,
+        content_type: any,
+        pub_year: any,
+        citing_paper_count: any
+        ) -> None:
+        """
+        Validate that the title, abstract, doc_id, authors and content type are string values, while abstract and title are not empty values.
+        Also validate that the publication year and the citing paper count are integers.
+        
+        Raises
+        ------
+        ValueError: If the abstract and title are both empty
+        TypeError: If the abstract, title, doc_id, authors or content type are not strings, or if the pub year and citing paper count are not integers
+        """
+        # Check if abstract, title, doc_id, authors and content type are strings
+        if not all(isinstance(atribute, str) for atribute in [abstract, title, doc_id, authors, content_type]):
+            raise TypeError("Abstract, title, doc id, author and content type variables must be strings")
+        
+        # Check if the publication year and the citing paper count are integers
+        if not all(isinstance(atribute, int) for atribute in [pub_year, citing_paper_count]):
+            raise TypeError("Publication year and citing paper count variables must be integers")
+        
+        # Check if abstract and title are not empty strings
+        if not abstract and not title:
+            raise ValueError("Abstract and title cannot be both empty")
+    
+    
+    def __get_authors_from_article(self, article: dict) -> str:
+        """
+        Get the authors from the article.
+        
+        Returns
+        -------
+        str: The authors of the article, in the format of "First author full name" + et al.
+        """
+        authors_list = article.get('authors', {}).get('authors', [{}])
+        number_of_authors = len(authors_list)
+        authors = authors_list[0].get('full_name', 'none')
+        
+        # Add "et al." if there are more than one author and they are listed as a string
+        if isinstance(authors, str) and authors != 'none' and number_of_authors > 1:
+            authors += " et al."
+        
+        return authors
+    
+    
+    def __get_content_type_from_article(self, article: dict) -> str:
+        """
+        Get the content type from the article, which can be: Conference, Journal, Magazine or Early Access Article.
+        
+        Returns
+        -------
+        str: The content type of the article
+        """
+        content_type = article.get('content_type', 'none')
+        
+        # Remove the trailing "s" if the content type ends with "s"
+        if isinstance(content_type, str):
+            content_type = content_type[:-1]
+            
+            if content_type == 'Conference':
+                content_type += ' Paper'
+            elif content_type == 'Journal' or content_type == 'Magazine':
+                content_type += ' Article'
+        
+        return content_type

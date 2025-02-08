@@ -360,6 +360,10 @@ class ObjectValidationUtils {
             typeof document.doc_id === "string" &&
             typeof document.title === "string" &&
             typeof document.abstract === "string" &&
+            typeof document.authors === "string" &&
+            typeof document.content_type === "string" &&
+            typeof document.publication_year === "number" &&
+            typeof document.citing_paper_count === "number" &&
             typeof document.preprocessed_text === "string" &&
             typeof document.weight === "number" &&
             Array.isArray(document.all_neighbour_terms) &&
@@ -1325,6 +1329,10 @@ class Document extends TextElement {
     private readonly _id: string
     private readonly _title: string
     private readonly _abstract: string
+    private readonly _authors: string
+    private readonly _content_type: string
+    private readonly _publication_year: number
+    private readonly _citing_paper_count: number
     private readonly _preprocessed_text: string
     private readonly _weight: number
     private _isExcluded: boolean
@@ -1347,6 +1355,10 @@ class Document extends TextElement {
         this._id = documentObject.doc_id;
         this._title = documentObject.title;
         this._abstract = documentObject.abstract;
+        this._authors = documentObject.authors;
+        this._content_type = documentObject.content_type;
+        this._publication_year = documentObject.publication_year;
+        this._citing_paper_count = documentObject.citing_paper_count;
         this._preprocessed_text = documentObject.preprocessed_text;
         this._weight = documentObject.weight;
         this._isExcluded = false;
@@ -1360,6 +1372,22 @@ class Document extends TextElement {
 
     get title(): string {
         return this._title
+    }
+
+    get authors(): string {
+        return this._authors
+    }
+
+    get content_type(): string {
+        return this._content_type
+    }
+
+    get publication_year(): number {
+        return this._publication_year
+    }
+
+    get citing_paper_count(): number {
+        return this._citing_paper_count
     }
 
     get abstract(): string {
@@ -1604,6 +1632,10 @@ interface DocumentResponseData {
     doc_id: string;
     title: string;
     abstract: string;
+    authors: string;
+    content_type: string;
+    publication_year: number;
+    citing_paper_count: number;
     preprocessed_text: string;
     weight: number;
     all_neighbour_terms: NTermObject[];
@@ -2470,11 +2502,13 @@ class ResultsList {
             // Create a new list item, title and abstract elements
             const listItem = document.createElement('li');
             const titleElement = this._createTitleElement(i, notExcludedDocuments[i])
+            const docInfoElement = this._createDocumentInfoElement(notExcludedDocuments[i])
             const intermediateElement = this._createIntermediateElement(notExcludedDocuments[i]);
             const abstractElement = this._createAbstractElement(notExcludedDocuments[i])
     
             // Append the title and abstract to the list item
             listItem.appendChild(titleElement);
+            listItem.appendChild(docInfoElement);
             listItem.appendChild(intermediateElement);
             listItem.appendChild(abstractElement);
     
@@ -2502,6 +2536,21 @@ class ResultsList {
         const highlightedSpanContainer = this._applyHighlightingToSentences(titleSentenceObject);
         titleElement.appendChild(highlightedSpanContainer);
         return titleElement;
+    }
+
+    private _createDocumentInfoElement(doc: Document): HTMLSpanElement {
+        const docInfoElement = document.createElement('div');
+        docInfoElement.className = 'doc-info-container';
+
+        // Create the document info text, then append it to the element
+        const docInfoText = document.createElement('span');
+        docInfoText.className = 'doc-info';
+        docInfoText.innerHTML = `Authors: ${doc.authors} &nbsp;|&nbsp; Year: ${doc.publication_year} &nbsp;|&nbsp; ${doc.content_type}`
+          + ` &nbsp;|&nbsp; Cited by: ${doc.citing_paper_count}`;
+
+        docInfoElement.appendChild(docInfoText);
+
+        return docInfoElement;
     }
 
     /**

@@ -25,6 +25,10 @@ class PydanticDocument(BaseModel):
     doc_id: str
     title: str
     abstract: str
+    authors: str
+    content_type: str
+    publication_year: int
+    citing_paper_count: int
     preprocessed_text: str
     weight: float
     all_neighbour_terms: List[PydanticNeighbourTerm]
