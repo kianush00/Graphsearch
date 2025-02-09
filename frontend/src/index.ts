@@ -2420,13 +2420,14 @@ class CriteriaTypesTable {
     }
     
     /**
-     * Updates the table with neighbour terms data.
-     * 
-     * This function retrieves the table body element, clears existing rows, and then iterates over the neighbour terms of the active query term.
-     * For each neighbour term, it creates a new row in the table and populates the cells with the term's value and hops.
-     * 
+     * Initializes the criteria types table with color circles, labels, and tooltips.
+     *
      * @remarks
-     * This function assumes that the table body element is already present in the HTML structure.
+     * This function retrieves the table body element and clears existing rows.
+     * It then defines the criteria types with their respective colors, labels, and tooltips.
+     * For each criteria type, it creates a new row in the table, adds a color circle with the appropriate color class,
+     * adds a text cell with the label, and adds a tooltip span with the tooltip text.
+     * Event listeners are added to the rows to show and hide the tooltips.
      */
     private _initializeTable(): void {
         // Get the table body element and clear existing rows in the table
@@ -2469,6 +2470,7 @@ class CriteriaTypesTable {
             this._addEventListenersToRows(row, tooltip);
         }
     }
+
 
     /**
      * Adds event listeners to a table row for displaying a tooltip.
