@@ -2435,18 +2435,27 @@ class CriteriaTypesTable {
         // Clear existing rows in the table
         tbody.innerHTML = '' 
 
-        // Iterate over the neighbour terms of the active query term
-        for(const criteriaType of [["green", "proximity"], ["blue", "frequency"], ["red", "exclusion"]]) {
+        // Define the criteria types with colors
+        const criteriaTypes = [
+            { colorClass: "criteria-green-circle", label: "proximity" },
+            { colorClass: "criteria-blue-circle", label: "frequency" },
+            { colorClass: "criteria-red-circle", label: "exclusion" }
+        ];
+
+        // Iterate over the criteria types
+        for (const criteriaType of criteriaTypes) {
             // Create a new row in the table
-            const row = tbody.insertRow()
+            const row = tbody.insertRow();
 
-            // Create cells for the row
-            const cell1 = row.insertCell(0)
-            const cell2 = row.insertCell(1)
+            // Create the color cell
+            const colorCell = row.insertCell(0);
+            const colorCircle = document.createElement('div');
+            colorCircle.classList.add('criteria-color-circle', criteriaType.colorClass);
+            colorCell.appendChild(colorCircle);
 
-            // Set the text content of the cells
-            cell1.innerHTML = criteriaType[0];
-            cell2.innerHTML = criteriaType[1];
+            // Create the criteria text cell
+            const textCell = row.insertCell(1);
+            textCell.innerText = criteriaType.label;
         }
     }
 }
@@ -2568,13 +2577,13 @@ class ResultsList {
 
         // Show abstract icon
         const showAbstractIcon = document.createElement('span');
-        showAbstractIcon.className = 'icon';
+        showAbstractIcon.className = 'abstract-icon';
         showAbstractIcon.innerHTML = '&#x1F53D; Abstract'; // Use HTML Entity
         this._addEventListenersToAbstractIcon(showAbstractIcon, intermediateElement);
 
         // Document graph icon
         const docGraphIcon = document.createElement('span');
-        docGraphIcon.className = 'icon';
+        docGraphIcon.className = 'doc-graph-icon';
         docGraphIcon.textContent = 'Document Graph';
         docGraphIcon.onmouseover = () => {
             if (this._activeTermService !== undefined) {
@@ -2585,7 +2594,7 @@ class ResultsList {
 
         // Full article link
         const fullArticleLink = document.createElement('span');
-        fullArticleLink.className = 'link';
+        fullArticleLink.className = 'doc-link';
         fullArticleLink.textContent = 'Full article here';
         fullArticleLink.onclick = () => {
             // When the list item is clicked, opens the original URL document webpage in a new tab
@@ -3349,7 +3358,7 @@ class CytoscapeManager {
 
         // When the user hovers it's mouse over a node
         this._cyUser.on('mouseover', 'node', (evt: cytoscape.EventObject) => {
-            queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'pointer');
+            queryService.activeQueryTermService?.changeCursorType(evt.target.id(), 'grab');
         });
 
         // When the user moves it's mouse away from a node

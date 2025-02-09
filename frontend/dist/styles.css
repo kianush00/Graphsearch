@@ -53,7 +53,7 @@ input, table, th, td {
     max-width: 95rem;
     height: inherit;
     margin-left: 1%;
-    margin-right: 8.5%;
+    margin-right: 9%;
 }
 
 #queryBarContainer {
@@ -228,23 +228,23 @@ input, table, th, td {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: bold;
 }
 
 .exclusion-area-text {
     top: 6%; 
-    color: rgba(130, 0, 0, 0.22); /* Adjusts the text color based on the background */
+    color: rgba(130, 0, 0, 0.19); /* Adjusts the text color based on the background */
 }
 
 .frequency-area-text {
     top: 24%; 
-    color: rgba(79, 116, 130, 0.32); /* Adjusts the text color based on the background */
+    color: rgba(79, 116, 130, 0.29); /* Adjusts the text color based on the background */
 }
 
 .proximity-area-text {
     top: 39%; 
-    color: rgba(80, 130, 31, 0.32); /* Adjusts the text color based on the background */
+    color: rgba(80, 130, 31, 0.29); /* Adjusts the text color based on the background */
 }
 
 #rerank {
@@ -286,7 +286,7 @@ input, table, th, td {
 }
 
 #criteriaTypesContainer {
-    flex-basis: 27%; /* Adjust the width as needed */
+    flex-basis: 20%; /* Adjust the width as needed */
 }
 
 #addTermsContainer {
@@ -343,11 +343,11 @@ input, table, th, td {
 }
 
 #criteriaTypesTable td:nth-child(1){
-    width: 40%; 
+    width: 20%; 
 }
 
 #criteriaTypesTable td:nth-child(2){
-    width: 60%;
+    width: 80%;
 }
 
 #addTermsFilterContainer {
@@ -361,6 +361,26 @@ input, table, th, td {
 #addTermsFilter {
     width: 75%;
     border-radius: 2px;
+}
+
+
+.criteria-color-circle {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.criteria-green-circle {
+    background-color: #73b201;
+}
+
+.criteria-blue-circle {
+    background-color: #2750db;
+}
+
+.criteria-red-circle {
+    background-color: #FF0000;
 }
 
 
@@ -464,18 +484,21 @@ input, table, th, td {
     font-size: 0.7rem;
 }
 
-.icon, .link {
-    cursor: pointer;
+.abstract-icon, .doc-graph-icon, .doc-link {
     font-size: 0.75rem;
     font-weight: bold;
     color: #003b7a;
 }
 
-.link {
+.abstract-icon, .doc-link {
+    cursor: pointer;
+}
+
+.doc-link {
     text-decoration: underline;
 }
 
-.icon:hover, .link:hover {
+.abstract-icon:hover, .doc-graph-icon:hover, .doc-link:hover {
     color: #007bff;
 }
 
