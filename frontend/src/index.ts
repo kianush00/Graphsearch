@@ -2429,17 +2429,18 @@ class CriteriaTypesTable {
      * This function assumes that the table body element is already present in the HTML structure.
      */
     private _initializeTable(): void {
-        // Get the table body element
+        // Get the table body element and clear existing rows in the table
         const tbody = this._dynamicTable.getElementsByTagName('tbody')[0]
-
-        // Clear existing rows in the table
         tbody.innerHTML = '' 
 
-        // Define the criteria types with colors
+        // Define the criteria types with colors and tooltips
         const criteriaTypes = [
-            { colorClass: "criteria-green-circle", label: "proximity" },
-            { colorClass: "criteria-blue-circle", label: "frequency" },
-            { colorClass: "criteria-red-circle", label: "exclusion" }
+            { colorClass: "criteria-green-circle", label: "proximity", 
+                text: "Documents will be classified according to how syntactically<br>close the term is to any query term." },
+            { colorClass: "criteria-blue-circle", label: "frequency", 
+                text: "Documents will be classified according to the<br>frequency of the term within a document" },
+            { colorClass: "criteria-red-circle", label: "exclusion", 
+                text: "Documents that include the term will<br>be excluded from the ranking." }
         ];
 
         // Iterate over the criteria types
@@ -2456,8 +2457,43 @@ class CriteriaTypesTable {
             // Create the criteria text cell
             const textCell = row.insertCell(1);
             textCell.innerText = criteriaType.label;
+
+            // Create tooltip span
+            const tooltip = document.createElement('span');
+            tooltip.classList.add('tooltip');
+            tooltip.style.visibility = 'hidden';
+            tooltip.innerHTML = criteriaType.text;
+            row.appendChild(tooltip);
+
+            // Event listeners to show/hide tooltip
+            this._addEventListenersToRows(row, tooltip);
         }
     }
+
+    /**
+     * Adds event listeners to a table row for displaying a tooltip.
+     *
+     * @param row - The HTMLTableRowElement to which the event listeners will be added.
+     * @param tooltip - The HTMLSpanElement that will be displayed as a tooltip.
+     *
+     * @remarks
+     * This function adds 'mouseenter' and 'mouseleave' event listeners to the table row.
+     * When the mouse enters the row, the tooltip is displayed with a transform property to position it.
+     * When the mouse leaves the row, the tooltip is hidden.
+     */
+    private _addEventListenersToRows(row: HTMLTableRowElement, tooltip: HTMLSpanElement): void {
+        row.addEventListener('mouseenter', () => {
+            tooltip.style.visibility = 'visible';
+            tooltip.style.opacity = '0.8';
+            tooltip.style.transform = 'translateX(4%)';
+        });
+
+        row.addEventListener('mouseleave', () => {
+            tooltip.style.visibility = 'hidden';
+            tooltip.style.opacity = '0';
+        });
+    }
+
 }
 
 

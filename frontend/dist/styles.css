@@ -159,10 +159,9 @@ input, table, th, td {
 }
 
 .tooltip {
-    display: none;
+    display: inline-block;
     position: absolute;
     background-color: black;
-    opacity: 0.8;
     color: white;
     padding: 5px 10px;
     border-radius: 4px;
@@ -170,11 +169,20 @@ input, table, th, td {
     white-space: nowrap;
     z-index: 10;
     box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+
+    /* Initially invisible */
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+}
+
+#searchParameters input + .tooltip {
+    visibility: hidden;
     transform: translateY(-15%);
 }
 
 #searchParameters input:hover + .tooltip {
-    display: inline-block;
+    visibility: visible;
+    opacity: 0.8;
 }
 
 #searchParameters {
@@ -234,17 +242,17 @@ input, table, th, td {
 
 .exclusion-area-text {
     top: 6%; 
-    color: rgba(130, 0, 0, 0.19); /* Adjusts the text color based on the background */
+    color: rgba(130, 0, 0, 0.25); /* Adjusts the text color based on the background */
 }
 
 .frequency-area-text {
     top: 24%; 
-    color: rgba(79, 116, 130, 0.29); /* Adjusts the text color based on the background */
+    color: rgba(79, 116, 130, 0.3); /* Adjusts the text color based on the background */
 }
 
 .proximity-area-text {
     top: 39%; 
-    color: rgba(80, 130, 31, 0.29); /* Adjusts the text color based on the background */
+    color: rgba(80, 130, 31, 0.3); /* Adjusts the text color based on the background */
 }
 
 #rerank {
@@ -254,17 +262,22 @@ input, table, th, td {
     margin-bottom: 8px;
 }
 
-#rerankButton:hover + .tooltip {
-    display: inline-block;
-    transform: translateY(110%);
-}
-
 #rerankButton {
     position: relative; /* Necessary for tooltips positioning */
     padding: 10px 20px;
     font-size: 1.25rem;
     font-weight: bold;
     cursor: pointer;
+}
+
+#rerankButton + .tooltip {
+    visibility: hidden;
+    transform: translateY(110%);
+}
+
+#rerankButton:hover + .tooltip {
+    visibility: visible;
+    opacity: 0.8;
 }
 
 #tablesContainer {
