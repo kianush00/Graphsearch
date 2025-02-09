@@ -2463,6 +2463,7 @@ class CriteriaTypesTable {
             const tooltip = document.createElement('span');
             tooltip.classList.add('tooltip');
             tooltip.style.visibility = 'hidden';
+            tooltip.style.lineHeight = '1.5';
             tooltip.innerHTML = criteriaType.text;
             row.appendChild(tooltip);
 
@@ -3174,6 +3175,8 @@ class RerankComponent {
     private readonly _queryService: QueryService
     private readonly _button: HTMLButtonElement
     private readonly _loadingBar: LoadingBar
+    private readonly _helpIcon: HTMLElement;
+    private readonly _helpTooltip: HTMLSpanElement;
 
     /**
      * Constructs a new instance of RerankComponent.
@@ -3185,9 +3188,20 @@ class RerankComponent {
         this._queryService = queryService
         this._button = document.getElementById('rerankButton') as HTMLButtonElement
         this._loadingBar = loadingBar;
+        this._helpIcon = document.getElementById('helpIcon') as HTMLElement;
+        this._helpTooltip = this._helpIcon.nextElementSibling as HTMLSpanElement;
 
         // Add event listener to the button element
         this._button.addEventListener('click', this._handleRerankClick.bind(this))
+
+         // Add event listeners for the help icon
+         this._helpIcon.addEventListener('mouseenter', () => {
+            this._helpTooltip.style.opacity = '0.8';
+        });
+
+        this._helpIcon.addEventListener('mouseleave', () => {
+            this._helpTooltip.style.opacity = '0';
+        });
     }
 
     /**

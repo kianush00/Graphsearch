@@ -25,7 +25,6 @@
                         <label><input class="dropdownCheckbox" type="checkbox" value="Conferences" checked>Conferences</label>
                         <label><input class="dropdownCheckbox" type="checkbox" value="Journals" checked>Journals</label>
                         <label><input class="dropdownCheckbox" type="checkbox" value="Magazines" checked>Magazines</label>
-                        <label><input class="dropdownCheckbox" type="checkbox" value="Early Access Articles" checked>Early Access Articles</label>
                     </div>
                 </div>
                 <input type="text" id="queryInput" size="36" placeholder="New query..." autofocus>
@@ -51,9 +50,17 @@
                 <div class="frequency-area-text">Frequency Area</div>
                 <div class="proximity-area-text">Proximity Area</div>
             </div>
-            <div id="rerank">
-                <button id="rerankButton">Rerank</button>
-                <span class="tooltip">Based on the previous configuration, reorder<br>the results of the initial ranking.</span>
+            <div id="rerankContainer">
+                <!-- Help icon -->
+                <div id="helpIconContainer">
+                    <div id="helpIcon">?</div>
+                    <span class="tooltip">You can remove terms from the graph by right-clicking on an adjacent node.</span>
+                </div>
+                <!-- Rerank button -->
+                <div id="rerank">
+                    <button id="rerankButton">Rerank</button>
+                    <span class="tooltip">Based on the previous configuration, reorder<br>the results of the initial ranking.</span>
+                </div>
             </div>
             <div id="tablesContainer">
                 <div id="criteriaTypesContainer">

@@ -580,7 +580,7 @@ class Document(QueryTreeHandler):
     @property
     def content_type(self) -> str:
         """
-        Retrieve the article type of the document, which can be: Conference, Journal, Magazine or Early Access Article.
+        Retrieve the article type of the document, which can be: Conference, Journal or Magazine.
 
         Returns:
         str: The content type of the document
@@ -819,7 +819,7 @@ class Ranking(QueryTreeHandler):
     def __init__( self, 
         query_text: str, 
         nr_search_results: int = 10, 
-        selected_categories: str = "Conferences,Journals,Magazines,Early Access Articles", 
+        selected_categories: str = "Conferences,Journals,Magazines", 
         ranking_weight_type: str = 'linear', 
         stop_words: tuple[str] = (), 
         lemmatization: bool = True, 
@@ -1351,7 +1351,7 @@ class Ranking(QueryTreeHandler):
     
     def __get_content_type_from_article(self, article: dict) -> str:
         """
-        Get the content type from the article, which can be: Conference, Journal, Magazine or Early Access Article.
+        Get the content type from the article, which can be: Conference, Journal or Magazine.
         
         Returns
         -------

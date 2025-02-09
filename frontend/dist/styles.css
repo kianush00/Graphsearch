@@ -255,11 +255,66 @@ input, table, th, td {
     color: rgba(80, 130, 31, 0.3); /* Adjusts the text color based on the background */
 }
 
+#rerankContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Space between icon and button */
+    margin-top: 6px;
+    margin-bottom: 8px;
+    margin-right: 25px;
+}
+
+/* Help icon container */
+#helpIconContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Help icon */
+#helpIcon {
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 24px;
+    border-radius: 50%;
+    background-color: #888888;
+    color: white;
+    cursor: pointer;
+}
+
+/* Tooltip for help icon */
+#helpIconContainer .tooltip {
+    visibility: hidden;
+    position: absolute;
+    bottom: 125%; /* Positioned above the icon */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: black;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+}
+
+/* Show tooltip when hovering over the help icon */
+#helpIconContainer:hover .tooltip {
+    visibility: visible;
+    opacity: 0.8;
+}
+
 #rerank {
     display: flex;
     justify-content: center;
-    margin-top: 6px;
-    margin-bottom: 8px;
 }
 
 #rerankButton {

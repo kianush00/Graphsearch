@@ -295,7 +295,7 @@ class XPLORE:
         Adds a query parameter for the 'content_type' field to the XPLORE API request.
 
         Parameters:
-        value (str): The type of content to query. For example: 'Conferences,Journals,Magazines,Early Access Articles'
+        value (str): The type of content to query. For example: 'Conferences,Journals,Magazines'
 
         Returns:
         None
