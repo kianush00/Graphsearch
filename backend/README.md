@@ -2,7 +2,7 @@
 
 This reposotory include the libraries, tests and notebooks of the **S**earch **R**esults **EX**plorer application.
 
-- **srex.py :** basic library including basic methods for text processing an graphs construction.
+- **srex.py:** basic library including basic methods for text processing an graphs construction.
 
 - **srex_classes.py:** advanced library which includes high level functionality
 
@@ -13,10 +13,10 @@ This reposotory include the libraries, tests and notebooks of the **S**earch **R
 
 # Run Uvicorn API
 
-For running Uvicorn API, execute the following command:
+For running Uvicorn API in development mode, execute the following command:
 
 ```bash
-    python run_api.py
+    python run_development_api.py
 ```
 
 # Run Tests
