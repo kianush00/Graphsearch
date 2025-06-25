@@ -90,7 +90,7 @@ class VectorUtils:
     @staticmethod
     def get_positions_sorted_desc(values: list[float]) -> list[int]:
         """
-        Sort the given list of values in descending order and return a list of their indices.
+        Sort the given list of values in descending order and return a list of their 0-index-based indices.
 
         Parameters:
         ----------
@@ -109,7 +109,7 @@ class VectorUtils:
         sorted_indexed_values = sorted(indexed_values, key=lambda x: x[1], reverse=True)
         
         # Extract the sorted indices
-        sorted_positions = [index for index, value in sorted_indexed_values]
+        sorted_positions = [value[0] for value in sorted_indexed_values]
         
         return sorted_positions
     

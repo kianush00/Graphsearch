@@ -231,8 +231,8 @@ class QueryService:
         for doc_weight, doc_graph, doc_is_excluded in document_weight_graph_tuple_list:
             if (not doc_is_excluded):
                 # Calculate the similarity score between the visible graph and the document graph
-                # Formula:    similarity_score = (doc_weight * (10 ^ -10)) + (doc_weight * initial_similarity_score)
-                similarity_score_between_graphs = (doc_weight * 0.0000000001) + (doc_weight * visible_graph.get_similarity_score_as_base_graph(doc_graph))
+                # Formula:    similarity_score = (doc_weight * (10 ^ -8)) + (doc_weight * initial_similarity_score)
+                similarity_score_between_graphs = (doc_weight * 0.00000001) + (doc_weight * visible_graph.get_similarity_score_as_base_graph(doc_graph))
                 # Add the similarity score to the ranking list
                 similarity_ranking.append(similarity_score_between_graphs)
             

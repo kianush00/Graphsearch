@@ -905,10 +905,10 @@ class Ranking(QueryTreeHandler):
 
     def get_document_by_ranking_position(self, position: int) -> Document | None:
         """
-        Retrieve a document from the ranking based on its ranking position.
+        Retrieve a document from the ranking based on its ranking position (1-based index).
 
         Parameters:
-        position (int): The position of the document in the ranking.
+        position (int): The 1-based-index position of the document in the ranking.
 
         Returns:
         Document | None: The document at the specified ranking position, or None if the position is invalid.

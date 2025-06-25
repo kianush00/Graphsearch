@@ -269,8 +269,7 @@ class TestSREX(unittest.TestCase):
         tokens = TextUtils.remove_special_characters(tokens)
         
         # Remove stopwords
-        result = TextUtils.remove_stopwords(tokens, stop_words)
-        
+        result = TextUtils.remove_stopwords_and_only_digit_words(tokens, stop_words)
         # Assert the result matches the expected output
         self.assertEqual(result, expected_result)
 
@@ -290,7 +289,7 @@ class TestSREX(unittest.TestCase):
         tokens = TextUtils.convert_to_lowercase(tokens)
         tokens = TextUtils.replace_accented_vowels(tokens)
         tokens = TextUtils.remove_special_characters(tokens)
-        tokens = TextUtils.remove_stopwords(tokens, stop_words)
+        tokens = TextUtils.remove_stopwords_and_only_digit_words(tokens, stop_words)
         
         # Perform lemmatization
         result = TextUtils.do_lemmatization(tokens)
@@ -314,7 +313,7 @@ class TestSREX(unittest.TestCase):
         tokens = TextUtils.convert_to_lowercase(tokens)
         tokens = TextUtils.replace_accented_vowels(tokens)
         tokens = TextUtils.remove_special_characters(tokens)
-        tokens = TextUtils.remove_stopwords(tokens, stop_words)
+        tokens = TextUtils.remove_stopwords_and_only_digit_words(tokens, stop_words)
         
         # Perform stemming
         result = TextUtils.do_stemming(tokens)

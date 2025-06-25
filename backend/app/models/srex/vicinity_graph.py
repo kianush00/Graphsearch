@@ -288,7 +288,7 @@ class VicinityGraph:
         return node_terms
     
     
-    def get_terms_from_proximity_nodes(self) -> list[str]:
+    def get_terms_from_proximity_nodes_sorted(self) -> list[str]:
         """
         Retrieves a list of terms from the proximity nodes of the current graph.
 

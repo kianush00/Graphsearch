@@ -80,7 +80,7 @@ class TextUtils:
         filtered_words = TextUtils.convert_to_lowercase(raw_splitted_words)
         filtered_words = TextUtils.replace_accented_vowels(filtered_words)
         filtered_words = TextUtils.remove_special_characters(filtered_words)
-        filtered_words = TextUtils.remove_stopwords(filtered_words, stop_words)  # Remove stopwords
+        filtered_words = TextUtils.remove_stopwords_and_only_digit_words(filtered_words, stop_words)  # Remove stopwords
         
         # Apply lemmatization
         if lema:
@@ -203,25 +203,34 @@ class TextUtils:
     
     
     @staticmethod
-    def remove_stopwords(
+    def remove_stopwords_and_only_digit_words(
         tokens: list[str], 
         stop_words: tuple[str]
         ) -> list[str]:
         """
-        Remove specified stop words from a list of tokens.
+        Remove stopwords and words that only contain digits from a list of tokens.
 
         This function takes a list of tokens and a tuple of stop words as input.
-        It filters out the stop words from the list of tokens and returns a new list
-        containing only the tokens that are not stop words.
+        It filters out stopwords and words that only contain digits from the list of tokens.
+        The filtered list of tokens is then returned.
 
         Parameters:
         tokens (list[str]): A list of strings where each string represents a token.
-        stop_words (tuple[str]): A tuple of strings representing stop words.
+        stop_words (tuple[str]): A tuple of strings where each string is a stop word.
 
         Returns:
-        list[str]: A list of strings where each string represents a token that is not a stop word.
+        list[str]: A list of strings where each string represents a token that has been filtered.
+            The filtered tokens do not contain stopwords or words that only contain digits.
         """
-        filtered_words = [word if word not in stop_words else '' for word in tokens]
+        filtered_words = []
+        
+        for word in tokens:
+            if word in stop_words or (word and word.isdigit()):
+                cleaned_word = ""
+            else:
+                cleaned_word = word
+            filtered_words.append(cleaned_word)
+        
         return filtered_words
     
 
