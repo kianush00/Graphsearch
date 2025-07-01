@@ -457,7 +457,7 @@ class VicinityGraph:
         
         if prox_nodes_length == 0 and freq_nodes_length == 0:
             print("Warning: The base graph doesn't have proximity or frequency nodes.")
-            return -1.0
+            return 0.0
         
         # Calculate the base vector with terms from the current graph
         proximity_vector_base = set(proximity_nodes_self_dict.keys()) | set(proximity_nodes_external_dict.keys())
