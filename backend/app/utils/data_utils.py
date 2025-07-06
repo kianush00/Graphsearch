@@ -1,6 +1,7 @@
 from typing import Any, Tuple
 import os
 import json
+import re
 
 
 class DataUtils:
@@ -87,12 +88,26 @@ class DataUtils:
         """
         extracted = []
         for result in results_data.get("results", []):
-            # Grab content and docid, rename as requested
-            content: str = result.get("content", "").replace('\n', '').replace('\t', '').replace('\"', '')  # Remove newlines
-            docid: str   = result.get("docid", "")
+            raw = result.get("content", "")
+            # 1) Split on newlines/tabs, drop empty
+            tokens = re.split(r'[\n\t]+', raw)
+            tokens = [t for t in tokens if t.strip()]
+
+            # 2) In first 4 tokens, strip off any "prefix -- " or "prefix _ "
+            for i in range(min(4, len(tokens))):
+                for sep in (" -- ", " _ "):
+                    if sep in tokens[i]:
+                        # keep only what comes after the separator
+                        tokens[i] = tokens[i].split(sep, 1)[1].strip()
+                        break  # no need to test the other sep
+
+            # 3) Rejoin and final clean
+            cleaned = " ".join(tokens)
+            cleaned = cleaned.replace('\n', '').replace('\t', '').replace('\"', '')
+
             extracted.append({
-                "title": content,
-                "article_number": docid
+                "title": cleaned,
+                "article_number": result.get("docid", "")
             })
         return extracted
     
