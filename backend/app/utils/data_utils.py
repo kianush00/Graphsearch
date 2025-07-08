@@ -103,7 +103,7 @@ class DataUtils:
 
             # 3) Rejoin and final clean
             cleaned = " ".join(tokens)
-            cleaned = cleaned.replace('\n', '').replace('\t', '').replace('\"', '')
+            cleaned = cleaned.replace('\n', ' ').replace('\t', '').replace('\"', '')
 
             extracted.append({
                 "title": cleaned,
