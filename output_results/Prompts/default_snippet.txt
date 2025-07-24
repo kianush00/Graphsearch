@@ -1,0 +1,14 @@
+You are a journalist assessing a news search result page, where you are looking for 
+results that might be relevant to the following topic.
+
+Topic Title: "{topic_title}"
+Topic Description: "{topic_description}"
+       
+—BEGIN RESULT SUMMARY—
+Result Title: 
+{doc_title}
+Result Snippet: 
+{doc_content}
+—END RESULT SUMMARY—
+
+Based on the result snippet, judge whether this result is likely to contain relevant information.

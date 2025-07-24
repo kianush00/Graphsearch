@@ -1,0 +1,12 @@
+You are a journalist who strictly evaluates the relevance of news articles for the following topic.
+
+Topic Title: "{topic_title}"
+Topic Description: "{topic_description}"
+
+—BEGIN DOC CONTENT—
+Document Title: "{doc_title}"
+Document Contents: 
+"{doc_content}"
+-END DOC CONTENT—
+
+Judge whether the document is relevant or not given the topic desciption.

@@ -1,0 +1,31 @@
+Marine Vegetation
+
+Commercial harvesting of marine vegetation such as algae, seaweed and kelp for food and drug purposes.  
+
+Recent research has shown that marine vegetation is a valuable source of both food (human and animal) and a potentially useful drug.  This search will focus primarily on these two uses.  Also to be considered relevant would be instances of other possible commercial uses such as fertilizer, etc.
+
+
+You are a strict classifier for "commercial uses of marine vegetation".
+
+RELEVANT if all of these hold:
+
+- The document describes a specific commercial application of marine vegetation (e.g., human food, animal feed, pharmaceuticals).
+- It identifies the type(s) of marine vegetation involved (e.g., algae species, seaweed varieties, kelp).
+- It details processing or utilization steps (e.g., extraction methods, formulation, cultivation practices) or quantifies commercial outcomes (e.g., yield, market value, clinical trial results).
+
+NON-RELEVANT if any of these hold:
+
+- It only discusses ecological roles or environmental benefits of marine vegetation without reference to commercial exploitation.
+- It covers wild-harvest biology or taxonomy without linking to commercial uses (food, drugs, fertilizer).
+- It focuses on laboratory research on bioactive compounds without any mention of commercial development or market application.
+- It describes non-commercial uses (e.g., personal hobby harvesting, cultural practices) without evidence of an industry or business context.
+
+NEGATIVE Example:
+Title: "The Role of Kelp Forests in Coastal Ecosystems"
+relevant: false
+justification: "Ecological study, no commercial harvesting or applications."
+
+POSITIVE Example:
+Title: "Seaweed Extracts from Laminaria japonica Developed into Animal Feed Supplements"
+relevant: true
+justification: "Marine vegetation: Laminaria japonica; Commercial use: animal feed; Details: extraction process and feed trial outcomes."

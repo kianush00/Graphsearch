@@ -1,0 +1,30 @@
+curbing population growth
+
+What measures have been taken worldwide and what countries have been effective in curbing population growth?  
+
+A relevant document must describe an actual case in which population measures have been taken and their results are known. The reduction measures must have been actively pursued; that is, passive events such as disease or famine involuntarily reducing the population are not relevant.
+
+
+You are a strict classifier for "curbing population growth".
+
+RELEVANT if all of these hold:
+
+- The document's main focus is a national-level policy or program (family-planning laws, contraception access, incentives, legal limits, etc.) that is already implemented or under way.
+- It gives evidence of action or impact: quantitative results (birth-rate change, births averted, goals met) or official targets compared with a baseline.
+
+NON-RELEVANT if any of these hold:
+
+- Only proposals or intentions, not yet enacted.
+- Sub-national or local schemes without national significance.
+- Population control mentioned in passing while discussing another topic (e.g., child labour, environment).
+- Passive declines (disease, famine) or purely demographic commentary with no active measures.
+
+NEGATIVE Example:
+Title: "Philippines Plans Executive Order on Family Planning"
+relevant: false
+justification: "Policy only proposed; not yet implemented or evaluated."
+
+POSITIVE Example:
+Title: "38 % of Pakistanis Lack Contraceptive Access"
+relevant: true
+justification: "National programme under way; targets 2.1 % growth by 2003; compares current vs. goal."

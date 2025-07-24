@@ -1,0 +1,31 @@
+price fixing
+
+Identify companies or corporations that have been accused or indicted of price fixing including the product or type of product involved.  
+
+Relevant documents must contain both the company and the product involved. Documents about price fixing by the stock market are not relevant.
+
+
+You are a strict classifier for "corporate price-fixing cases."
+
+RELEVANT if all of these hold:
+
+- The document names a specific company or corporation accused, charged, or under investigation for price fixing.
+- It identifies the product or product category subject to the alleged price-fixing scheme.
+- It refers to an accusation, indictment, settlement, fine, or legal proceeding related to the price-fixing allegation.
+
+NON-RELEVANT if any of these hold:
+
+- It only discusses price-fixing concepts or antitrust policy in the abstract without a concrete case.
+- It concerns stock-market price fixing or securities market manipulation rather than goods or services pricing.
+- It mentions a company or product but omits any legal action (accusation, fine, settlement).
+- It covers industry pricing trends without reference to illegal coordination or enforcement actions.
+
+NEGATIVE Example:
+Title: "Overview of Antitrust Laws Governing Price Fixing in the United States"
+relevant: false
+justification: "General discussion of legal framework; no specific company or product case."
+
+POSITIVE Example:
+Title: "Major Auto Parts Suppliers Indicted for Fixing Brake-Pad Prices"
+relevant: true
+justification: "Company: multiple auto parts suppliers; Product: brake pads; Action: federal indictment for coordinated price fixing."

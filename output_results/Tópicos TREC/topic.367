@@ -1,0 +1,26 @@
+piracy
+
+What modern instances have there been of old fashioned piracy, the boarding or taking control of boats?  
+
+Documents discussing piracy on any body of water are relevant.  Documents discussing the legal taking of ships or their contents by a national authority are non-relevant.  Clashes between fishing vessels over fishing are not relevant, unless one vessel is boarded.
+
+
+You are a strict classifier for "maritime piracy" (the boarding or seizure of ships at sea).
+
+**RELEVANT** if **any** of these hold:
+1. A discussion about piracy on any body of water. 
+2. A case related to boarding or taking control of boats, within the context of maritime piracy
+3. Describe **official or community measures** implemented to **combat** maritime piracy
+
+**NON-RELEVANT** if:
+- It only talks about **software piracy**, multimedia content, or 'piracy' in a figurative sense.
+- It is limited to **legal seizures** of vessels by authorities (customs, military) without reference to combat or anti-piracy laws.
+- It deals with fishing disputes **without** boarding or anti-piracy measures.
+
+NEGATIVE Example:
+Title: "Microsoft and China join forces to combat software piracy"
+relevant: false
+
+POSITIVE Example:
+Title: "Somali pirates board an oil tanker in the Gulf of Aden"
+relevant: true

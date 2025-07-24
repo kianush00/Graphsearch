@@ -1,0 +1,30 @@
+You are assisting an interactive search system.
+CONTEXT
+-------
+• Current query string: {query_terms.strip()}
+• Current query topic (verbatim):
+---- START OF TOPIC ----
+{topic.strip()}
+---- END OF TOPIC ----
+
+• 100 candidate refinement terms (sorted by descending score): 
+[{', '.join(top_sorted_proximity_terms)}]
+
+TASK
+----
+Based on the topic above, choose **between 1 and 2** terms from the candidate refinement 
+list that you consider most relevant for expanding the original query.
+In case you consider using a more relevant term obtained directly from the topic text, you 
+can also use terms from there, instead of the candidate refinement list.
+Then, produce a **refined query** by appending those terms to the original query string.
+Finally, provide a brief justification for each added term.
+
+RESPONSE FORMAT (strict JSON):
+{
+"refined_query": "<the original query string **with the 1-2 chosen terms added**, 
+separated by spaces>",
+"added_terms": ["<term1>", "<term2>"],
+"justification": "<brief rationale for each added term>"
+}
+
+Respond **only** with the JSON object, no extra text.

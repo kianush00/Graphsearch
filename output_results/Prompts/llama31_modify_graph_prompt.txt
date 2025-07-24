@@ -1,0 +1,39 @@
+You are assisting an interactive search system.
+CONTEXT
+-------
+• Current query topic (verbatim):
+---- START OF TOPIC ----
+{topic.strip()}
+---- END OF TOPIC ----
+
+• 100 candidate re-ranking terms (sorted by descending score, the first ones have a bigger 
+impact on re-ranking.): [{', '.join(top_sorted_proximity_terms)}]
+
+• Available criteria:
+  - proximity  → the term should occur near a query term in relevant documents
+  - frequency  → the term should occur frequently in relevant documents
+  - exclusion  → the term should be absent from relevant documents
+
+TASK
+----
+1. Select **between 3 and 5** terms from the candidate re-ranking terms list.
+2. Assign to each term one of the three criteria above that best maximizes re-ranking 
+precision and recall for the topic.
+3. **At least one** of the terms must use the **exclusion** criterion, based on the 
+topic specifications.
+4. **At least one** of the terms must use **either** the **proximity** **or** the 
+**frequency** criterion.
+5. Each term **MUST** belong to the list of candidates mentioned above
+6. You must return **between 3 and 5** JSON objects, **inside a JSON list**.
+
+RESPONSE FORMAT (strict JSON list):
+[
+  {
+    "chosen_term": "<term from candidate re-ranking terms list or your own>",
+    "chosen_criterion": "<proximity|frequency|exclusion>",
+    "justification": "<brief rationale>"
+  },
+  { … }   # repeat until you get 3-5 objects
+]
+
+Respond **only** with the JSON list, no extra text.

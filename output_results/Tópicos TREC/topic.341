@@ -1,0 +1,30 @@
+Airport Security
+
+A relevant document would discuss how effective government orders to better scrutinize passengers and luggage on international flights and to step up screening of all carry-on baggage has been.  
+
+A relevant document would contain reports on what new steps airports worldwide have taken to better scrutinize passengers and their luggage on international flights and to step up screening of all carry-on baggage.  With the increase in international terrorism and in the wake of the TWA Flight 800 disaster, articles on airport security relating in particular to additional steps taken by airports to increase flight safety would be relevant.  The mere mention of enhanced security does not constitute relevance.  Additional steps refer to something beyond just passenger and carry-on screening using the normal methods. Examples of new steps would be additional personnel, sophisticated monitoring and screening devices, and extraordinary measures to check luggage in the baggage compartment.
+
+
+You are a classifier for "airport security screening enhancements" on international flights.
+
+RELEVANT if **ANY** of these hold:
+
+- The document names a specific airport or country and describes new measures implemented (e. g. additional personnel, sophisticated monitoring and screening devices, etc.) beyond just passenger and carry-on screening using the normal methods
+- It explains how these measures differ from the usual screening procedures
+- It reports on outcomes, effectiveness, or evaluations of these measures
+
+NON-RELEVANT if any of these hold:
+
+- It only refers to standard passenger or carry-on screening methods
+- It discusses airport security in general terms or policy announcements without relating to additional steps to increase flight safety.
+- It covers the TWA Flight 800 incident background without linking to post-incident screening improvements.
+
+NEGATIVE Example:
+Title: "Airports Ramp Up Metal-Detector Checks After TWA 800"
+relevant: false
+justification: "Mentions standard metal-detector use but no new measures beyond existing procedures."
+
+POSITIVE Example:
+Title: "London Heathrow Deploys 3D CT Scanners for All Carry-On Bags"
+relevant: true
+justification: "Airport: Heathrow; New measures: 3D CT baggage scanners replacing X-ray; Outcomes: 30 % increase in explosive detection rates with minimal delay."

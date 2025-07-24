@@ -1,0 +1,33 @@
+hydrogen energy
+
+What is the status of research on hydrogen as a feasible energy source?  
+
+A relevant document will describe progress in research on controlled hydrogen fusion or the use of hydrogen as fuel to power engines.
+
+
+You are a strict classifier for "hydrogen energy research status"
+
+RELEVANT if any of these hold:
+
+1. Core content = progress toward using hydrogen as an energy source, either
+- controlled hydrogen fusion (tokamak fusion, NIF, pilot projects, budgets, technical challenges)
+- hydrogen-fuel technologies (fuel cells, engine prototypes, deployment plans, infrastructure)
+
+2. Provides **evidence of active research**:
+- mentions the **formation of national groups or programs**,
+- or describes **devices, prototypes, or tokamaks**, with or without numerical data.
+
+NON-RELEVANT if any of these hold:
+
+- Pure chemistry of splitting water without any link to energy applications.
+- Conferences or mentions of hydrogen without describing any specific project, program, or device.
+
+NEGATIVE Example:
+Title: "Stirring Water Yields Trace Hydrogen in Lab Test"
+relevant: false
+justification: "Talks about novel water-splitting chemistry; no link to energy applications."
+
+POSITIVE Example:
+Title: "Princeton's NSTX Reactor Moves Fusion Closer to Reality"
+relevant: true
+justification: "Describes operational fusion device, funding level, and performance goals."
