@@ -25,6 +25,7 @@ class PydanticDocument(BaseModel):
     doc_id: str
     title: str
     abstract: str
+    initial_position: int
     authors: str
     content_type: str
     publication_year: int

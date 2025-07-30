@@ -332,7 +332,7 @@ class QueryService:
                         raw_to_processed_map=s.raw_to_processed_map, all_neighbour_terms=sentence_neighbour_terms))
             
             # Add the document to the list of documents with their neighbour terms and sentences
-            documents.append(PydanticDocument(doc_id=d.doc_id, title=d.title, abstract=d.abstract, authors=d.authors, 
+            documents.append(PydanticDocument(doc_id=d.doc_id, title=d.title, abstract=d.abstract, initial_position=d.ranking_position, authors=d.authors, 
                         content_type=d.content_type, publication_year=d.publication_year, citing_paper_count=d.citing_paper_count,
                         preprocessed_text=d.preprocessed_text, weight=d.weight, all_neighbour_terms=doc_neighbour_terms, sentences=_sentences))
         

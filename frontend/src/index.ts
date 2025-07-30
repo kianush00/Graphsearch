@@ -360,6 +360,7 @@ class ObjectValidationUtils {
             typeof document.doc_id === "string" &&
             typeof document.title === "string" &&
             typeof document.abstract === "string" &&
+            typeof document.initial_position === "number" &&
             typeof document.authors === "string" &&
             typeof document.content_type === "string" &&
             typeof document.publication_year === "number" &&
@@ -1329,6 +1330,7 @@ class Document extends TextElement {
     private readonly _id: string
     private readonly _title: string
     private readonly _abstract: string
+    private readonly _initial_position: number
     private readonly _authors: string
     private readonly _content_type: string
     private readonly _publication_year: number
@@ -1355,6 +1357,7 @@ class Document extends TextElement {
         this._id = documentObject.doc_id;
         this._title = documentObject.title;
         this._abstract = documentObject.abstract;
+        this._initial_position = documentObject.initial_position;
         this._authors = documentObject.authors;
         this._content_type = documentObject.content_type;
         this._publication_year = documentObject.publication_year;
@@ -1372,6 +1375,10 @@ class Document extends TextElement {
 
     get title(): string {
         return this._title
+    }
+
+    get initial_position(): number {
+        return this._initial_position
     }
 
     get authors(): string {
@@ -1632,6 +1639,7 @@ interface DocumentResponseData {
     doc_id: string;
     title: string;
     abstract: string;
+    initial_position: number;
     authors: string;
     content_type: string;
     publication_year: number;
@@ -2546,13 +2554,13 @@ class ResultsList {
         // Get the ranking of the active query term
         const notExcludedDocuments = this._activeTermService.ranking.getNotExcludedDocuments()
     
-        for (let i = 0; i < notExcludedDocuments.length; i++) {
+        for (const doc of notExcludedDocuments) {
             // Create a new list item, title and abstract elements
             const listItem = document.createElement('li');
-            const titleElement = this._createTitleElement(i, notExcludedDocuments[i])
-            const docInfoElement = this._createDocumentInfoElement(notExcludedDocuments[i])
-            const intermediateElement = this._createIntermediateElement(notExcludedDocuments[i]);
-            const abstractElement = this._createAbstractElement(notExcludedDocuments[i])
+            const titleElement = this._createTitleElement(doc.initial_position, doc)
+            const docInfoElement = this._createDocumentInfoElement(doc)
+            const intermediateElement = this._createIntermediateElement(doc);
+            const abstractElement = this._createAbstractElement(doc)
     
             // Append the title and abstract to the list item
             listItem.appendChild(titleElement);
@@ -2573,14 +2581,14 @@ class ResultsList {
      * 
      * @returns A new HTMLSpanElement representing the title of the document.
      */
-    private _createTitleElement(index: number, doc: Document): HTMLSpanElement {
+    private _createTitleElement(initial_position: number, doc: Document): HTMLSpanElement {
         const titleElement = document.createElement('span');
         titleElement.className = 'title';
         // Check if the sentences array is not empty
         const sentences = doc.sentences;
         const titleSentenceObject = sentences.length > 0 ? [sentences[0]] : [];
         // Highlight the title element with green color for the query terms and purple color for the neighbour terms
-        titleElement.appendChild(document.createTextNode(`${index + 1}. `));
+        titleElement.appendChild(document.createTextNode(`${initial_position}. `));
         const highlightedSpanContainer = this._applyHighlightingToSentences(titleSentenceObject);
         titleElement.appendChild(highlightedSpanContainer);
         return titleElement;
@@ -2979,7 +2987,7 @@ class QueryComponent {
         this._loadingBar = loadingBar;
 
         // Set default values for the inputs
-        this._searchResultsInput.value = "10";
+        this._searchResultsInput.value = "50";
         this._limitDistanceInput.value = "4";
         this._graphTermsInput.value = "5";
 

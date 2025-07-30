@@ -16,7 +16,7 @@ This reposotory include the libraries, tests and notebooks of the **S**earch **R
 For running Uvicorn API in development mode, execute the following command:
 
 ```bash
-    python run_development_api.py
+python run_development_api.py
 ```
 
 # Run Tests
@@ -24,7 +24,7 @@ For running Uvicorn API in development mode, execute the following command:
 For running tests, execute the following command:
 
 ```bash
-    python run_tests.py
+python run_tests.py
 ```
 
 # Run Static Analysis
@@ -34,13 +34,13 @@ Run the following command from the backend/ directory to launch analysis:
 ### Windows
 
 ```bash
-    sonar-scanner.bat -D"sonar.token=myAuthenticationToken"
+sonar-scanner.bat -D"sonar.token=myAuthenticationToken"
 ```
 
 ### Linux / MacOS
 
 ```bash
-    sonar-scanner -Dsonar.token=myAuthenticationToken
+sonar-scanner -Dsonar.token=myAuthenticationToken
 ```
 
 
@@ -49,7 +49,7 @@ Run the following command from the backend/ directory to launch analysis:
 Create a `.env` file in the current backend directory of the project with the following content:
 
 ```bash
-    IEEE_XPLORE_API_KEY=your_api_key
+IEEE_XPLORE_API_KEY=your_api_key
 ```
 
 
