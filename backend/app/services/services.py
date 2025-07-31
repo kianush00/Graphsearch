@@ -1,7 +1,7 @@
 from models.request.request import PydanticRankingRequest, PydanticNeighbourTermRequest
 from models.request.response import PydanticRanking, PydanticDocument, PydanticSentence, PydanticNeighbourTerm, RerankNewPositions
 from models.srex.ranking import Ranking
-from backend.app.models.srex.term_graph import TermGraph, TGNode
+from models.srex.term_graph import TermGraph, TGNode
 from utils.data_utils import DataUtils
 from utils.vector_utils import VectorUtils
 from fastapi import HTTPException

@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 import json
 
 from models.ieee_xplore.xploreapi import XPLORE
-from backend.app.models.srex.term_graph import TermGraph
-from backend.app.models.srex.term_graph import TGNode
+from models.srex.term_graph import TermGraph
+from models.srex.term_graph import TGNode
 from models.srex.binary_expression_tree import BinaryExpressionTree
 from models.srex.binary_expression_tree import BETNode
 from exceptions.exceptions import MissingEnvironmentVariableError

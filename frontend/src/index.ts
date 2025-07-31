@@ -271,7 +271,7 @@ class HTTPRequestUtils {
                 return result;
             } else {
                 console.error('Error:', result);
-                alert(`${result['detail']}`);
+                alert(`No results found for your search. Please make sure your search string is correct.`);
                 return null;
             }
         } catch (error) {
@@ -1610,6 +1610,11 @@ class Ranking {
         this._reorderDocuments(newPositions);
     }
 
+    /** Remove exclusions and return documents to their original order (initial_position asc) */
+    public resetOrder(): void {
+        this._documents.forEach(doc => doc.isExcluded = false);
+        this._documents.sort((a, b) => a.initial_position - b.initial_position);
+    }
 
     /**
      * Refreshes the exclusion status of all documents in the ranking.
@@ -1797,7 +1802,7 @@ class QueryTermService {
                 this._generateVisibleNeighbourTerms(result)
                 this._generateCompleteNeighbourTerms(result)
                 this._generateRankingDocuments(result)
-            } else {
+            } else if (result !== null) {
                 console.error("Invalid response format:", result);
                 alert("The server returned an invalid response.");
             }
@@ -2177,6 +2182,13 @@ class QueryService {
 
     public updateAddTermsTable(): void {
         this._addTermsTable.updateTable()
+    }
+
+    /** Restores the initial order of the active ranking */
+    public resetRanking(): void {
+        if (this._activeQueryTermService === undefined) return;
+        this._activeQueryTermService.ranking.resetOrder();
+        this.updateResultsList();
     }
 
     /**
@@ -2704,13 +2716,11 @@ class ResultsList {
         };
 
         // Full article link
-        const fullArticleLink = document.createElement('span');
+        const fullArticleLink = document.createElement('a');
         fullArticleLink.className = 'doc-link';
         fullArticleLink.textContent = 'Full article here';
-        fullArticleLink.onclick = () => {
-            // When the list item is clicked, opens the original URL document webpage in a new tab
-            window.open(`https://ieeexplore.ieee.org/document/${docObject.id}`, '_blank');
-        };
+        fullArticleLink.href = `https://ieeexplore.ieee.org/document/${docObject.id}`;
+        fullArticleLink.target = '_blank';
 
         intermediateElement.appendChild(showAbstractIcon);
         intermediateElement.appendChild(docGraphIcon);
@@ -3249,6 +3259,7 @@ class RerankComponent {
     private readonly _loadingBar: LoadingBar
     private readonly _helpIcon: HTMLElement;
     private readonly _helpTooltip: HTMLSpanElement;
+    private readonly _resetButton: HTMLButtonElement;
 
     /**
      * Constructs a new instance of RerankComponent.
@@ -3263,11 +3274,26 @@ class RerankComponent {
         this._helpIcon = document.getElementById('helpIcon') as HTMLElement;
         this._helpTooltip = this._helpIcon.nextElementSibling as HTMLSpanElement;
 
-        // Add event listener to the button element
+        // Add event listener to the reset button
+        this._resetButton = document.getElementById('resetRerankButton') as HTMLButtonElement;
+        this._resetButton.addEventListener('click', () => {
+            queryService.resetRanking();              // order by initial_position
+            this._resetButton.blur();                 // remove focus (optional)
+        });
+
+        this._resetButton.addEventListener('mouseenter', () => {
+            this._helpTooltip.style.opacity = '0.8';
+        });
+
+        this._resetButton.addEventListener('mouseleave', () => {
+            this._helpTooltip.style.opacity = '0';
+        });
+
+        // Add event listener to the rerank button element
         this._button.addEventListener('click', this._handleRerankClick.bind(this))
 
          // Add event listeners for the help icon
-         this._helpIcon.addEventListener('mouseenter', () => {
+        this._helpIcon.addEventListener('mouseenter', () => {
             this._helpTooltip.style.opacity = '0.8';
         });
 

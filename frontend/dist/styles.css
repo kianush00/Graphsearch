@@ -205,7 +205,7 @@ input, table, th, td {
 #cy {
     position: relative;
     width: inherit;
-    height: 22rem;
+    height: 21rem;
     background-color: rgba(255, 0, 0, 0.08);
 }
 
@@ -262,7 +262,7 @@ input, table, th, td {
     gap: 10px; /* Space between icon and button */
     margin-top: 6px;
     margin-bottom: 8px;
-    margin-right: 25px;
+    margin-left: 30px;
 }
 
 /* Help icon container */
@@ -293,7 +293,7 @@ input, table, th, td {
     position: absolute;
     bottom: 125%; /* Positioned above the icon */
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -18%);
     background-color: black;
     color: white;
     padding: 5px 10px;
@@ -327,10 +327,37 @@ input, table, th, td {
 
 #rerankButton + .tooltip {
     visibility: hidden;
-    transform: translateY(110%);
+    transform: translate(0%, 115%);
 }
 
 #rerankButton:hover + .tooltip {
+    visibility: visible;
+    opacity: 0.8;
+}
+
+/* Botón reset, mismo alto que el de Rerank */
+#resetRerankButton {
+  padding: 10px 16px;
+  font-size: 1.25rem;
+  line-height: 1;          /* evita descentrar el icono */
+  border: 1px solid #999;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+  color: #555;
+}
+
+#resetRerankButton:hover {
+  background-color: #ebebeb;
+}
+
+#resetRerankButton + .tooltip {
+    visibility: hidden;
+    transform: translate(-35%, 175%);
+}
+
+#resetRerankButton:hover + .tooltip {
     visibility: visible;
     opacity: 0.8;
 }
@@ -568,6 +595,10 @@ input, table, th, td {
 
 .abstract-icon:hover, .doc-graph-icon:hover, .doc-link:hover {
     color: #007bff;
+}
+
+.doc-link:visited {
+  color: #800080; /* morado */
 }
 
 /* Loading bar container */

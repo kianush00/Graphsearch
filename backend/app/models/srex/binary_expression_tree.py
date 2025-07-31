@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from functools import reduce
 from utils.text_utils import TextUtils
-from backend.app.models.srex.term_graph import TermGraph
+from models.srex.term_graph import TermGraph
 
 
 

@@ -1,9 +1,7 @@
 import unittest
 from models.srex.binary_expression_tree import BinaryExpressionTree
-from models.srex.ranking import Ranking
-from models.srex.ranking import Sentence
-from backend.app.models.srex.term_graph import TermGraph
-from backend.app.models.srex.term_graph import TGNode
+from models.srex.ranking import Ranking, Sentence
+from models.srex.term_graph import TermGraph, TGNode
 from utils.text_utils import TextUtils
 from utils.vector_utils import VectorUtils
 from utils.data_utils import DataUtils
