@@ -545,8 +545,19 @@ class GraphNode implements CyElementRemover {
     }
 
 
-    public setBackgroundColor(hexColor: string): void {
-        this._cyElement.getElementById(this._id).style('background-color', hexColor);
+    public setBackgroundColor(hexColor: string, duration: number = 0): void {
+        if (duration == 0) {
+            this._cyElement.getElementById(this._id).style('background-color', hexColor);
+        } else {
+            const ele = this._cyElement.getElementById(this._id);
+            // Make sure to stop any previous animation
+            ele.stop(true);
+            // Animate the color transition
+            ele.animate({
+                style: { 'background-color': hexColor },
+                duration: duration
+            });
+        } 
     }
 
     /**
@@ -770,6 +781,7 @@ class NeighbourTerm extends Term implements ViewManager {
     private readonly _proximityScore: number
     private readonly _frequencyScore: number
     private _criteria: TermCriteria;
+    private _addedByUser: boolean;
 
     /**
      * Constructor for the NeighbourTerm class.
@@ -787,6 +799,7 @@ class NeighbourTerm extends Term implements ViewManager {
         this._criteria = termObject.criteria;
         this._setInitialHops()
         this._value = termObject.term
+        this._addedByUser = false
     }
 
     public get proximityScore(): number {
@@ -799,6 +812,14 @@ class NeighbourTerm extends Term implements ViewManager {
 
     public get criteria(): TermCriteria {
         return this._criteria;
+    }
+
+    public get nodePosition(): Position {
+        return this._nodePosition;
+    }
+
+    public set addedByUser(addedByUser: boolean) {
+        this._addedByUser = addedByUser;
     }
     
     /**
@@ -1001,12 +1022,23 @@ class NeighbourTerm extends Term implements ViewManager {
      * @returns {void} - This function does not return any value.
      */
     private _initializeNodeColor(): void {
-        if (this._criteria === "proximity") {
-            this._setProximityNodeColor();
-        } else if (this._criteria === "frequency") {
-            this._setFrequencyNodeColor();
+        // Initialize the node color as white
+        if (this._addedByUser) {
+            this._setWhiteNodeColor(0);
+            this._initializeNodeColorByCriteria(700);
+            this._addedByUser = false;
         } else {
-            this._setExclusionNodeColor();
+            this._initializeNodeColorByCriteria(0);
+        }
+    }
+
+    private _initializeNodeColorByCriteria(duration: number = 700): void {
+        if (this._criteria === "proximity") {
+            this._setProximityNodeColor(duration);
+        } else if (this._criteria === "frequency") {
+            this._setFrequencyNodeColor(duration);
+        } else {
+            this._setExclusionNodeColor(duration);
         }
     }
 
@@ -1027,26 +1059,30 @@ class NeighbourTerm extends Term implements ViewManager {
     private _updateUserCriteria(previousHops: number, newHops: number): void {
         if (previousHops >= 1.7 && newHops < 1.7) {
             this._criteria = "proximity";
-            this._setProximityNodeColor();
+            this._setProximityNodeColor(70);
         } else if ((previousHops < 1.7 || previousHops >= 3.2) && (newHops >= 1.7 && newHops < 3.2)) {
             this._criteria = "frequency";
-            this._setFrequencyNodeColor();
+            this._setFrequencyNodeColor(70);
         } else if (previousHops < 3.2 && newHops >= 3.2) {
             this._criteria = "exclusion";
-            this._setExclusionNodeColor();
+            this._setExclusionNodeColor(70);
         }
     }
 
-    private _setProximityNodeColor(): void {
-        this._node?.setBackgroundColor("#73b201");
+    private _setProximityNodeColor(duration: number = 70): void {
+        this._node?.setBackgroundColor("#73b201", duration);
     }
 
-    private _setFrequencyNodeColor(): void {
-        this._node?.setBackgroundColor("#2750db");
+    private _setFrequencyNodeColor(duration: number = 70): void {
+        this._node?.setBackgroundColor("#2750db", duration);
     }
 
-    private _setExclusionNodeColor(): void {
-        this._node?.setBackgroundColor("#FF0000");
+    private _setExclusionNodeColor(duration: number = 70): void {
+        this._node?.setBackgroundColor("#FF0000", duration);
+    }
+
+    private _setWhiteNodeColor(duration: number = 0): void {
+        this._node?.setBackgroundColor("#ffffff", duration);
     }
 }
 
@@ -1108,6 +1144,31 @@ class QueryTerm extends Term implements ViewManager {
         this._updateOuterNodesAngles();
     }
 
+    public getNeighbourTermsSortedByAngle(): NeighbourTerm[] {
+        const center = this._node?.position;
+        if (!center) {
+            return this._neighbourTerms;
+        }
+
+        // Mapeamos cada neighbourTerm a su ángulo en grados
+        const termsWithAngle = this._neighbourTerms.map(term => {
+            const pos = term.nodePosition;
+            // Asegurarse de tener posición
+            const dx = pos.x - center.x;
+            const dy = pos.y - center.y;
+            let angle = Math.atan2(dy, dx) * (180 / Math.PI); // radianes → grados
+            if (angle < 0) angle += 360;                      // de (–180,180] a [0,360)
+            return { term, angle };
+        });
+
+        // Ordenar por ángulo ascendente
+        termsWithAngle.sort((a, b) => a.angle - b.angle);
+
+        // Devolver sólo los términos
+        return termsWithAngle.map(item => item.term);
+    }
+
+
     /**
      * Displays the views of the query term and its associated neighbour terms in the graph.
      * This includes creating and positioning the CentralNode and OuterNodes.
@@ -1168,12 +1229,14 @@ class QueryTerm extends Term implements ViewManager {
         this._neighbourTerms = this._neighbourTerms.filter(term => term !== neighbourTerm)
         neighbourTerm.removeViews()
         this._updateGraphZoom();
-        this._updateOuterNodesAngles()
     }
 
     private _updateOuterNodesAngles(): void {
-        for (let i = 0; i < this._neighbourTerms.length; i++) {
-            this._neighbourTerms[i].updateSymmetricalAngularPosition(this._neighbourTerms.length, i)
+        const neighbourTermsSortedByAngle = this.getNeighbourTermsSortedByAngle();
+        const termsLength = this._neighbourTerms.length;
+
+        for (let i = 0; i < termsLength; i++) {
+            neighbourTermsSortedByAngle[i].updateSymmetricalAngularPosition(termsLength, i)
         }
     }
 
@@ -2358,6 +2421,7 @@ class AddTermsTable {
         const visibleNeighbourTerm = new NeighbourTerm(queryTerm, neighbourTermObject);
 
         // Add the neighbour term to the active query term's visible neighbour terms
+        visibleNeighbourTerm.addedByUser = true;
         this._activeTermService.addVisibleNeighbourTerm(visibleNeighbourTerm);
     }
 
@@ -3313,7 +3377,7 @@ class CytoscapeManager {
                   'height': '15px',
                   'label': 'data(label)',
                   'font-size': '12px',
-                  'color': '#4b4b4b'
+                  'color': '#1b1b1b'
                 }
             }
         ],
