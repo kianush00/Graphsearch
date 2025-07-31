@@ -2382,23 +2382,31 @@ class AddTermsTable {
 
         const visibleNeighbourTermsValues = this._activeTermService.visibleQueryTerm.getNeighbourTermsValues()
 
-        // Iterate over the neighbour terms of the active query term
-        for(const term of this._activeTermService.completeQueryTerm.neighbourTerms) {
-            // Check if the term is not already in the visible neighbour terms list
-            if ((!visibleNeighbourTermsValues.includes(term.value)) && (term.criteria === "proximity")) {
-                // Create a new row in the table
-                const row = tbody.insertRow();
-                const cell = row.insertCell(0);
-                cell.innerHTML = term.value
-                
-                // Apply classes for styles
-                row.classList.add('clickable-row');
+        // calculate the maximum proximity_score between the terms that WILL be displayed
+        const candidateTerms = this._activeTermService.completeQueryTerm.neighbourTerms
+                        .filter(t => !visibleNeighbourTermsValues.includes(t.value) && t.criteria === "proximity");
+        
+        const maxScore = candidateTerms.length
+                   ? Math.max(...candidateTerms.map(t => t.proximityScore))
+                   : 0;   // avoid division by 0
 
-                // Handle click on row
-                row.addEventListener('click', () => {
-                    this._handleTermAddition(term.value);
-            });
-            }
+        // Iterate over the neighbour terms of the active query term
+        for(const term of candidateTerms) {
+            const row = tbody.insertRow();   // Create a new row in the table
+            row.classList.add('clickable-row');
+
+            // create the "bar" as a proportional gradient
+            const percentage = maxScore ? (term.proximityScore / maxScore) * 100 : 0;
+            row.style.setProperty('--bar-width', `${percentage}%`);
+
+            // Create a new cell in the row for the term value
+            const cell = row.insertCell(0);
+            cell.textContent = term.value.length > 20
+                ? term.value.slice(0, 20) + '...'
+                : term.value;
+
+            // Handle click on row
+            row.addEventListener('click', () => this._handleTermAddition(term.value));  
         }
 
         // Toggle the filter input visibility, if the table has rows 

@@ -396,7 +396,7 @@ input, table, th, td {
 }
 
 #criteriaTypesTableContainer, #addTermsTableContainer {
-    max-height: 219px; /* Set the fixed height as needed */
+    max-height: 199px; /* Set the fixed height as needed */
 }
 
 #criteriaTypesTable, #addTermsTable {
@@ -409,17 +409,17 @@ input, table, th, td {
     text-align: center;
 }
 
-/* Estilo base de las filas */
+/*
 #addTermsTable tbody tr {
     background-color: #f5f5f5;
     cursor: pointer;
     transition: background-color 0.15s ease-in-out;
 }
 
-/* Cambio de color al pasar el mouse */
 #addTermsTable tbody tr:hover {
     background-color: #e0e0e0;
 }
+*/
 
 /* Espaciado entre filas */
 #addTermsTable tbody tr:not(:last-child) {
@@ -437,6 +437,30 @@ input, table, th, td {
     background-color: #ececec;
 }
 
+/* --- Base row --- */
+#addTermsTable tbody tr.clickable-row {
+    position: relative;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    border-bottom: 1px solid #ddd;
+    transition: background-color 0.15s ease-in-out;
+    overflow: hidden;
+}
+
+/* Green bar with variable width */
+#addTermsTable tbody tr.clickable-row::before{
+  content: "";
+  position: absolute; top:0; left:0; bottom:0;
+  width: var(--bar-width,0%);          /* valor por JS */
+  background:rgba(115,178,1,.25);
+  pointer-events: none;                 /* no tapa el clic */
+  transition: width .15s ease-in-out;  /* opcional */
+}
+
+#addTermsTable tbody tr.clickable-row:hover {
+    background-color: #e0e0e0;
+}
+
 #criteriaTypesTable td:nth-child(1){
     width: 20%; 
 }
@@ -450,7 +474,7 @@ input, table, th, td {
     top: 0;
     background-color: #fcfcfc;
     z-index: 10; /* Asegura que el filtro esté por encima de la tabla */
-    padding: 0px 0px 4px 1px;
+    padding: 0px 0px 10px 1px;
 }
 
 #addTermsFilter {
