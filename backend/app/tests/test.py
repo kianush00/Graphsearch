@@ -2,8 +2,8 @@ import unittest
 from models.srex.binary_expression_tree import BinaryExpressionTree
 from models.srex.ranking import Ranking
 from models.srex.ranking import Sentence
-from models.srex.vicinity_graph import VicinityGraph
-from models.srex.vicinity_graph import VicinityNode
+from backend.app.models.srex.term_graph import TermGraph
+from backend.app.models.srex.term_graph import TGNode
 from utils.text_utils import TextUtils
 from utils.vector_utils import VectorUtils
 from utils.data_utils import DataUtils
@@ -134,13 +134,13 @@ class TestSREX(unittest.TestCase):
     def test_union_between_graphs_sum_scores(self):
         # Initialize vicinity graphs
         g1, g2 = self.__initialize_graph_1_and_2_sum_scores()
-        r = VicinityGraph(subquery="")
+        r = TermGraph(subquery="")
 
         # Build graph result to be evaluated
-        r_node1 = VicinityNode(term='w', proximity_score=4.5, frequency_score=6.0, criteria="proximity")
-        r_node2 = VicinityNode(term='x', proximity_score=1.5, frequency_score=3.0, criteria="proximity")
-        r_node3 = VicinityNode(term='y', proximity_score=0.0, frequency_score=5.0, criteria="frequency")
-        r_node4 = VicinityNode(term='z', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
+        r_node1 = TGNode(term='w', proximity_score=4.5, frequency_score=6.0, criteria="proximity")
+        r_node2 = TGNode(term='x', proximity_score=1.5, frequency_score=3.0, criteria="proximity")
+        r_node3 = TGNode(term='y', proximity_score=0.0, frequency_score=5.0, criteria="frequency")
+        r_node4 = TGNode(term='z', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
         r.add_node(r_node1)
         r.add_node(r_node2)
         r.add_node(r_node3)
@@ -157,12 +157,12 @@ class TestSREX(unittest.TestCase):
     def test_union_between_graphs_no_sum_scores(self):
         # Initialize vicinity graphs
         g1, g2 = self.__initialize_graph_1_and_2_no_sum_scores()
-        r = VicinityGraph(subquery="")
+        r = TermGraph(subquery="")
 
         # Build graph result to be evaluated
-        r_node1 = VicinityNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
-        r_node2 = VicinityNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
-        r_node3 = VicinityNode(term='z', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
+        r_node1 = TGNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
+        r_node2 = TGNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
+        r_node3 = TGNode(term='z', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
         r.add_node(r_node1)
         r.add_node(r_node2)
         r.add_node(r_node3)
@@ -178,12 +178,12 @@ class TestSREX(unittest.TestCase):
     def test_intersection_between_graphs_sum_scores(self):
         # Initialize vicinity graphs
         g1, g2 = self.__initialize_graph_1_and_2_sum_scores()
-        r = VicinityGraph(subquery="")
+        r = TermGraph(subquery="")
 
         # Build graph result to be evaluated
-        r_node1 = VicinityNode(term='w', proximity_score=4.5, frequency_score=6.0, criteria="proximity")
-        r_node2 = VicinityNode(term='x', proximity_score=1.5, frequency_score=3.0, criteria="proximity")
-        r_node3 = VicinityNode(term='y', proximity_score=0.0, frequency_score=5.0, criteria="frequency")
+        r_node1 = TGNode(term='w', proximity_score=4.5, frequency_score=6.0, criteria="proximity")
+        r_node2 = TGNode(term='x', proximity_score=1.5, frequency_score=3.0, criteria="proximity")
+        r_node3 = TGNode(term='y', proximity_score=0.0, frequency_score=5.0, criteria="frequency")
         r.add_node(r_node1)
         r.add_node(r_node2)
         r.add_node(r_node3)
@@ -199,11 +199,11 @@ class TestSREX(unittest.TestCase):
     def test_intersection_between_graphs_no_sum_scores(self):
         # Initialize vicinity graphs
         g1, g2 = self.__initialize_graph_1_and_2_no_sum_scores()
-        r = VicinityGraph(subquery="")
+        r = TermGraph(subquery="")
 
         # Build graph result to be evaluated
-        r_node1 = VicinityNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
-        r_node2 = VicinityNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
+        r_node1 = TGNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
+        r_node2 = TGNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
         r.add_node(r_node1)
         r.add_node(r_node2)
 
@@ -728,14 +728,14 @@ class TestSREX(unittest.TestCase):
         return ranking
     
 
-    def __get_initialized_graph_config_01(self) -> VicinityGraph:
+    def __get_initialized_graph_config_01(self) -> TermGraph:
         # Initialize vicinity graph
-        graph = VicinityGraph(subquery="")
+        graph = TermGraph(subquery="")
         
         # Build graph
-        node1 = VicinityNode(term='x', frequency_score=3.0, proximity_score=2.5, criteria='proximity')
-        node2 = VicinityNode(term='y', frequency_score=4.0, proximity_score=3.5, criteria='proximity')
-        node3 = VicinityNode(term='z', frequency_score=5.0, proximity_score=0.0, criteria='frequency')
+        node1 = TGNode(term='x', frequency_score=3.0, proximity_score=2.5, criteria='proximity')
+        node2 = TGNode(term='y', frequency_score=4.0, proximity_score=3.5, criteria='proximity')
+        node3 = TGNode(term='z', frequency_score=5.0, proximity_score=0.0, criteria='frequency')
         graph.add_node(node1)
         graph.add_node(node2)
         graph.add_node(node3)
@@ -772,24 +772,24 @@ class TestSREX(unittest.TestCase):
         return b_expr_tree
     
     
-    def __initialize_graph_1_and_2_sum_scores(self) -> tuple[VicinityGraph, VicinityGraph]:
+    def __initialize_graph_1_and_2_sum_scores(self) -> tuple[TermGraph, TermGraph]:
         # Initialize vicinity graphs
-        g1 = VicinityGraph(subquery="")
-        g2 = VicinityGraph(subquery="")
+        g1 = TermGraph(subquery="")
+        g2 = TermGraph(subquery="")
 
         # Build graph 1
-        g1_node1 = VicinityNode(term='w', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
-        g1_node2 = VicinityNode(term='x', proximity_score=1.5, frequency_score=2.0, criteria="proximity")
-        g1_node3 = VicinityNode(term='y', proximity_score=0.0, frequency_score=3.0, criteria="frequency")
+        g1_node1 = TGNode(term='w', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
+        g1_node2 = TGNode(term='x', proximity_score=1.5, frequency_score=2.0, criteria="proximity")
+        g1_node3 = TGNode(term='y', proximity_score=0.0, frequency_score=3.0, criteria="frequency")
         g1.add_node(g1_node1)
         g1.add_node(g1_node2)
         g1.add_node(g1_node3)
 
         # Build graph 2
-        g2_node1 = VicinityNode(term='w', proximity_score=2.5, frequency_score=4.0, criteria="proximity")
-        g2_node2 = VicinityNode(term='x', proximity_score=0.0, frequency_score=1.0, criteria="frequency")
-        g2_node3 = VicinityNode(term='y', proximity_score=0.0, frequency_score=2.0, criteria="frequency")
-        g2_node4 = VicinityNode(term='z', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
+        g2_node1 = TGNode(term='w', proximity_score=2.5, frequency_score=4.0, criteria="proximity")
+        g2_node2 = TGNode(term='x', proximity_score=0.0, frequency_score=1.0, criteria="frequency")
+        g2_node3 = TGNode(term='y', proximity_score=0.0, frequency_score=2.0, criteria="frequency")
+        g2_node4 = TGNode(term='z', proximity_score=2.0, frequency_score=2.0, criteria="proximity")
         g2.add_node(g2_node1)
         g2.add_node(g2_node2)
         g2.add_node(g2_node3)
@@ -798,21 +798,21 @@ class TestSREX(unittest.TestCase):
         return g1, g2
     
     
-    def __initialize_graph_1_and_2_no_sum_scores(self) -> tuple[VicinityGraph, VicinityGraph]:
+    def __initialize_graph_1_and_2_no_sum_scores(self) -> tuple[TermGraph, TermGraph]:
         # Initialize vicinity graphs
-        g1 = VicinityGraph(subquery="")
-        g2 = VicinityGraph(subquery="")
+        g1 = TermGraph(subquery="")
+        g2 = TermGraph(subquery="")
 
         # Build graph 1
-        g1_node1 = VicinityNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
-        g1_node2 = VicinityNode(term='y', proximity_score=3.0, frequency_score=0.0, criteria="proximity")
+        g1_node1 = TGNode(term='x', proximity_score=2.0, frequency_score=0.0, criteria="proximity")
+        g1_node2 = TGNode(term='y', proximity_score=3.0, frequency_score=0.0, criteria="proximity")
         g1.add_node(g1_node1)
         g1.add_node(g1_node2)
 
         # Build graph 2
-        g2_node1 = VicinityNode(term='x', proximity_score=1.0, frequency_score=0.0, criteria="proximity")
-        g2_node2 = VicinityNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
-        g2_node3 = VicinityNode(term='z', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
+        g2_node1 = TGNode(term='x', proximity_score=1.0, frequency_score=0.0, criteria="proximity")
+        g2_node2 = TGNode(term='y', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
+        g2_node3 = TGNode(term='z', proximity_score=4.0, frequency_score=0.0, criteria="proximity")
         g2.add_node(g2_node1)
         g2.add_node(g2_node2)
         g2.add_node(g2_node3)

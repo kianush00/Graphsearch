@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 import json
 
 from models.ieee_xplore.xploreapi import XPLORE
-from models.srex.vicinity_graph import VicinityGraph
-from models.srex.vicinity_graph import VicinityNode
+from backend.app.models.srex.term_graph import TermGraph
+from backend.app.models.srex.term_graph import TGNode
 from models.srex.binary_expression_tree import BinaryExpressionTree
-from models.srex.binary_expression_tree import BinaryTreeNode
+from models.srex.binary_expression_tree import BETNode
 from exceptions.exceptions import MissingEnvironmentVariableError
 from utils.text_utils import TextUtils
 from utils.math_utils import MathUtils
@@ -52,17 +52,17 @@ class QueryTreeHandler:
         self.__query_tree = query_tree
 
 
-    def get_graph(self) -> VicinityGraph | None:
+    def get_graph(self) -> TermGraph | None:
         """
         Retrieve the graph associated with the query tree of the handler.
 
         Returns:
-        VicinityGraph | None: The graph associated with the query tree, or None if the graph does not exist.
+        TermGraph | None: The graph associated with the query tree, or None if the graph does not exist.
         """
         return self.__query_tree.get_graph()
 
 
-    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
+    def get_graph_by_subquery(self, query: str) -> TermGraph | None:
         """
         Retrieve the graph associated with a specific subquery within the query tree of the handler.
 
@@ -70,7 +70,7 @@ class QueryTreeHandler:
         query (str): The subquery for which to retrieve the graph.
 
         Returns:
-        VicinityGraph | None: The graph associated with the subquery, or None if the graph does not exist.
+        TermGraph | None: The graph associated with the subquery, or None if the graph does not exist.
         """
         return self.__query_tree.get_graph_by_subquery(query)
 
@@ -233,7 +233,7 @@ class Sentence(QueryTreeHandler):
         """
         Generate nodes to all the graphs associated with the sentence tree, based 
         on their isolated query terms as leaves from the query tree. Also, generate
-        frequency criteria VicinityNodes for the root BinaryTreeNode.
+        frequency criteria TGNodes for the root BETNode.
         """
         #First, generate proximity nodes to the graphs associated with the leaves from the query tree
         self.generate_proximity_nodes_in_all_leaf_graphs()
@@ -241,16 +241,16 @@ class Sentence(QueryTreeHandler):
         #Then, generate proximity nodes to the graphs associated with the rest of the nodes in the tree
         self.query_tree.operate_non_leaf_graphs_from_leaves()
         
-        #Finally, generate frequency criteria VicinityNodes for the root BinaryTreeNode.
+        #Finally, generate frequency criteria TGNodes for the root BETNode.
         self.generate_frequency_criteria_nodes_for_root()
     
     
     def generate_frequency_criteria_nodes_for_root(self) -> None:
         """
-        Generate frequency criteria VicinityNodes for the root BinaryTreeNode.\n
+        Generate frequency criteria TGNodes for the root BETNode.\n
         This function creates a frequency dictionary of all the sentence words, to then multiply
-        its frequencies by the document weight and finally create frequency criteria VicinityNodes 
-        for the root BinaryTreeNode and adds them to the graph.
+        its frequencies by the document weight and finally create frequency criteria TGNodes 
+        for the root BETNode and adds them to the graph.
         """
         root_graph = self.query_tree.get_graph()
         if not root_graph:
@@ -272,7 +272,7 @@ class Sentence(QueryTreeHandler):
                 if graph_node:  # Double check
                     graph_node.frequency_score = freq_score
             else:   # If the term isn't in the graph, add a new frequency node
-                freq_criteria_node = VicinityNode(
+                freq_criteria_node = TGNode(
                     term=term,
                     frequency_score = freq_score,
                     proximity_score=0.0,
@@ -364,7 +364,7 @@ class Sentence(QueryTreeHandler):
     
 
     def generate_proximity_nodes_in_leaf_graph(self, 
-            leaf_node: BinaryTreeNode,
+            leaf_node: BETNode,
             ) -> None:
         """
         Generate proximity nodes for the graph associated with the sentence, based on the isolated query 
@@ -373,7 +373,7 @@ class Sentence(QueryTreeHandler):
 
         Parameters
         ----------
-        leaf_node : BinaryTreeNode
+        leaf_node : BETNode
             A leaf node associated with the sentence tree
         """
         query_term: str = leaf_node.value
@@ -404,7 +404,7 @@ class Sentence(QueryTreeHandler):
             prox_score = round(prox_score, 6)
             
             # Initialize the new vicinity node and add it to the leaf node graph
-            new_node = VicinityNode(term=neighbour_term, proximity_score=prox_score, 
+            new_node = TGNode(term=neighbour_term, proximity_score=prox_score, 
                                     frequency_score=0.0, criteria="proximity")
             
             leaf_node.graph.add_node(new_node)

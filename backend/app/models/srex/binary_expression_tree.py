@@ -3,23 +3,23 @@ import re
 from copy import deepcopy
 from functools import reduce
 from utils.text_utils import TextUtils
-from models.srex.vicinity_graph import VicinityGraph
+from backend.app.models.srex.term_graph import TermGraph
 
 
 
 
-class BinaryTreeNode:
+class BETNode:
     def __init__(self, value: str):
         """
-        Initialize a new instance of BinaryTreeNode.
+        Initialize a new instance of BETNode.
         
         Parameters:
         value (str): The value to be assigned to the node.
         """
         self.value = value
-        self.graph: VicinityGraph | None = None
-        self.left: BinaryTreeNode | None = None
-        self.right: BinaryTreeNode | None = None
+        self.graph: TermGraph | None = None
+        self.left: BETNode | None = None
+        self.right: BETNode | None = None
     
 
     def is_leaf(self) -> bool:
@@ -45,28 +45,28 @@ class BinaryTreeNode:
         return self.left.get_values_from_leaves() + self.right.get_values_from_leaves()
     
 
-    def get_leaves(self) -> list['BinaryTreeNode']:
+    def get_leaves(self) -> list['BETNode']:
         """
         Retrieve all leaf nodes in the subtree rooted at the current node.
         
         Returns:
-        list['BinaryTreeNode']: A list of leaf nodes.
+        list['BETNode']: A list of leaf nodes.
         """
         if self.is_leaf():
             return [self]
         return self.left.get_leaves() + self.right.get_leaves()
     
 
-    def get_graph_from_subtree_by_subquery(self, query: str) -> VicinityGraph | None:
+    def get_graph_from_subtree_by_subquery(self, query: str) -> TermGraph | None:
         """
-        Recursively search for a VicinityGraph object with a specific subquery in the 
+        Recursively search for a TermGraph object with a specific subquery in the 
         subtree rooted at the current node.
         
         Parameters:
         query (str): The subquery to search for.
 
         Returns:
-        graph (VicinityGraph | None): The VicinityGraph object with the specified subquery, or None if no such object is found.
+        graph (TermGraph | None): The TermGraph object with the specified subquery, or None if no such object is found.
         """
         if self.graph and self.graph.subquery == query:
             return self.graph
@@ -87,8 +87,8 @@ class BinaryTreeNode:
     
 
     def get_union_to_subtree(self, 
-            external_subtree: 'BinaryTreeNode'
-            ) -> 'BinaryTreeNode':
+            external_subtree: 'BETNode'
+            ) -> 'BETNode':
         """
         Gets the union between an external subtree and the own subtree, then obtains 
         a new subtree. The merging process involves iterating through the nodes of both 
@@ -96,10 +96,10 @@ class BinaryTreeNode:
         that is, the union between each graph (tree node) of both subtrees.
         
         Parameters:
-        external_subtree (BinaryTreeNode): The external subtree to be united
+        external_subtree (BETNode): The external subtree to be united
 
         Returns:
-        copy_subtree (BinaryTreeNode): The union between copy of the subtree itself 
+        copy_subtree (BETNode): The union between copy of the subtree itself 
         and an external subtree.
         """
         copy_subtree = deepcopy(self)
@@ -153,15 +153,15 @@ class BinaryTreeNode:
     
 
     def __do_union_between_copy_self_and_subtree(self, 
-            external_peer_node: 'BinaryTreeNode'
+            external_peer_node: 'BETNode'
             ) -> None:
         """
         Unites an external subtree with the own copy subtree and modifies 
         the own subtree graphs. This method should only be used by the 
-        copy from the original BinaryTreeNode object.
+        copy from the original BETNode object.
         
         Parameters:
-        external_peer_node (BinaryTreeNode): The external peer node to be united
+        external_peer_node (BETNode): The external peer node to be united
         """
         #Checks if both nodes have a non-null graph attribute, to then join them and set 
         #them in the copy attribute
@@ -179,13 +179,13 @@ class BinaryTreeNode:
             self.right.__do_union_between_copy_self_and_subtree(external_peer_node.right)
 
 
-    def __set_and_get_graph_operated_from_subtrees(self) -> VicinityGraph:
+    def __set_and_get_graph_operated_from_subtrees(self) -> TermGraph:
         """
         This function sets and gets the graph operated from the left and right subtrees.
         It performs an intersection or union operation based on the boolean operator value.
 
         Returns:
-        VicinityGraph: The graph resulting from the intersection or union operation.
+        TermGraph: The graph resulting from the intersection or union operation.
         
         Raises:
         ValueError: If the operator value is neither 'AND' nor 'OR'.
@@ -213,18 +213,18 @@ class BinaryTreeNode:
         return graph
     
     
-    def __get_leaf_graph(self, node: 'BinaryTreeNode') -> VicinityGraph:
+    def __get_leaf_graph(self, node: 'BETNode') -> TermGraph:
         """
         Retrieve the vicinity graph associated with a leaf node in the binary expression tree.
 
         Parameters:
         ----------
-        node : BinaryTreeNode
+        node : BETNode
             The node for which the vicinity graph needs to be retrieved.
 
         Returns:
         -------
-        VicinityGraph
+        TermGraph
             The vicinity graph associated with the leaf node. If the node is not a leaf node,
             a TypeError is raised. If the vicinity graph is not set for the leaf node,
             a TypeError is also raised.
@@ -355,32 +355,32 @@ class BinaryExpressionTree:
         return individual_query_terms
     
 
-    def get_query_terms_as_leaves(self) -> list[BinaryTreeNode]:
+    def get_query_terms_as_leaves(self) -> list[BETNode]:
         """
         Retrieve the query terms from the binary expression tree as leaf nodes.
 
         Returns:
         -------
-        list[BinaryTreeNode]:
-            A list of BinaryTreeNode objects representing the query terms.
-            Each BinaryTreeNode object corresponds to a leaf node in the binary expression tree.
+        list[BETNode]:
+            A list of BETNode objects representing the query terms.
+            Each BETNode object corresponds to a leaf node in the binary expression tree.
         """
         return self.root.get_leaves()
     
 
-    def get_graph(self) -> VicinityGraph | None:
+    def get_graph(self) -> TermGraph | None:
         """
         Retrieve the graph associated with the root node of the binary expression tree.
 
         Returns:
-        VicinityGraph | None:
+        TermGraph | None:
             The graph associated with the root node of the binary expression tree.
             If no graph is associated with the root node, the function returns None.
         """
         return self.root.graph
     
 
-    def get_graph_by_subquery(self, query: str) -> VicinityGraph | None:
+    def get_graph_by_subquery(self, query: str) -> TermGraph | None:
         """
         Get the graph associated with a specific subquery from the root node of the tree.
 
@@ -391,7 +391,7 @@ class BinaryExpressionTree:
 
         Returns:
         -------
-        VicinityGraph | None
+        TermGraph | None
             The graph associated with the subquery if found, otherwise None.
             If the graph is not found, a message is printed to the console.
         """
@@ -463,7 +463,7 @@ class BinaryExpressionTree:
         This function iterates through the non-leaf nodes of the binary expression tree,
         retrieves the associated graph for each leaf node, and performs a specific operation
         on the graph (in this case, it is assumed that the operation is defined in the
-        `do_graph_operation_from_subtrees` method of the `BinaryTreeNode` class).
+        `do_graph_operation_from_subtrees` method of the `BETNode` class).
 
         Returns:
         -------
@@ -491,7 +491,7 @@ class BinaryExpressionTree:
         stem : bool, optional
             If True, stemming is applied
         """
-        def transform_node_if_leaf(node: BinaryTreeNode) -> None:
+        def transform_node_if_leaf(node: BETNode) -> None:
             if node.is_leaf():
                 node.value = TextUtils.get_transformed_text_if_it_has_underscores(node.value, stop_words, 
                                                                                   lema, stem)
@@ -523,8 +523,8 @@ class BinaryExpressionTree:
             Summarization type to operate distances in the vicinity matrix for each 
             sentence (it can be: mean or median)
         """
-        def initialize_graph(node: BinaryTreeNode):
-            node.graph = VicinityGraph(str(node), nr_of_graph_terms, limit_distance, 
+        def initialize_graph(node: BETNode):
+            node.graph = TermGraph(str(node), nr_of_graph_terms, limit_distance, 
                                        include_query_terms, summarize)
             if not node.is_leaf():
                 initialize_graph(node.left)
@@ -544,7 +544,7 @@ class BinaryExpressionTree:
         Returns:
         None: The function does not return any value. It modifies the tree in-place.
         """
-        def remove_graph(node: BinaryTreeNode):
+        def remove_graph(node: BETNode):
             node.graph = None
             if node.left:
                 remove_graph(node.left)
@@ -577,7 +577,7 @@ class BinaryExpressionTree:
         return self.root.tree_str()
     
     
-    def __get_tree_built(self, raw_query: str) -> BinaryTreeNode:
+    def __get_tree_built(self, raw_query: str) -> BETNode:
         """
         Build a binary expression tree from a boolean query.
         The function separates the boolean query into tokens, processes the tokens to obtain an infix token list,
@@ -591,7 +591,7 @@ class BinaryExpressionTree:
 
         Returns
         -------
-        root_node: BinaryTreeNode
+        root_node: BETNode
             The root node of the constructed binary expression tree.
         """
         tokens = self.__separate_boolean_query(raw_query)
@@ -701,7 +701,7 @@ class BinaryExpressionTree:
         return postfix_list
     
     
-    def __construct_tree_from_postfix(self, postfix_tokens: list[str]) -> BinaryTreeNode:
+    def __construct_tree_from_postfix(self, postfix_tokens: list[str]) -> BETNode:
         """
         Construct a binary expression tree from a postfix token list.
         
@@ -712,20 +712,20 @@ class BinaryExpressionTree:
 
         Returns
         -------
-        root_node: BinaryTreeNode
+        root_node: BETNode
             The root node of the constructed binary expression tree.
         """
-        stack: list[BinaryTreeNode] = []
+        stack: list[BETNode] = []
         for token in postfix_tokens:
             if token in ['AND', 'OR']:
                 # If the token is an operator, create a node and link the subtrees
-                node = BinaryTreeNode(token)
+                node = BETNode(token)
                 node.right = stack.pop()
                 node.left = stack.pop()
                 stack.append(node)
             else:
                 # If the token is an operand, create a node and add it to the stack
-                node = BinaryTreeNode(token)
+                node = BETNode(token)
                 stack.append(node)
         
         # The last element on the stack is the root of the tree

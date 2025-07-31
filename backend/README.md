@@ -71,7 +71,7 @@ IEEE_XPLORE_API_KEY=your_api_key
 
 | Endpoint                | Method | Description                | Classes/Services involved                          |
 |-------------------------|--------|----------------------------|----------------------------------------------------|
-| /get-ranking            | POST   | Get ranking from query     | Ranking, VicinityGraph, VicinityNode               |
-| /get-ranking-example-1  | POST   | Get ranking 1st example    | Ranking, VicinityGraph, VicinityNode               |
-| /get-ranking-example-2  | POST   | Get ranking 2nd example    | Ranking, VicinityGraph, VicinityNode               |
-| /rerank                 | POST   | Rerank the current ranking | Ranking, VicinityGraph, VicinityNode, VectorUtils  |
+| /get-ranking            | POST   | Get ranking from query     | Ranking, TermGraph, TGNode                         |
+| /get-ranking-example-1  | POST   | Get ranking 1st example    | Ranking, TermGraph, TGNode                         |
+| /get-ranking-example-2  | POST   | Get ranking 2nd example    | Ranking, TermGraph, TGNode                         |
+| /rerank                 | POST   | Rerank the current ranking | Ranking, TermGraph, TGNode, VectorUtils            |

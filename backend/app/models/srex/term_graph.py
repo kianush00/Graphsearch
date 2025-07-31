@@ -6,11 +6,11 @@ from utils.vector_utils import VectorUtils
 
 
 
-class VicinityGraphConfig:
+class TermGraphConfig:
     def __init__(self, nr_of_graph_terms: int = 5, limit_distance: int = 4, 
                  include_query_terms: bool = True, summarize: str = 'mean'):
         """
-        Initialize a VicinityGraph object with the specified parameters.
+        Initialize a TermGraph object with the specified parameters.
 
         Parameters:
         nr_of_graph_terms (int): The maximum number of terms to include in the graph. Default is 5.
@@ -80,12 +80,12 @@ class VicinityGraphConfig:
 
 
 
-class VicinityNode:
+class TGNode:
     
     def __init__(self, term: str, frequency_score: float = 0.0, proximity_score: float = 0.0, 
                  criteria: str = "frequency"):
         """
-        Initialize a new instance of the VicinityNode class.
+        Initialize a new instance of the TGNode class.
 
         Parameters:
         term (str): The term of the node.
@@ -205,12 +205,12 @@ class VicinityNode:
 
 
 
-class VicinityGraph:
+class TermGraph:
         
     def __init__(self, subquery: str, nr_of_graph_terms: int = 5, limit_distance: int = 4, 
                  include_query_terms: bool = True, summarize: str = 'mean'):
         """
-        Initialize a VicinityGraph object.
+        Initialize a TermGraph object.
 
         Parameters:
         subquery (str): The subquery for which the graph is being created.
@@ -220,46 +220,46 @@ class VicinityGraph:
         summarize (str, optional): The method to summarize ponderations when calculating cosine similarity. Defaults to 'mean'.
         """
         self.subquery = subquery
-        self.__config: VicinityGraphConfig = VicinityGraphConfig(nr_of_graph_terms, limit_distance, 
+        self.__config: TermGraphConfig = TermGraphConfig(nr_of_graph_terms, limit_distance, 
                                                                  include_query_terms, summarize)
-        self.__nodes: list[VicinityNode] = []
+        self.__nodes: list[TGNode] = []
 
 
     @property
-    def config(self) -> VicinityGraphConfig:
+    def config(self) -> TermGraphConfig:
         """
-        Returns the configuration object of the VicinityGraph.
+        Returns the configuration object of the TermGraph.
 
         Returns:
-        VicinityGraphConfig: The configuration object of the VicinityGraph.
+        TermGraphConfig: The configuration object of the TermGraph.
         """
         return self.__config
     
 
-    def get_all_nodes_sorted(self) -> list[VicinityNode]:
+    def get_all_nodes_sorted(self) -> list[TGNode]:
         """
         Return the list of all nodes (all criteria types) sorted by proximity score in descending order.
 
         Returns:
-        list[VicinityNode]: A list of VicinityNode objects sorted by proximity score in descending order.
+        list[TGNode]: A list of TGNode objects sorted by proximity score in descending order.
         """
         sorted_nodes = sorted(self.__nodes, key=lambda node: node.proximity_score, reverse=True)
         return sorted_nodes
     
     
-    def get_proximity_nodes_sorted(self) -> list[VicinityNode]:
+    def get_proximity_nodes_sorted(self) -> list[TGNode]:
         """
         Return the list of proximity nodes sorted by proximity score in descending order.
 
         Returns:
-        list[VicinityNode]: A list of proximity VicinityNode objects sorted by proximity score in descending order.
+        list[TGNode]: A list of proximity TGNode objects sorted by proximity score in descending order.
         """
         sorted_proximity_nodes = [node for node in self.__nodes if node.criteria == "proximity"]
         sorted_proximity_nodes = sorted(sorted_proximity_nodes, key=lambda node: node.proximity_score, reverse=True)
         return sorted_proximity_nodes
     
 
-    def get_node_by_term(self, term: str) -> VicinityNode | None:
+    def get_node_by_term(self, term: str) -> TGNode | None:
         """
         Retrieve a node from the graph by its term.
 
@@ -267,7 +267,7 @@ class VicinityGraph:
         term (str): The term of the node to be retrieved.
 
         Returns:
-        VicinityNode | None: The node with the given term if found, otherwise None.
+        TGNode | None: The node with the given term if found, otherwise None.
         If a node with the given term is not found, it prints "No node with term".
         """
         for node in self.__nodes:
@@ -310,12 +310,12 @@ class VicinityGraph:
         return node_terms
 
 
-    def add_node(self, node: VicinityNode) -> None:
+    def add_node(self, node: TGNode) -> None:
         """
         Adds a node to the graph.
 
         Parameters:
-        node (VicinityNode): The node to be added to the graph. This node should be an instance of the VicinityNode class.
+        node (TGNode): The node to be added to the graph. This node should be an instance of the TGNode class.
         """
         self.__nodes.append(node)
 
@@ -338,14 +338,14 @@ class VicinityGraph:
 
     def __str__(self) -> str:
         """
-        Returns a string representation of the VicinityGraph object.
+        Returns a string representation of the TermGraph object.
 
         The string representation includes the subquery and the details of each node in the graph.
         Each node is represented as a string in the format: 
         "term ; frequency score ; proximity score ; criteria"
 
         Returns:
-        string (str): A string representation of the VicinityGraph object.
+        string (str): A string representation of the TermGraph object.
         """
         string = "SUBQUERY: " + self.subquery
         for node in self.get_all_nodes_sorted():
@@ -372,16 +372,16 @@ class VicinityGraph:
         return graph_dict
 
     
-    def get_viewable_graph_copy(self) -> 'VicinityGraph':
+    def get_viewable_graph_copy(self) -> 'TermGraph':
         """
         Returns a copy of the graph, with the vicinity terms with the highest proximity score 
         limited by the number of graph terms configured in the current graph, and 
         ignores the vicinity nodes that include the query terms.
         
         Returns:
-        graph_copy (VicinityGraph): A copy of the graph with the specified conditions applied.
+        graph_copy (TermGraph): A copy of the graph with the specified conditions applied.
         """
-        graph_copy = VicinityGraph(self.subquery, *self.__config.get_config_params())
+        graph_copy = TermGraph(self.subquery, *self.__config.get_config_params())
         for node in self.__get_limited_sorted_nodes_to_visualize():
             graph_copy.add_node(node)
         return graph_copy
@@ -424,7 +424,7 @@ class VicinityGraph:
         return visual_graph
     
 
-    def get_similarity_score_as_base_graph(self, external_graph: 'VicinityGraph') -> float:
+    def get_similarity_score_as_base_graph(self, external_graph: 'TermGraph') -> float:
         """
         Calculate the similarity score between the self graph and another graph. To calculate it, it is 
         proposed to compare the graph using a multidimensional vector space, where the properties of 
@@ -433,7 +433,7 @@ class VicinityGraph:
 
         Parameters
         ----------
-        external_graph : VicinityGraph
+        external_graph : TermGraph
             The external graph to be compared
 
         Returns
@@ -490,9 +490,9 @@ class VicinityGraph:
     
 
     def get_union_to_graph(self,
-            external_graph: 'VicinityGraph',
+            external_graph: 'TermGraph',
             sum_scores: bool = True
-            ) -> 'VicinityGraph':
+            ) -> 'TermGraph':
         """
         Unites an external graph with the own graph and obtains a new graph
         The merging process involves iterating through the nodes of both graphs, calculating 
@@ -500,7 +500,7 @@ class VicinityGraph:
         
         Parameters
         ----------
-        external_graph : VicinityGraph
+        external_graph : TermGraph
             The external graph to be united
         sum_scores : bool, optional
             If True, then get the new score of each intersected node by adding 
@@ -509,7 +509,7 @@ class VicinityGraph:
 
         Returns
         -------
-        united_graph : VicinityGraph
+        united_graph : TermGraph
             The union between copy of the graph itself and an external graph
         """
         united_graph = self.__get_calculation_of_intersected_terms(external_graph, sum_scores)
@@ -528,9 +528,9 @@ class VicinityGraph:
     
 
     def get_intersection_to_graph(self,
-            external_graph: 'VicinityGraph',
+            external_graph: 'TermGraph',
             sum_scores: bool = True
-            ) -> 'VicinityGraph':
+            ) -> 'TermGraph':
         """
         Intersects an external graph with the own graph and obtains a new graph
         The merging process involves iterating through the nodes of both graphs, calculating 
@@ -538,7 +538,7 @@ class VicinityGraph:
         
         Parameters
         ----------
-        external_graph : VicinityGraph
+        external_graph : TermGraph
             The external graph to be intersected
         sum_scores : bool, optional
             If True, then get the new score of each intersected node by adding 
@@ -547,7 +547,7 @@ class VicinityGraph:
 
         Returns
         -------
-        intersected_graph : VicinityGraph
+        intersected_graph : TermGraph
             The intersection between copy of the graph itself and an external graph
         """
         #if the graph copy term is already in the external graph
@@ -563,16 +563,16 @@ class VicinityGraph:
     
 
     def __get_calculation_of_intersected_terms(self,
-            external_graph: 'VicinityGraph',
+            external_graph: 'TermGraph',
             sum_scores: bool = True
-            ) -> 'VicinityGraph':
+            ) -> 'TermGraph':
         """
         Calculates the sum or max value (depending on the sum_scores parameter) of proximity 
         and frequency scores, of the nodes between the external graph and itself.
         
         Parameters
         ----------
-        external_graph : VicinityGraph
+        external_graph : TermGraph
             The external graph to calculate the intersected terms
         sum_scores : bool, optional
             If True, then get the new score of each intersected node by adding 
@@ -581,7 +581,7 @@ class VicinityGraph:
 
         Returns
         -------
-        copy_graph : VicinityGraph
+        copy_graph : TermGraph
             The copied graph that contain the calculation of the intersected terms
         """
         copy_graph = deepcopy(self)
@@ -623,14 +623,14 @@ class VicinityGraph:
     
 
     def __get_terms_from_intersection_between_graphs(self,
-            graph_b: 'VicinityGraph'
+            graph_b: 'TermGraph'
             ) -> set[str]:
         """
         This function returns the set of terms that exist in both the current graph and an external graph.
         It calculates the intersection of the terms from the nodes of both graphs.
 
         Parameters:
-        graph_b (VicinityGraph): The external graph to find the intersection with the current graph.
+        graph_b (TermGraph): The external graph to find the intersection with the current graph.
 
         Returns:
         set[str]: A set containing the terms that exist in both the current graph and the external graph.
@@ -639,17 +639,17 @@ class VicinityGraph:
         return base_terms
     
 
-    def __get_limited_sorted_nodes_to_visualize(self) -> list[VicinityNode]:
+    def __get_limited_sorted_nodes_to_visualize(self) -> list[TGNode]:
         """
         Return the list of proximity nodes sorted by proximity score in descending order, and limit 
         its length by the number of graph terms, from the current graph configuration.
         It also ignores the vicinity nodes that include the query terms.
 
         Parameters:
-        self (VicinityGraph): The instance of the VicinityGraph class.
+        self (TermGraph): The instance of the TermGraph class.
 
         Returns:
-        list[VicinityNode]: A list of VicinityNode objects, sorted by proximity score in descending order, 
+        list[TGNode]: A list of TGNode objects, sorted by proximity score in descending order, 
         and limited by the number of graph terms, excluding nodes that contain the query terms.
         """
         sorted_nodes_to_visualize = self.get_proximity_nodes_sorted()

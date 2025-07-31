@@ -1,7 +1,7 @@
 from models.request.request import PydanticRankingRequest, PydanticNeighbourTermRequest
 from models.request.response import PydanticRanking, PydanticDocument, PydanticSentence, PydanticNeighbourTerm, RerankNewPositions
 from models.srex.ranking import Ranking
-from models.srex.vicinity_graph import VicinityGraph, VicinityNode
+from backend.app.models.srex.term_graph import TermGraph, TGNode
 from utils.data_utils import DataUtils
 from utils.vector_utils import VectorUtils
 from fastapi import HTTPException
@@ -185,7 +185,7 @@ class QueryService:
     def __get_doc_weight_graph_excluded_tuple_list(self, 
         ranking: PydanticRankingRequest, 
         excluded_vicinity_terms: list[str]
-        ) -> list[tuple[float, VicinityGraph, bool]]:
+        ) -> list[tuple[float, TermGraph, bool]]:
         """
         This function extracts the document weight and all its neighbour terms from a PydanticRankingRequest object.
 
@@ -194,8 +194,8 @@ class QueryService:
         has a weight and neighbour terms.
     
         Returns:
-        - list[tuple[float, VicinityGraph, bool]]: A list of tuples. Each tuple contains a document weight (float), and a
-        VicinityGraph object representing all the neighbour terms of the document.
+        - list[tuple[float, TermGraph, bool]]: A list of tuples. Each tuple contains a document weight (float), and a
+        TermGraph object representing all the neighbour terms of the document.
         """
         document_weight_graph_tuple_list = []
         for document in ranking.documents:
@@ -208,8 +208,8 @@ class QueryService:
     
     
     def __calculate_similarity_scores(self, 
-        document_weight_graph_tuple_list: list[tuple[float, VicinityGraph, bool]], 
-        visible_graph: VicinityGraph
+        document_weight_graph_tuple_list: list[tuple[float, TermGraph, bool]], 
+        visible_graph: TermGraph
         ) -> list[float]:
         """
         Calculates the similarity scores between the visible neighbour terms and the neighbour terms of each document, until 
@@ -217,9 +217,9 @@ class QueryService:
         frequency scores associated with the user graph terms.
         
         Parameters:
-        - document_weight_graph_tuple_list (list[tuple[float, VicinityGraph, bool]]): A list of tuples, where each tuple contains 
-        a document weight (float) and a VicinityGraph object representing the neighbour terms of the document.
-        - visible_graph (VicinityGraph): A VicinityGraph object representing the neighbour terms of the visible graph.
+        - document_weight_graph_tuple_list (list[tuple[float, TermGraph, bool]]): A list of tuples, where each tuple contains 
+        a document weight (float) and a TermGraph object representing the neighbour terms of the document.
+        - visible_graph (TermGraph): A TermGraph object representing the neighbour terms of the visible graph.
     
         Returns:
         - list[float]: A list of similarity scores representing the ranking of the documents based on their similarity 
@@ -239,9 +239,9 @@ class QueryService:
         return similarity_ranking
     
     
-    def __get_graph_from_pydantic_neighbour_term_list(self, neighbour_terms: List[PydanticNeighbourTermRequest]) -> VicinityGraph:
+    def __get_graph_from_pydantic_neighbour_term_list(self, neighbour_terms: List[PydanticNeighbourTermRequest]) -> TermGraph:
         """
-        This function converts a list of PydanticNeighbourTermRequest objects into a VicinityGraph object.
+        This function converts a list of PydanticNeighbourTermRequest objects into a TermGraph object.
         Each node contains the following attributes: term, ponderation and distance.
 
         Parameters:
@@ -249,18 +249,18 @@ class QueryService:
         each object represents a neighbour term with its attributes.
 
         Returns:
-        - VicinityGraph: A VicinityGraph object, where each neighbour term from the input list is added as a node to the graph.
+        - TermGraph: A TermGraph object, where each neighbour term from the input list is added as a node to the graph.
         """
-        graph = VicinityGraph(subquery="new")
+        graph = TermGraph(subquery="new")
         for node in neighbour_terms:
-            graph.add_node(VicinityNode(term=node.term, proximity_score=node.proximity_score, 
+            graph.add_node(TGNode(term=node.term, proximity_score=node.proximity_score, 
                                         frequency_score=node.frequency_score, criteria=node.criteria))
         return graph
     
     
-    def __get_graph_from_pydantic_visible_neighbour_term_list(self, neighbour_terms: List[PydanticNeighbourTermRequest]) -> VicinityGraph:
+    def __get_graph_from_pydantic_visible_neighbour_term_list(self, neighbour_terms: List[PydanticNeighbourTermRequest]) -> TermGraph:
         """
-        This function converts a list of PydanticNeighbourTermRequest objects into a VicinityGraph object.
+        This function converts a list of PydanticNeighbourTermRequest objects into a TermGraph object.
         Each node contains the following attributes: term, ponderation and distance.
 
         Parameters:
@@ -268,11 +268,11 @@ class QueryService:
         each object represents a neighbour term with its attributes.
 
         Returns:
-        - VicinityGraph: A VicinityGraph object, where each neighbour term from the input list is added as a node to the graph.
+        - TermGraph: A TermGraph object, where each neighbour term from the input list is added as a node to the graph.
         """
-        graph = VicinityGraph(subquery="new")
+        graph = TermGraph(subquery="new")
         for node in neighbour_terms:
-            graph.add_node(VicinityNode(term=node.term, proximity_score=1.0, frequency_score=1.0, criteria=node.criteria))
+            graph.add_node(TGNode(term=node.term, proximity_score=1.0, frequency_score=1.0, criteria=node.criteria))
         return graph
     
     
